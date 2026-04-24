@@ -1,0 +1,60 @@
+:root {
+  --navy:      #0D1B2E;
+  --navy-2:    #111F33;
+  --navy-3:    #1A2E48;
+  --accent:    #C9A84C;
+  --bg:        #F2F5F9;
+  --surface:   #FFFFFF;
+  --surface-2: #F8FAFC;
+  --surface-3: #EEF2F7;
+  --border:    #E5EAF0;
+  --border-2:  #D2DAE6;
+  --text-1:    #0D1B2E;
+  --text-2:    #4A5568;
+  --text-3:    #8898AA;
+  --text-4:    #B4BFCD;
+  --green:     #0EA472;
+  --green-bg:  rgba(14,164,114,0.08);
+  --red:       #E53E3E;
+  --red-bg:    rgba(229,62,62,0.08);
+  --amber:     #C97B06;
+  --amber-bg:  rgba(201,123,6,0.08);
+  --blue:      #2563EB;
+  --blue-bg:   rgba(37,99,235,0.08);
+  --purple:    #6B46C1;
+  --purple-bg: rgba(107,70,193,0.08);
+  --font:      'DM Sans', system-ui, -apple-system, sans-serif;
+  --mono:      'IBM Plex Mono', monospace;
+  /* Shadows — light and purposeful */
+  --sh-xs: 0 1px 2px rgba(13,27,46,0.04);
+  --sh-sm: 0 1px 3px rgba(13,27,46,0.05), 0 1px 2px rgba(13,27,46,0.03);
+  --sh-md: 0 4px 12px rgba(13,27,46,0.07), 0 1px 3px rgba(13,27,46,0.04);
+  --sh-lg: 0 8px 24px rgba(13,27,46,0.10), 0 2px 6px rgba(13,27,46,0.05);
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body, #root { height:100%; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* Scrollbar — minimal */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:99px; }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.fade-up  { animation:fadeUp 0.2s ease both; }
+.spinning { animation:spin 0.7s linear infinite; }

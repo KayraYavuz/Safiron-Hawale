@@ -1,0 +1,406 @@
+"""
+Raporlar API
+
+Hesap Ekstresi Mantığı:
+  Her işlem TEK satır — bacak bazlı değil, işlem bazlı.
+  USD tutarı: pnl.usd_amount (gerçek işlem tutarı, kur tablosundan değil)
+  Bakiye: müşteri perspektifi
+    - Müşteri bizden para aldı (outgoing bizden) → müşteri borçlu oldu → bakiye ↑ (alacağımız artar)
+    - Müşteri bize para verdi (incoming bize)    → müşterinin borcu azaldı → bakiye ↓
+
+Kasa / Lokasyon Hareketi:
+  Her bacak ayrı — kasa bazlı bakiye takibi
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
+from typing import Optional
+from uuid import UUID
+from datetime import date
+from decimal import Decimal
+from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.master import Account, Location, Currency, Counterparty
+from app.models.transaction import (
+    Transaction, TransactionLeg, TransactionPnL,
+    LegType, TxnType, TxnStatus
+)
+
+router = APIRouter(prefix="/api/reports", tags=["reports"])
+
+ZERO = Decimal("0")
+
+def _safe(v) -> Decimal:
+    if v is None:
+        return ZERO
+    return Decimal(str(v)) if not isinstance(v, Decimal) else v
+
+def _fmt2(v) -> str:
+    return str(_safe(v).quantize(Decimal("0.01")))
+
+
+# ── Pozisyon ──────────────────────────────────────────────────────────────────
+@router.get("/position")
+def position(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Tüm kasaların anlık bakiyesi."""
+    from app.services.balance import get_account_balance, balance_to_usd
+
+    accounts = (db.query(Account)
+                .options(joinedload(Account.location), joinedload(Account.currency))
+                .filter(Account.is_active == True).all())
+
+    result = []
+    total_usd = ZERO
+    for acc in accounts:
+        balance     = get_account_balance(db, acc.id)
+        balance_usd = balance_to_usd(balance, acc.currency.code, db)
+        total_usd  += balance_usd
+        result.append({
+            "account_id":       str(acc.id),
+            "account_name":     acc.name,
+            "account_type":     acc.account_type.value,
+            "location_id":      str(acc.location_id),
+            "location_name_tr": acc.location.name_tr if acc.location else "",
+            "currency_code":    acc.currency.code if acc.currency else "",
+            "balance":          _fmt2(balance),
+            "balance_usd":      _fmt2(balance_usd),
+        })
+
+    result.sort(key=lambda x: (x["location_name_tr"], x["currency_code"]))
+    return {"accounts": result, "total_usd": _fmt2(total_usd)}
+
+
+# ── Lokasyon / Kasa Hareketleri ───────────────────────────────────────────────
+@router.get("/cash-movements")
+def cash_movements(
+    location_id: Optional[UUID] = None,
+    account_id:  Optional[UUID] = None,
+    from_date:   Optional[date] = None,
+    to_date:     Optional[date] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Kasa / Lokasyon bazlı tüm hareketler.
+    Her bacak ayrı satır. Kasa bazlı running balance.
+    """
+    from app.services.balance import get_account_balance, balance_to_usd
+
+    TYPE_LABEL = {
+        "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
+        "deposit": "Para Yatırma", "withdrawal": "Para Çekme",
+        "internal_transfer": "İç Transfer",
+    }
+
+    # Hesapları çek
+    acc_q = db.query(Account).options(
+        joinedload(Account.location), joinedload(Account.currency)
+    ).filter(Account.is_active == True)
+
+    if location_id:
+        acc_q = acc_q.filter(Account.location_id == location_id)
+    if account_id:
+        acc_q = acc_q.filter(Account.id == account_id)
+
+    accounts = acc_q.all()
+
+    result = []
+    for acc in accounts:
+        # Bu hesabın tüm hareketleri
+        leg_q = (db.query(TransactionLeg)
+                 .options(
+                     joinedload(TransactionLeg.transaction).joinedload(Transaction.counterparty),
+                     joinedload(TransactionLeg.currency),
+                 )
+                 .join(Transaction)
+                 .filter(TransactionLeg.account_id == acc.id)
+                 .order_by(Transaction.txn_date, Transaction.created_at))
+
+        if from_date:
+            leg_q = leg_q.filter(Transaction.txn_date >= from_date)
+        if to_date:
+            leg_q = leg_q.filter(Transaction.txn_date <= to_date)
+
+        legs = leg_q.all()
+
+        running = acc.opening_balance
+        movements = []
+        for leg in legs:
+            txn = leg.transaction
+            if leg.leg_type == LegType.incoming:
+                running += leg.amount
+                sign = "+"
+            else:
+                running -= leg.amount
+                sign = "-"
+
+            movements.append({
+                "txn_number":  txn.txn_number,
+                "txn_date":    str(txn.txn_date),
+                "type":        TYPE_LABEL.get(txn.txn_type.value, txn.txn_type.value),
+                "counterparty": txn.counterparty.name if txn.counterparty else "—",
+                "direction":   "Giriş" if leg.leg_type == LegType.incoming else "Çıkış",
+                "amount":      f"{sign}{_fmt2(leg.amount)}",
+                "currency":    acc.currency.code if acc.currency else "",
+                "balance":     _fmt2(running),
+                "status":      txn.status.value,
+            })
+
+        result.append({
+            "account_id":       str(acc.id),
+            "account_name":     acc.name,
+            "location_name_tr": acc.location.name_tr if acc.location else "",
+            "currency_code":    acc.currency.code if acc.currency else "",
+            "opening_balance":  _fmt2(acc.opening_balance),
+            "closing_balance":  _fmt2(running),
+            "movements":        movements,
+        })
+
+    return result
+
+
+# ── Lokasyon Kârı ─────────────────────────────────────────────────────────────
+@router.get("/location-pnl")
+def location_pnl(
+    from_date: Optional[date] = None,
+    to_date:   Optional[date] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Her lokasyon için kâr/zarar — sadece tamamlanan FX/Havale/SWIFT."""
+    FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
+    locations = db.query(Location).filter(Location.is_active == True).all()
+    result = []
+
+    for loc in locations:
+        q = (db.query(Transaction)
+             .join(TransactionLeg, TransactionLeg.transaction_id == Transaction.id)
+             .join(Account, Account.id == TransactionLeg.account_id)
+             .filter(
+                 Account.location_id == loc.id,
+                 Transaction.txn_type.in_(FX_TYPES),
+                 Transaction.status == TxnStatus.completed,
+             ))
+        if from_date: q = q.filter(Transaction.txn_date >= from_date)
+        if to_date:   q = q.filter(Transaction.txn_date <= to_date)
+
+        txns    = q.distinct().all()
+        txn_ids = [t.id for t in txns]
+
+        # Hacim: pnl.usd_amount toplamı (gerçek işlem tutarı)
+        volume_usd = (db.query(func.sum(TransactionPnL.usd_amount))
+                      .filter(TransactionPnL.transaction_id.in_(txn_ids))
+                      .scalar() or ZERO)
+
+        pnl_rows   = db.query(TransactionPnL).filter(TransactionPnL.transaction_id.in_(txn_ids)).all()
+        fx_gain    = sum(_safe(p.gross_profit_usd) for p in pnl_rows)
+        commission = sum(_safe(p.commission_usd)   for p in pnl_rows)
+        net_pnl    = sum(_safe(p.net_pnl_usd)      for p in pnl_rows)
+
+        result.append({
+            "location_id":       str(loc.id),
+            "location_name_tr":  loc.name_tr,
+            "location_name_ar":  loc.name_ar,
+            "transaction_count": len(txns),
+            "volume_usd":        _fmt2(volume_usd),
+            "fx_gain_usd":       _fmt2(fx_gain),
+            "commission_usd":    _fmt2(commission),
+            "net_pnl_usd":       _fmt2(net_pnl),
+        })
+
+    return result
+
+
+# ── Gelir Tablosu ─────────────────────────────────────────────────────────────
+@router.get("/income-statement")
+def income_statement(
+    from_date: Optional[date] = None,
+    to_date:   Optional[date] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Gelir tablosu — sadece tamamlanan FX/Havale/SWIFT."""
+    FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
+
+    q = (db.query(TransactionPnL).join(Transaction)
+         .filter(Transaction.txn_type.in_(FX_TYPES), Transaction.status == TxnStatus.completed))
+    if from_date: q = q.filter(Transaction.txn_date >= from_date)
+    if to_date:   q = q.filter(Transaction.txn_date <= to_date)
+    rows = q.all()
+
+    cnt_q = db.query(func.count(Transaction.id)).filter(
+        Transaction.txn_type.in_(FX_TYPES), Transaction.status == TxnStatus.completed)
+    if from_date: cnt_q = cnt_q.filter(Transaction.txn_date >= from_date)
+    if to_date:   cnt_q = cnt_q.filter(Transaction.txn_date <= to_date)
+
+    fx_gain    = sum(_safe(r.gross_profit_usd) for r in rows)
+    commission = sum(_safe(r.commission_usd)   for r in rows)
+    gross      = fx_gain + commission
+    net        = sum(_safe(r.net_pnl_usd)      for r in rows)
+
+    return {
+        "fx_gain_usd":       _fmt2(fx_gain),
+        "commission_usd":    _fmt2(commission),
+        "gross_income_usd":  _fmt2(gross),
+        "cost_usd":          "0.00",
+        "net_pnl_usd":       _fmt2(net),
+        "transaction_count": cnt_q.scalar() or 0,
+        "from_date":         str(from_date) if from_date else None,
+        "to_date":           str(to_date)   if to_date   else None,
+    }
+
+
+# ── Karşı Taraf Hesap Ekstresi ────────────────────────────────────────────────
+@router.get("/counterparty-statement/{cp_id}")
+def counterparty_statement(
+    cp_id:     UUID,
+    from_date: Optional[date] = None,
+    to_date:   Optional[date] = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Karşı taraf hesap ekstresi — işlem bazlı (bacak bazlı değil).
+
+    Her işlem TEK satır.
+    USD tutarı: pnl.usd_amount (gerçek USD, kur tablosundan hesaplanan değil)
+    Eğer pnl yoksa (deposit/withdrawal): outgoing leg USD tutarı
+
+    Bakiye mantığı (biz ne kadar alacağımız / borcumuz):
+      Müşteriye hizmet verdik → müşteri bize borçlu → bakiye ↑ (alacak)
+      Müşteriden ödeme aldık  → borç kapandı        → bakiye ↓
+
+    Havale (USD→EGP):  müşteri 100k USD verdi → bize 100k USD alacak girdi → bakiye artar
+    Deposit (müşteri para yatırdı): bize geldi → alacağımız kapandı → bakiye azalır
+    Withdrawal (müşteriye para verdik): bakiye artar
+    """
+    cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
+    if not cp:
+        raise HTTPException(404, "Karşı taraf bulunamadı")
+
+    q = (db.query(Transaction)
+         .options(
+             joinedload(Transaction.legs).joinedload(TransactionLeg.account)
+                 .joinedload(Account.location),
+             joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
+             joinedload(Transaction.pnl),
+         )
+         .filter(Transaction.counterparty_id == cp_id))
+    if from_date: q = q.filter(Transaction.txn_date >= from_date)
+    if to_date:   q = q.filter(Transaction.txn_date <= to_date)
+
+    transactions = q.order_by(Transaction.txn_date, Transaction.created_at).all()
+
+    TYPE_LABEL = {
+        "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
+        "deposit": "Para Yatırma", "withdrawal": "Para Çekme",
+        "internal_transfer": "İç Transfer",
+    }
+    FX_TYPES = {"remittance", "fx", "swift"}
+
+    rows = []
+    running_balance = ZERO
+
+    for txn in transactions:
+        txn_type_val = txn.txn_type.value
+
+        if txn_type_val in FX_TYPES:
+            # FX/Havale: tek satır, pnl.usd_amount kullan
+            usd_amount = _safe(txn.pnl.usd_amount) if txn.pnl else ZERO
+
+            # Yön: source → dest
+            out_leg = next((l for l in txn.legs if l.leg_type == LegType.outgoing), None)
+            in_leg  = next((l for l in txn.legs if l.leg_type == LegType.incoming), None)
+
+            out_cur  = out_leg.currency.code if out_leg and out_leg.currency else ""
+            in_cur   = in_leg.currency.code  if in_leg  and in_leg.currency  else ""
+            out_amt  = _fmt2(out_leg.amount)  if out_leg else "0"
+            in_amt   = _fmt2(in_leg.amount)   if in_leg  else "0"
+
+            # Müşteri bakış: müşteri SOURCE'da ödedi → bize geldi → alacak kapandı → bakiye ↓
+            # Müşteri DEST'te aldı → biz verdik → bakiye ↑
+            # Net USD etkisi: out_leg (source, müşteri verdi) = alacağımız azalır
+            # Pratik kural: müşterinin verdiği = bizim alacağımız kapanır
+            if out_cur == "USD":
+                # Müşteri USD verdi (outgoing bizden = USD kasa çıktı)
+                # Müşterinin hesabına: ödedi = borç kapandı = bakiye azalır
+                running_balance -= usd_amount
+                debit_col  = f"{out_amt} {out_cur}"
+                credit_col = f"{in_amt} {in_cur}"
+            else:
+                # Müşteri non-USD verdi, USD aldı
+                # Müşteri aldı = borçlandı = bakiye artar
+                running_balance += usd_amount
+                debit_col  = f"{in_amt} {in_cur}"
+                credit_col = f"{out_amt} {out_cur}"
+
+            rows.append({
+                "txn_number":  txn.txn_number,
+                "txn_date":    str(txn.txn_date),
+                "value_date":  str(txn.value_date),
+                "type":        TYPE_LABEL[txn_type_val],
+                "description": f"{out_cur} → {in_cur}" if out_cur and in_cur else "",
+                "debit":       debit_col,
+                "credit":      credit_col,
+                "amount_usd":  _fmt2(usd_amount),
+                "balance_usd": _fmt2(running_balance),
+                "status":      txn.status.value,
+            })
+
+        elif txn_type_val == "deposit":
+            # Müşteri para yatırdı → bize geldi → alacağımız azaldı
+            leg = next((l for l in txn.legs if l.leg_type == LegType.incoming), None)
+            if not leg:
+                continue
+            usd_amount = _safe(leg.amount_usd)
+            running_balance -= usd_amount
+            cur = leg.currency.code if leg.currency else ""
+            rows.append({
+                "txn_number":  txn.txn_number,
+                "txn_date":    str(txn.txn_date),
+                "value_date":  str(txn.value_date),
+                "type":        TYPE_LABEL[txn_type_val],
+                "description": "Tahsilat",
+                "debit":       "—",
+                "credit":      f"{_fmt2(leg.amount)} {cur}",
+                "amount_usd":  _fmt2(usd_amount),
+                "balance_usd": _fmt2(running_balance),
+                "status":      txn.status.value,
+            })
+
+        elif txn_type_val == "withdrawal":
+            # Müşteriye para verildi → biz verdik → alacağımız arttı
+            leg = next((l for l in txn.legs if l.leg_type == LegType.outgoing), None)
+            if not leg:
+                continue
+            usd_amount = _safe(leg.amount_usd)
+            running_balance += usd_amount
+            cur = leg.currency.code if leg.currency else ""
+            rows.append({
+                "txn_number":  txn.txn_number,
+                "txn_date":    str(txn.txn_date),
+                "value_date":  str(txn.value_date),
+                "type":        TYPE_LABEL[txn_type_val],
+                "description": "Teslim",
+                "debit":       f"{_fmt2(leg.amount)} {cur}",
+                "credit":      "—",
+                "amount_usd":  _fmt2(usd_amount),
+                "balance_usd": _fmt2(running_balance),
+                "status":      txn.status.value,
+            })
+
+        # internal_transfer: karşı taraf etkisi yok, atla
+
+    return {
+        "counterparty": {
+            "id":      str(cp.id),
+            "code":    cp.code,
+            "name":    cp.name,
+            "name_ar": cp.name_ar,
+            "type":    cp.type.value,
+        },
+        "rows":                rows,
+        "closing_balance_usd": _fmt2(running_balance),
+        "from_date":           str(from_date) if from_date else None,
+        "to_date":             str(to_date)   if to_date   else None,
+    }
