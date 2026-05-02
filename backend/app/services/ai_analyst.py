@@ -3,7 +3,6 @@ from app.core.config import settings
 from sqlalchemy.orm import Session
 from app.models.transaction import Transaction
 from app.models.master import Location, Account
-from app.services.pnl import calculate_transaction_pnl
 from datetime import datetime, timedelta
 import json
 
@@ -27,21 +26,21 @@ def get_ai_financial_analysis(db: Session, prompt: str = None):
         "total_transactions": len(txns),
         "transaction_types": {},
         "location_performance": {},
-        "currency_volumes": {},
         "total_estimated_pnl_usd": 0
     }
 
     for t in txns:
         # Tür dağılımı
-        summary["transaction_types"][t.txn_type] = summary["transaction_types"].get(t.txn_type, 0) + 1
+        summary["transaction_types"][t.txn_type.value] = summary["transaction_types"].get(t.txn_type.value, 0) + 1
         
         # PNL Hesabı (Sayısal özet için)
-        pnl = calculate_transaction_pnl(t)
-        summary["total_estimated_pnl_usd"] += float(pnl.get("net_pnl_usd", 0))
+        if t.pnl:
+            summary["total_estimated_pnl_usd"] += float(t.pnl.net_pnl_usd or 0)
         
-        # Lokasyon bazlı hacim
-        loc_name = t.location.name_tr if t.location else "Unknown"
-        summary["location_performance"][loc_name] = summary["location_performance"].get(loc_name, 0) + 1
+        # Lokasyon bazlı hacim (İlk bacağın lokasyonunu alalım)
+        if t.legs:
+            loc_name = t.legs[0].account.location.name_tr if t.legs[0].account and t.legs[0].account.location else "Unknown"
+            summary["location_performance"][loc_name] = summary["location_performance"].get(loc_name, 0) + 1
 
     # 3. Gemini'ye Gönder
     genai.configure(api_key=settings.GEMINI_API_KEY)
