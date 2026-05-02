@@ -404,3 +404,12 @@ def counterparty_statement(
         "from_date":           str(from_date) if from_date else None,
         "to_date":             str(to_date)   if to_date   else None,
     }
+
+# ── AI Analizcisi ─────────────────────────────────────────────────────────────
+from app.services.ai_analyst import get_ai_financial_analysis
+
+@router.get("/ai-analysis")
+def ai_analysis(prompt: Optional[str] = None, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """AI Finansal Analiz Raporu"""
+    analysis = get_ai_financial_analysis(db, prompt)
+    return {"analysis": analysis}

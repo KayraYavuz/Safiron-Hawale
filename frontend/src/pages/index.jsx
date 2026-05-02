@@ -848,6 +848,7 @@ export function Reports() {
     { k:'location',  label:'Lokasyon Kârı'   },
     { k:'income',    label:'Gelir Tablosu'   },
     { k:'statement', label:'Hesap Ekstresi'  },
+    { k:'ai',        label:'AI Analiz'       },
   ]
 
   // ── Export ─────────────────────────────────────────────────────────────────
@@ -881,7 +882,20 @@ export function Reports() {
       const r = (stmt?.rows??[]).map(s => [s.txn_number, s.txn_date, s.type, s.description, s.debit, s.credit, `$${fmt(s.amount_usd)}`, `$${fmt(s.balance_usd)}`, s.status])
       type==='pdf' ? downloadPDF(`Ekstre — ${stmt.counterparty?.name??''}`,h,r,'ekstre.pdf') : downloadExcel(`Ekstre`,h,r,'ekstre.xlsx')
     },
+    ai: (type) => {
+      if (!aiData?.analysis) return
+      const t = "AI Finansal Analiz Raporu"
+      const h = ["Analiz Sonucu"]
+      const r = [[aiData.analysis]]
+      type==='pdf' ? downloadPDF(t,h,r,'ai-analiz.pdf') : downloadExcel(t,h,r,'ai-analiz.xlsx')
+    }
   }
+
+  const { data:aiData, refetch:refetchAI, isFetching:isAiLoading } = useQuery({
+    queryKey: ['aiAnalysis'],
+    queryFn: () => reportsApi.aiAnalysis().then(r => r.data),
+    enabled: false // Manuel çalışacak
+  })
 
   const clearDates = () => { setFromDate(''); setToDate('') }
 
@@ -906,7 +920,39 @@ export function Reports() {
 
       {/* Filtreler */}
       <div style={{ display:'flex', gap:10, alignItems:'flex-end', flexWrap:'wrap' }}>
+        {tab === 'ai' && (
+          <Btn onClick={() => refetchAI()} disabled={isAiLoading}>
+            {isAiLoading ? 'Analiz Ediliyor...' : 'Yapay Zeka Analizini Başlat'}
+          </Btn>
+        )}
         {tab === 'statement' && (
+...
+      {/* ── AI Analiz ── */}
+      {tab === 'ai' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <Card>
+            <CardHeader>AI Finansal Analiz (Gemini 1.5 Flash)</CardHeader>
+            <div style={{ padding:20, minHeight:200, whiteSpace:'pre-wrap', lineHeight:1.6, fontSize:14, color:C.text1 }}>
+              {isAiLoading ? (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:40 }}>
+                  <div className="spinning" style={{ width:30, height:30, border:'3px solid rgba(0,0,0,0.1)', borderTopColor:C.navy, borderRadius:'50%' }} />
+                  <div style={{ color:C.text3, fontWeight:500 }}>Son 30 günlük veriler analiz ediliyor...</div>
+                </div>
+              ) : aiData?.analysis ? (
+                <div>{aiData.analysis}</div>
+              ) : (
+                <div style={{ textAlign:'center', color:C.text4, padding:40 }}>
+                  <Icon name="refresh" size={32} color={C.border2} style={{ marginBottom:12 }} />
+                  <div>Analiz başlatmak için yukarıdaki butona tıklayın.</div>
+                </div>
+              )}
+            </div>
+          </Card>
+          <Info type="info">
+            <strong>Güvenlik Notu:</strong> Yapay zeka sadece anonimleştirilmiş rakamları görür. Müşteri isimleri, telefonları veya özel bilgiler AI modeline gönderilmez. AI sadece "okuma" yetkisine sahiptir, işlem yapamaz.
+          </Info>
+        </div>
+      )}
           <Select value={cpId} onChange={e => setCpId(e.target.value)} style={{ width:200 }}>
             <option value="">— karşı taraf seç —</option>
             {cps.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
