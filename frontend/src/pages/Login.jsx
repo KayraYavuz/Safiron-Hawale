@@ -81,15 +81,11 @@ export default function Login() {
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <div>
                 <label style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>E-posta</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inp}
-                  onFocus={e=>e.target.style.borderColor='rgba(201,168,76,0.6)'}
-                  onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.15)'} />
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inp} />
               </div>
               <div>
                 <label style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>Şifre</label>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp}
-                  onFocus={e=>e.target.style.borderColor='rgba(201,168,76,0.6)'}
-                  onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.15)'} />
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp} />
               </div>
               <button type="submit" disabled={loading} style={{
                 marginTop:4, padding:'12px', borderRadius:10, border:'none', cursor: loading ? 'not-allowed' : 'pointer',

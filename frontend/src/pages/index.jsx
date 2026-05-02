@@ -455,31 +455,6 @@ export function Counterparties() {
     cp.code?.toLowerCase().includes(search.toLowerCase())
   ) : data
 
-  const FormCard = () => (
-    <Card>
-      <CardHeader>{editId ? 'Düzenle' : 'Yeni Karşı Taraf'}</CardHeader>
-      <div style={{ padding:20 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-          <Input label="Ad" value={form.name} onChange={e=>setForm(x=>({...x,name:e.target.value}))} placeholder="Ahmed Al-Rashidi" />
-          <Input label="Ad (Arapça)" value={form.name_ar} onChange={e=>setForm(x=>({...x,name_ar:e.target.value}))} placeholder="أحمد الراشدي" style={{ direction:'rtl' }} />
-          <Select label="Tür" value={form.type} onChange={e=>setForm(x=>({...x,type:e.target.value}))}>
-            <option value="customer">Müşteri</option><option value="supplier">Tedarikçi</option>
-            <option value="both">Her ikisi</option><option value="founder">Ortak</option>
-          </Select>
-          <Input label="Ülke (3 harf)" value={form.country} onChange={e=>setForm(x=>({...x,country:e.target.value.toUpperCase()}))} placeholder="EGY" maxLength={3} />
-          <Input label="Telefon" value={form.phone} onChange={e=>setForm(x=>({...x,phone:e.target.value}))} placeholder="+20 123 456 7890" />
-          <Input label="Kredi Limiti (USD)" type="number" value={form.credit_limit_usd} onChange={e=>setForm(x=>({...x,credit_limit_usd:e.target.value}))} min={0} />
-        </div>
-        <div style={{ display:'flex', gap:10, marginTop:16 }}>
-          <Btn onClick={handleSave} disabled={isPending||!form.name.trim()}>
-            {isPending ? 'Kaydediliyor...' : editId ? 'Güncelle' : 'Kaydet'}
-          </Btn>
-          <Btn variant="ghost" onClick={() => { setShowForm(false); setEditId(null) }}>İptal</Btn>
-        </div>
-      </div>
-    </Card>
-  )
-
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       <div style={{ display:'flex', gap:10, alignItems:'center' }}>
@@ -491,7 +466,30 @@ export function Counterparties() {
         <Btn onClick={openNew}><Icon name="plus" size={14} color="white"/> Yeni</Btn>
       </div>
 
-      {showForm && <FormCard />}
+      {showForm && (
+        <Card>
+          <CardHeader>{editId ? 'Düzenle' : 'Yeni Karşı Taraf'}</CardHeader>
+          <div style={{ padding:20 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <Input label="Ad" value={form.name} onChange={e=>setForm(x=>({...x,name:e.target.value}))} placeholder="Ahmed Al-Rashidi" />
+              <Input label="Ad (Arapça)" value={form.name_ar} onChange={e=>setForm(x=>({...x,name_ar:e.target.value}))} placeholder="أحمد الراشدي" style={{ direction:'rtl' }} />
+              <Select label="Tür" value={form.type} onChange={e=>setForm(x=>({...x,type:e.target.value}))}>
+                <option value="customer">Müşteri</option><option value="supplier">Tedarikçi</option>
+                <option value="both">Her ikisi</option><option value="founder">Ortak</option>
+              </Select>
+              <Input label="Ülke (3 harf)" value={form.country} onChange={e=>setForm(x=>({...x,country:e.target.value.toUpperCase()}))} placeholder="EGY" maxLength={3} />
+              <Input label="Telefon" value={form.phone} onChange={e=>setForm(x=>({...x,phone:e.target.value}))} placeholder="+20 123 456 7890" />
+              <Input label="Kredi Limiti (USD)" type="number" value={form.credit_limit_usd} onChange={e=>setForm(x=>({...x,credit_limit_usd:e.target.value}))} min={0} />
+            </div>
+            <div style={{ display:'flex', gap:10, marginTop:16 }}>
+              <Btn onClick={handleSave} disabled={isPending||!form.name.trim()}>
+                {isPending ? 'Kaydediliyor...' : editId ? 'Güncelle' : 'Kaydet'}
+              </Btn>
+              <Btn variant="ghost" onClick={() => { setShowForm(false); setEditId(null) }}>İptal</Btn>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <Table>

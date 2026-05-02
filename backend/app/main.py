@@ -39,7 +39,7 @@ _origins_env = os.environ.get("ALLOWED_ORIGINS", "")
 _allowed_origins = (
     [o.strip() for o in _origins_env.split(",") if o.strip()]
     if _origins_env
-    else ["http://localhost:3000", "http://localhost:5173"]
+    else ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
 )
 
 app.add_middleware(

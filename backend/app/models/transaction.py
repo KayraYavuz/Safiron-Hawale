@@ -1,10 +1,10 @@
 import uuid
 import enum
 from sqlalchemy import Column, String, Enum, ForeignKey, DateTime, Numeric, Date, Text
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.types import GUID
 
 
 class TxnType(str, enum.Enum):
@@ -29,17 +29,17 @@ class LegType(str, enum.Enum):
 
 class Transaction(Base):
     __tablename__ = "transactions"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     txn_number = Column(String(20), unique=True, nullable=False, index=True)
     txn_date = Column(Date, nullable=False)
     value_date = Column(Date, nullable=False)
     txn_type = Column(Enum(TxnType), nullable=False)
     status = Column(Enum(TxnStatus), default=TxnStatus.pending)
-    counterparty_id = Column(UUID(as_uuid=True), ForeignKey("counterparties.id"), nullable=True)
+    counterparty_id = Column(GUID(), ForeignKey("counterparties.id"), nullable=True)
     counterparty_role = Column(String(20), nullable=True)
     notes = Column(Text)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    approved_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     counterparty = relationship("Counterparty", back_populates="transactions")
@@ -52,11 +52,11 @@ class Transaction(Base):
 
 class TransactionLeg(Base):
     __tablename__ = "transaction_legs"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(GUID(), ForeignKey("transactions.id"), nullable=False)
     leg_type = Column(Enum(LegType), nullable=False)
-    account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
-    currency_id = Column(UUID(as_uuid=True), ForeignKey("currencies.id"), nullable=False)
+    account_id = Column(GUID(), ForeignKey("accounts.id"), nullable=False)
+    currency_id = Column(GUID(), ForeignKey("currencies.id"), nullable=False)
     amount = Column(Numeric(18, 4), nullable=False)
     rate_usd = Column(Numeric(18, 8), default=1)
     amount_usd = Column(Numeric(18, 4), default=0)
@@ -84,8 +84,8 @@ class TransactionPnL(Base):
       Case B (src=USD):  profit = supplier_settlement - customer_gets [destCur]
     """
     __tablename__ = "transaction_pnl"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), unique=True, nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(GUID(), ForeignKey("transactions.id"), unique=True, nullable=False)
 
     # Kur ve yön bilgisi
     source_currency = Column(String(5), nullable=True)   # müşteri veriyor
@@ -123,7 +123,7 @@ class TransactionPnL(Base):
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     date = Column(Date, nullable=False, index=True)
     currency_code = Column(String(5), nullable=False)
     rate_per_usd = Column(Numeric(18, 8), nullable=False)  # 1 USD = ? currency
@@ -164,14 +164,14 @@ class SupplierSettlement(Base):
     """
     __tablename__ = "supplier_settlements"
 
-    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=False)
+    id             = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(GUID(), ForeignKey("transactions.id"), nullable=False)
 
     # Uzlaşma türü
     settlement_type = Column(Enum(SupplierSettlementType), nullable=False)
 
     # Tedarikçi — ya kayıtlı (counterparty_id) ya harici (external_name)
-    counterparty_id = Column(UUID(as_uuid=True), ForeignKey("counterparties.id"), nullable=True)
+    counterparty_id = Column(GUID(), ForeignKey("counterparties.id"), nullable=True)
     external_name   = Column(String, nullable=True)  # harici tedarikçi adı
 
     # Yön (işlemden kopyalanır, müşteri verisi içermez)
@@ -191,11 +191,11 @@ class SupplierSettlement(Base):
     payable_currency           = Column(String(5),      nullable=True)
 
     # Lokasyon etkileri
-    receivable_location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=True)
-    payable_location_id    = Column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=True)
+    receivable_location_id = Column(GUID(), ForeignKey("locations.id"), nullable=True)
+    payable_location_id    = Column(GUID(), ForeignKey("locations.id"), nullable=True)
 
     notes      = Column(Text, nullable=True)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     transaction          = relationship("Transaction", back_populates="supplier_settlement")
@@ -211,8 +211,8 @@ class AuditLog(Base):
     Her kritik işlemde otomatik oluşur.
     """
     __tablename__ = "audit_logs"
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(GUID(), ForeignKey("users.id"), nullable=True)
     action     = Column(String(50), nullable=False)   # CREATE, UPDATE, DELETE, LOGIN, LOGOUT
     entity     = Column(String(50), nullable=True)    # Transaction, Counterparty, User...
     entity_id  = Column(String(100), nullable=True)

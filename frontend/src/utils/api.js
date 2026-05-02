@@ -1,7 +1,9 @@
 import axios from 'axios'
 import { useAuthStore } from '../store'
 
-const api = axios.create({ baseURL: 'http://localhost:8000' })
+const api = axios.create({ 
+  baseURL: window.location.protocol + '//' + window.location.hostname + ':8000' 
+})
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token

@@ -28,7 +28,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </QueryClientProvider>
 )
 
-// Service Worker — PWA offline desteği
+// Service Worker devre dışı bırakıldı (test aşaması için)
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -36,3 +37,4 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('[SW] Registration failed:', err))
   })
 }
+*/

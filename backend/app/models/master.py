@@ -2,15 +2,15 @@ import uuid
 import enum
 from decimal import Decimal
 from sqlalchemy import Column, String, Boolean, Enum, ForeignKey, DateTime, Numeric, Integer
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.types import GUID
 
 
 class Location(Base):
     __tablename__ = "locations"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     code = Column(String(10), unique=True, nullable=False, index=True)
     name_tr = Column(String, nullable=False)
     name_ar = Column(String, nullable=False)
@@ -23,7 +23,7 @@ class Location(Base):
 
 class Currency(Base):
     __tablename__ = "currencies"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     code = Column(String(5), unique=True, nullable=False, index=True)
     name_tr = Column(String, nullable=False)
     name_ar = Column(String, nullable=False)
@@ -42,9 +42,9 @@ class AccountType(str, enum.Enum):
 
 class Account(Base):
     __tablename__ = "accounts"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=False)
-    currency_id = Column(UUID(as_uuid=True), ForeignKey("currencies.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    location_id = Column(GUID(), ForeignKey("locations.id"), nullable=False)
+    currency_id = Column(GUID(), ForeignKey("currencies.id"), nullable=False)
     account_type = Column(Enum(AccountType), nullable=False)
     name = Column(String, nullable=False)
     bank_name = Column(String)
@@ -69,7 +69,7 @@ class CounterpartyType(str, enum.Enum):
 
 class Counterparty(Base):
     __tablename__ = "counterparties"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     code = Column(String(20), unique=True, nullable=False, index=True)
     name = Column(String, nullable=False)
     name_ar = Column(String)
