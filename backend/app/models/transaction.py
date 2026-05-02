@@ -1,6 +1,6 @@
 import uuid
 import enum
-from sqlalchemy import Column, String, Enum, ForeignKey, DateTime, Numeric, Date, Text
+from sqlalchemy import Column, String, Enum, ForeignKey, DateTime, Numeric, Date, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -29,6 +29,13 @@ class LegType(str, enum.Enum):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (
+        Index("ix_transactions_status",         "status"),
+        Index("ix_transactions_txn_date",       "txn_date"),
+        Index("ix_transactions_counterparty_id","counterparty_id"),
+        Index("ix_transactions_type_status",    "txn_type", "status"),
+        Index("ix_transactions_date_status",    "txn_date", "status"),
+    )
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     txn_number = Column(String(20), unique=True, nullable=False, index=True)
     txn_date = Column(Date, nullable=False)
@@ -52,6 +59,11 @@ class Transaction(Base):
 
 class TransactionLeg(Base):
     __tablename__ = "transaction_legs"
+    __table_args__ = (
+        Index("ix_legs_account_id",      "account_id"),
+        Index("ix_legs_transaction_id",  "transaction_id"),
+        Index("ix_legs_account_legtype", "account_id", "leg_type"),
+    )
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     transaction_id = Column(GUID(), ForeignKey("transactions.id"), nullable=False)
     leg_type = Column(Enum(LegType), nullable=False)
@@ -123,9 +135,12 @@ class TransactionPnL(Base):
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
+    __table_args__ = (
+        Index("ix_exchange_rates_currency_date", "currency_code", "date"),
+    )
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     date = Column(Date, nullable=False, index=True)
-    currency_code = Column(String(5), nullable=False)
+    currency_code = Column(String(5), nullable=False, index=True)
     rate_per_usd = Column(Numeric(18, 8), nullable=False)  # 1 USD = ? currency
     source = Column(String, default="manual")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -211,6 +226,10 @@ class AuditLog(Base):
     Her kritik işlemde otomatik oluşur.
     """
     __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_created_at", "created_at"),
+        Index("ix_audit_user_action", "user_id", "action"),
+    )
     id         = Column(GUID(), primary_key=True, default=uuid.uuid4)
     user_id    = Column(GUID(), ForeignKey("users.id"), nullable=True)
     action     = Column(String(50), nullable=False)   # CREATE, UPDATE, DELETE, LOGIN, LOGOUT

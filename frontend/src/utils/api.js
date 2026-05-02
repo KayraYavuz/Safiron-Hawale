@@ -34,7 +34,12 @@ export const authApi = {
   me: () => api.get('/api/auth/me'),
 }
 
-export const locationsApi  = { list: () => api.get('/api/locations') }
+export const locationsApi  = {
+  list:   ()         => api.get('/api/locations'),
+  create: (data)     => api.post('/api/locations', data),
+  update: (id, data) => api.put(`/api/locations/${id}`, data),
+  delete: (id)       => api.delete(`/api/locations/${id}`),
+}
 export const currenciesApi = { list: () => api.get('/api/currencies') }
 
 export const accountsApi = {

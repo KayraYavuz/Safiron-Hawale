@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addCommas, stripCommas } from '../utils/format'
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
@@ -88,17 +88,11 @@ export function Input({ label, hint, error, style={}, ...props }) {
           borderRadius:7, fontSize:13.5,
           color:C.text1, background:'white',
           fontFamily:'var(--font)', outline:'none',
-          transition:'border-color 0.15s, box-shadow 0.15s',
+          transition:'border-color 0.15s',
           ...style,
         }}
-        onFocus={e => {
-          e.target.style.borderColor = C.navy3
-          e.target.style.boxShadow = '0 0 0 3px rgba(26,46,72,0.07)'
-        }}
-        onBlur={e => {
-          e.target.style.borderColor = error ? C.red : C.border
-          e.target.style.boxShadow = 'none'
-        }}
+        onFocus={e => e.target.style.borderColor = C.navy3}
+        onBlur={e  => e.target.style.borderColor = error ? C.red : C.border}
         {...props}
       />
       {error && <span style={{ fontSize:11.5, color:C.red }}>{error}</span>}
@@ -171,17 +165,13 @@ export function AmountInput({ label, hint, value, onChange, onCalc, currency, hi
           fontFamily:'var(--mono)', color:C.text1,
           background: highlight ? 'rgba(14,164,114,0.03)' : 'white',
           outline:'none',
-          transition:'border-color 0.15s, box-shadow 0.15s',
+          transition:'border-color 0.15s',
           letterSpacing:'-0.01em',
           ...style,
         }}
-        onFocus={e => {
-          e.target.style.borderColor = highlight ? C.green : C.navy3
-          e.target.style.boxShadow = `0 0 0 3px ${highlight ? 'rgba(14,164,114,0.10)' : 'rgba(26,46,72,0.07)'}`
-        }}
-        onBlur={e => {
+        onFocus={e => e.target.style.borderColor = highlight ? C.green : C.navy3}
+        onBlur={e  => {
           e.target.style.borderColor = highlight ? C.green : C.border
-          e.target.style.boxShadow = 'none'
           if (onCalc) onCalc()
         }}
       />
@@ -214,17 +204,11 @@ export function RateInput({ label, hint, value, onChange, accent='amber', style=
           border:`1px solid ${th.border}`, background:'white',
           fontSize:14.5, fontFamily:'var(--mono)', color:C.text1,
           outline:'none', letterSpacing:'-0.01em',
-          transition:'border-color 0.15s, box-shadow 0.15s',
+          transition:'border-color 0.15s',
           ...style,
         }}
-        onFocus={e => {
-          e.target.style.borderColor = th.text
-          e.target.style.boxShadow = `0 0 0 3px ${th.bg.replace('0.04','0.12')}`
-        }}
-        onBlur={e => {
-          e.target.style.borderColor = th.border
-          e.target.style.boxShadow = 'none'
-        }}
+        onFocus={e => e.target.style.borderColor = th.text}
+        onBlur={e  => e.target.style.borderColor = th.border}
       />
       {hint && <div style={{ fontSize:11.5, color:th.text, marginTop:5, opacity:0.8 }}>{hint}</div>}
     </div>
@@ -358,9 +342,17 @@ export function Badge({ type, children, dot=false }) {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 export function Modal({ title, subtitle, onClose, children, footer }) {
+  // Close on Escape key — keyboard accessibility
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
     <div
       onClick={e => e.target === e.currentTarget && onClose?.()}
+      role="dialog" aria-modal="true" aria-label={title}
       style={{
         position:'fixed', inset:0,
         background:'rgba(13,27,46,0.45)',
@@ -396,14 +388,13 @@ export function Modal({ title, subtitle, onClose, children, footer }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Kapat"
+            className="icon-btn"
             style={{
-              background:'none', border:'none', cursor:'pointer',
-              color:C.text4, padding:5, borderRadius:6,
-              display:'flex', alignItems:'center',
-              transition:'color 0.12s, background 0.12s',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: C.text4, padding: 5, borderRadius: 6,
+              display: 'flex', alignItems: 'center',
             }}
-            onMouseEnter={e => { e.currentTarget.style.color=C.text1; e.currentTarget.style.background=C.surface3 }}
-            onMouseLeave={e => { e.currentTarget.style.color=C.text4; e.currentTarget.style.background='none' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -546,12 +537,16 @@ export function CPSearch({ list=[], value, onChange, label }) {
   const [open, setOpen] = useState(false)
   const sel = list.find(c => c.id === value)
 
-  const filtered = list.filter(c =>
-    !q ||
-    (c.name||'').toLowerCase().includes(q.toLowerCase()) ||
-    (c.name_ar||'').includes(q) ||
-    (c.code||'').toLowerCase().includes(q.toLowerCase())
-  )
+  // Memoize search — avoids re-filtering large counterparty lists on every keystroke
+  const filtered = useMemo(() => {
+    if (!q) return list
+    const lq = q.toLowerCase()
+    return list.filter(c =>
+      (c.name   || '').toLowerCase().includes(lq) ||
+      (c.name_ar || '').includes(q) ||
+      (c.code   || '').toLowerCase().includes(lq)
+    )
+  }, [list, q])
 
   const tb = {
     customer:{ bg:C.blueBg,   color:C.blue   },

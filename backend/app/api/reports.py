@@ -42,26 +42,33 @@ def _fmt2(v) -> str:
 # ── Pozisyon ──────────────────────────────────────────────────────────────────
 @router.get("/position")
 def position(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    """Tüm kasaların anlık bakiyesi."""
-    from app.services.balance import get_account_balance, balance_to_usd
+    """Tüm kasaların anlık bakiyesi. Batch sorgularla N+1 önlendi."""
+    from app.services.balance import get_all_balances, get_all_usd_rates
 
     accounts = (db.query(Account)
                 .options(joinedload(Account.location), joinedload(Account.currency))
                 .filter(Account.is_active == True).all())
 
+    # N+1 yerine 2 toplu sorgu
+    balances  = get_all_balances(db)
+    usd_rates = get_all_usd_rates(db)
+
     result = []
     total_usd = ZERO
     for acc in accounts:
-        balance     = get_account_balance(db, acc.id)
-        balance_usd = balance_to_usd(balance, acc.currency.code, db)
+        acc_id      = str(acc.id)
+        balance     = balances.get(acc_id, ZERO)
+        cur_code    = acc.currency.code if acc.currency else "USD"
+        rate        = usd_rates.get(cur_code, Decimal("1"))
+        balance_usd = (balance / rate).quantize(Decimal("0.01")) if rate else ZERO
         total_usd  += balance_usd
         result.append({
-            "account_id":       str(acc.id),
+            "account_id":       acc_id,
             "account_name":     acc.name,
             "account_type":     acc.account_type.value,
             "location_id":      str(acc.location_id),
             "location_name_tr": acc.location.name_tr if acc.location else "",
-            "currency_code":    acc.currency.code if acc.currency else "",
+            "currency_code":    cur_code,
             "balance":          _fmt2(balance),
             "balance_usd":      _fmt2(balance_usd),
         })
@@ -167,41 +174,54 @@ def location_pnl(
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    """Her lokasyon için kâr/zarar — sadece tamamlanan FX/Havale/SWIFT."""
+    """Her lokasyon için kâr/zarar — sadece tamamlanan FX/Havale/SWIFT. Batch sorgularla N+1 önlendi."""
+    from sqlalchemy import distinct
     FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
     locations = db.query(Location).filter(Location.is_active == True).all()
+
+    # Tüm lokasyonları tek sorguda çöz: txn → location join
+    q_base = (db.query(
+                  Account.location_id,
+                  Transaction.id.label("txn_id"),
+              )
+              .join(TransactionLeg, TransactionLeg.account_id == Account.id)
+              .join(Transaction,    Transaction.id == TransactionLeg.transaction_id)
+              .filter(
+                  Transaction.txn_type.in_(FX_TYPES),
+                  Transaction.status == TxnStatus.completed,
+              ))
+    if from_date: q_base = q_base.filter(Transaction.txn_date >= from_date)
+    if to_date:   q_base = q_base.filter(Transaction.txn_date <= to_date)
+
+    # location_id → set of txn_ids
+    loc_txn_map: dict = {}
+    for row in q_base.distinct().all():
+        loc_id = str(row.location_id)
+        loc_txn_map.setdefault(loc_id, set()).add(row.txn_id)
+
+    # Tüm ilgili txn_ids için PnL'i tek sorguda çek
+    all_txn_ids = [tid for ids in loc_txn_map.values() for tid in ids]
+    pnl_by_txn: dict = {}
+    if all_txn_ids:
+        for p in db.query(TransactionPnL).filter(TransactionPnL.transaction_id.in_(all_txn_ids)).all():
+            pnl_by_txn[str(p.transaction_id)] = p
+
     result = []
-
     for loc in locations:
-        q = (db.query(Transaction)
-             .join(TransactionLeg, TransactionLeg.transaction_id == Transaction.id)
-             .join(Account, Account.id == TransactionLeg.account_id)
-             .filter(
-                 Account.location_id == loc.id,
-                 Transaction.txn_type.in_(FX_TYPES),
-                 Transaction.status == TxnStatus.completed,
-             ))
-        if from_date: q = q.filter(Transaction.txn_date >= from_date)
-        if to_date:   q = q.filter(Transaction.txn_date <= to_date)
+        loc_id  = str(loc.id)
+        txn_ids = loc_txn_map.get(loc_id, set())
+        pnl_rows = [pnl_by_txn[str(t)] for t in txn_ids if str(t) in pnl_by_txn]
 
-        txns    = q.distinct().all()
-        txn_ids = [t.id for t in txns]
-
-        # Hacim: pnl.usd_amount toplamı (gerçek işlem tutarı)
-        volume_usd = (db.query(func.sum(TransactionPnL.usd_amount))
-                      .filter(TransactionPnL.transaction_id.in_(txn_ids))
-                      .scalar() or ZERO)
-
-        pnl_rows   = db.query(TransactionPnL).filter(TransactionPnL.transaction_id.in_(txn_ids)).all()
-        fx_gain    = sum(_safe(p.gross_profit_usd) for p in pnl_rows)
-        commission = sum(_safe(p.commission_usd)   for p in pnl_rows)
-        net_pnl    = sum(_safe(p.net_pnl_usd)      for p in pnl_rows)
+        volume_usd = sum(_safe(p.usd_amount)        for p in pnl_rows)
+        fx_gain    = sum(_safe(p.gross_profit_usd)  for p in pnl_rows)
+        commission = sum(_safe(p.commission_usd)    for p in pnl_rows)
+        net_pnl    = sum(_safe(p.net_pnl_usd)       for p in pnl_rows)
 
         result.append({
-            "location_id":       str(loc.id),
+            "location_id":       loc_id,
             "location_name_tr":  loc.name_tr,
             "location_name_ar":  loc.name_ar,
-            "transaction_count": len(txns),
+            "transaction_count": len(txn_ids),
             "volume_usd":        _fmt2(volume_usd),
             "fx_gain_usd":       _fmt2(fx_gain),
             "commission_usd":    _fmt2(commission),
@@ -228,11 +248,7 @@ def income_statement(
     if to_date:   q = q.filter(Transaction.txn_date <= to_date)
     rows = q.all()
 
-    cnt_q = db.query(func.count(Transaction.id)).filter(
-        Transaction.txn_type.in_(FX_TYPES), Transaction.status == TxnStatus.completed)
-    if from_date: cnt_q = cnt_q.filter(Transaction.txn_date >= from_date)
-    if to_date:   cnt_q = cnt_q.filter(Transaction.txn_date <= to_date)
-
+    # COUNT için ayrı sorgu yerine len(rows) kullan — zaten hepsini çektik
     fx_gain    = sum(_safe(r.gross_profit_usd) for r in rows)
     commission = sum(_safe(r.commission_usd)   for r in rows)
     gross      = fx_gain + commission
@@ -244,7 +260,7 @@ def income_statement(
         "gross_income_usd":  _fmt2(gross),
         "cost_usd":          "0.00",
         "net_pnl_usd":       _fmt2(net),
-        "transaction_count": cnt_q.scalar() or 0,
+        "transaction_count": len(rows),
         "from_date":         str(from_date) if from_date else None,
         "to_date":           str(to_date)   if to_date   else None,
     }

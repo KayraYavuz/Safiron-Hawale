@@ -10,31 +10,33 @@ const qc = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      // Master data (locations, currencies, accounts) değişmez → 5 dk cache
-      // Transaction data → 30 sn (mutation sonrası invalidate ile zaten güncellenir)
-      staleTime: 30_000,
-      // Pencere focus'ta her seferinde refetch etme (lag'ın ana kaynağı)
+      // Master data (currencies, accounts) → 5 min; mutations invalidate immediately
+      staleTime:           30_000,
+      // Network errors: don't refetch on window focus — avoids flash of loading states
       refetchOnWindowFocus: false,
-    }
-  }
+      // Keep stale data in cache for 10 minutes after last use
+      gcTime:              10 * 60_000,
+    },
+    mutations: {
+      // Don't retry mutations (network idempotency unknown)
+      retry: 0,
+    },
+  },
 })
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <QueryClientProvider client={qc}>
-    <BrowserRouter>
-      <App />
-      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-    </BrowserRouter>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={qc}>
+      <BrowserRouter>
+        <App />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: { fontFamily: 'var(--font)', fontSize: 13.5 },
+          }}
+        />
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>
 )
-
-// Service Worker devre dışı bırakıldı (test aşaması için)
-/*
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('[SW] Registered:', reg.scope))
-      .catch(err => console.warn('[SW] Registration failed:', err))
-  })
-}
-*/
