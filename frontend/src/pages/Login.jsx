@@ -33,13 +33,13 @@ export default function Login() {
   const inp = {
     width:'100%', padding:'11px 14px', borderRadius:10,
     background:'rgba(255,255,255,0.08)', border:'1.5px solid rgba(255,255,255,0.15)',
-    color:'white', fontSize:14, outline:'none', fontFamily:'var(--sans)',
+    color:'white', fontSize:14, outline:'none', fontFamily:'var(--font)',
     transition:'border-color 0.15s',
   }
 
   return (
     <div style={{
-      minHeight:'100vh', display:'flex', fontFamily:'var(--sans)',
+      minHeight:'100vh', display:'flex', fontFamily:'var(--font)',
       background:'#0D1B2E',
     }}>
       {/* Sol — Form */}
@@ -49,7 +49,7 @@ export default function Login() {
           <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:32 }}>
             <div style={{
               width:44, height:44, borderRadius:12,
-              background:`linear-gradient(135deg, ${C.accent}, ${C.accent2})`,
+              background:`linear-gradient(135deg, ${C.accent}, ${C.accent})`,
               display:'flex', alignItems:'center', justifyContent:'center',
               fontSize:20, fontWeight:700, color:C.navy,
             }}>H</div>
@@ -68,7 +68,7 @@ export default function Login() {
               {['tr','ar','en'].map(l => (
                 <button key={l} onClick={() => setLang(l)} style={{
                   padding:'4px 10px', borderRadius:7, fontSize:11.5, cursor:'pointer',
-                  fontFamily:'var(--sans)', transition:'all 0.15s', fontWeight: l===lang ? 600 : 400,
+                  fontFamily:'var(--font)', transition:'all 0.15s', fontWeight: l===lang ? 600 : 400,
                   background: l===lang ? C.accent : 'transparent',
                   color: l===lang ? C.navy : 'rgba(255,255,255,0.4)',
                   border: l===lang ? 'none' : '1px solid rgba(255,255,255,0.1)',
@@ -78,19 +78,19 @@ export default function Login() {
               ))}
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }} aria-label="Giriş formu">
               <div>
-                <label style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>E-posta</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inp} />
+                <label htmlFor="login-email" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>E-posta</label>
+                <input id="login-email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inp} />
               </div>
               <div>
-                <label style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>Şifre</label>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp} />
+                <label htmlFor="login-password" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>Şifre</label>
+                <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp} />
               </div>
               <button type="submit" disabled={loading} style={{
                 marginTop:4, padding:'12px', borderRadius:10, border:'none', cursor: loading ? 'not-allowed' : 'pointer',
-                background: loading ? 'rgba(201,168,76,0.5)' : `linear-gradient(135deg, ${C.accent}, ${C.accent2})`,
-                color:C.navy, fontSize:14, fontWeight:700, fontFamily:'var(--sans)', opacity: loading ? 0.7 : 1,
+                background: loading ? 'rgba(201,168,76,0.5)' : `linear-gradient(135deg, ${C.accent}, ${C.accent})`,
+                color:C.navy, fontSize:14, fontWeight:700, fontFamily:'var(--font)', opacity: loading ? 0.7 : 1,
               }}>
                 {loading ? 'Giriş yapılıyor...' : 'Giriş Yap →'}
               </button>

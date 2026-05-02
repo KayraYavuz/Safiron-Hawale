@@ -34,13 +34,21 @@ def _require(user: User, *roles: UserRole):
 
 
 def _next_txn_number(db: Session) -> str:
-    from sqlalchemy import func
+    """MAX+1 tabanlı sıra numarası — race-condition safe, index kullanır."""
     import datetime
     year = datetime.date.today().year
-    count = db.query(Transaction).filter(
-        func.extract("year", Transaction.txn_date) == year
-    ).count()
-    return f"TXN-{year}-{str(count + 1).zfill(4)}"
+    prefix = f"TXN-{year}-"
+    last = (db.query(Transaction.txn_number)
+              .filter(Transaction.txn_number.like(f"{prefix}%"))
+              .order_by(Transaction.txn_number.desc())
+              .first())
+    seq = int(last[0].split("-")[-1]) + 1 if last else 1
+    for _ in range(10):
+        candidate = f"{prefix}{seq:04d}"
+        if not db.query(Transaction.id).filter(Transaction.txn_number == candidate).first():
+            return candidate
+        seq += 1
+    raise ValueError("İşlem numarası oluşturulamadı")
 
 
 def _to_usd(amount: Decimal, currency_code: str, db: Session) -> Decimal:
@@ -55,14 +63,18 @@ def _to_usd(amount: Decimal, currency_code: str, db: Session) -> Decimal:
 
 @router.get("", response_model=List[TransactionOut])
 def list_transactions(
-    status: Optional[str] = None,
-    txn_type: Optional[str] = None,
+    status:          Optional[str]  = None,
+    txn_type:        Optional[str]  = None,
     counterparty_id: Optional[UUID] = None,
-    from_date: Optional[date] = None,
-    to_date: Optional[date] = None,
+    from_date:       Optional[date] = None,
+    to_date:         Optional[date] = None,
+    limit:  int = 200,  # default page size — prevents loading 10k rows at once
+    offset: int = 0,
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
+    # Cap limit to avoid accidental huge queries
+    limit = min(limit, 500)
     q = db.query(Transaction).options(
         joinedload(Transaction.counterparty),
         joinedload(Transaction.legs).joinedload(TransactionLeg.account).joinedload(Account.location),
@@ -81,7 +93,7 @@ def list_transactions(
         q = q.filter(Transaction.txn_date >= from_date)
     if to_date:
         q = q.filter(Transaction.txn_date <= to_date)
-    return q.order_by(Transaction.created_at.desc()).all()
+    return q.order_by(Transaction.created_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("", response_model=TransactionOut)

@@ -25,15 +25,15 @@
   --purple-bg: rgba(107,70,193,0.08);
   --font:      'DM Sans', system-ui, -apple-system, sans-serif;
   --mono:      'IBM Plex Mono', monospace;
-  /* Shadows — light and purposeful */
+  /* Shadows */
   --sh-xs: 0 1px 2px rgba(13,27,46,0.04);
   --sh-sm: 0 1px 3px rgba(13,27,46,0.05), 0 1px 2px rgba(13,27,46,0.03);
   --sh-md: 0 4px 12px rgba(13,27,46,0.07), 0 1px 3px rgba(13,27,46,0.04);
   --sh-lg: 0 8px 24px rgba(13,27,46,0.10), 0 2px 6px rgba(13,27,46,0.05);
 }
 
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-html, body, #root { height:100%; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
 
 body {
   font-family: var(--font);
@@ -42,19 +42,106 @@ body {
   -webkit-font-smoothing: antialiased;
   font-size: 13.5px;
   line-height: 1.55;
+  /* Prevent layout shift from scrollbar appearing/disappearing */
+  overflow-y: scroll;
 }
 
-/* Scrollbar — minimal */
-::-webkit-scrollbar { width:4px; height:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:99px; }
+/* Minimal scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
 
-/* Animations */
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+/* GPU-composited: only transform + opacity (no layout/paint) */
 @keyframes fadeUp {
-  from { opacity:0; transform:translateY(6px); }
-  to   { opacity:1; transform:translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
-@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* Skeleton shimmer — GPU-composited background-position shift */
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
 
-.fade-up  { animation:fadeUp 0.2s ease both; }
-.spinning { animation:spin 0.7s linear infinite; }
+.fade-up  { animation: fadeUp 0.2s ease both; }
+.spinning { animation: spin 0.7s linear infinite; }
+
+/* ── CSS hover classes (avoid inline JS onMouseEnter/onMouseLeave) ───────────
+   Using CSS transitions on transform/opacity is GPU-accelerated and avoids
+   React re-renders triggered by style mutations.                             */
+
+/* Nav links */
+.nav-link {
+  transition: background 0.12s, color 0.12s;
+}
+.nav-link:hover:not(.nav-link-active) {
+  background: rgba(255,255,255,0.04) !important;
+  color: rgba(255,255,255,0.68) !important;
+}
+
+/* Sidebar logout button */
+.sidebar-btn {
+  transition: background 0.12s, color 0.12s;
+}
+.sidebar-btn:hover {
+  background: rgba(255,255,255,0.04) !important;
+  color: rgba(255,255,255,0.58) !important;
+}
+
+/* Language toggle buttons */
+.lang-btn {
+  transition: background 0.12s, color 0.12s;
+}
+
+/* Table row link */
+.row-link {
+  transition: color 0.12s;
+}
+.row-link:hover { color: var(--blue) !important; }
+
+/* View all link on dashboard */
+.view-link {
+  transition: color 0.12s;
+}
+.view-link:hover { color: var(--accent) !important; }
+
+/* Icon button (edit/delete in location rows) */
+.icon-btn {
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover {
+  background: var(--surface-3) !important;
+  color: var(--navy) !important;
+}
+.icon-btn-danger {
+  transition: background 0.12s;
+}
+.icon-btn-danger:hover {
+  background: rgba(239,68,68,0.07) !important;
+}
+
+/* ── Input focus ring — GPU-accelerated outline instead of box-shadow ─────────
+   box-shadow causes repaint; outline doesn't move other elements (no layout).
+   Using outline + offset for the focus ring.                                  */
+input:focus,
+select:focus {
+  outline: 2.5px solid rgba(26,46,72,0.18);
+  outline-offset: -2px;
+}
+
+/* Accessible focus visible only for keyboard nav */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove focus ring on mouse clicks (focus-visible handles this) */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}

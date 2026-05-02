@@ -30,6 +30,19 @@ class UserOut(BaseModel):
         from_attributes = True
 
 # ── Location ──────────────────────────────────────────────────────────────────
+class LocationCreate(BaseModel):
+    code: str
+    name_tr: str
+    name_ar: str = ""
+    name_en: str = ""
+    country: Optional[str] = None
+
+class LocationUpdate(BaseModel):
+    name_tr: Optional[str] = None
+    name_ar: Optional[str] = None
+    name_en: Optional[str] = None
+    country: Optional[str] = None
+
 class LocationOut(BaseModel):
     id: UUID
     code: str

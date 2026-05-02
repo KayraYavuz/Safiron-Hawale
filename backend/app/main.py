@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.core.database import engine, Base, SessionLocal
 from app.models import *
 from app.api.auth import router as auth_router
@@ -32,6 +33,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Gzip responses ≥ 1 kB — reduces API payload size by ~60-80%
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── CORS — production'da env'den al ──────────────────────────────────────────
 import os
@@ -69,11 +73,32 @@ async def startup():
     from app.models.user import User, UserRole
     from app.models.master import Location, Currency
 
-    # Migration: mevcut DB'ye eksik kolonları ekle (idempotent — güvenli tekrar çalıştırılabilir)
+    # Migration: mevcut DB'ye eksik kolonları ve indexleri ekle (idempotent — güvenli tekrar çalıştırılabilir)
     try:
         from sqlalchemy import text, inspect
         insp = inspect(engine)
         tables = insp.get_table_names()
+
+        # Performance indexleri — IF NOT EXISTS ile idempotent
+        with engine.begin() as conn:
+            perf_indexes = [
+                "CREATE INDEX IF NOT EXISTS ix_transactions_status          ON transactions (status)",
+                "CREATE INDEX IF NOT EXISTS ix_transactions_txn_date        ON transactions (txn_date)",
+                "CREATE INDEX IF NOT EXISTS ix_transactions_counterparty_id ON transactions (counterparty_id)",
+                "CREATE INDEX IF NOT EXISTS ix_transactions_type_status     ON transactions (txn_type, status)",
+                "CREATE INDEX IF NOT EXISTS ix_transactions_date_status     ON transactions (txn_date, status)",
+                "CREATE INDEX IF NOT EXISTS ix_legs_account_id              ON transaction_legs (account_id)",
+                "CREATE INDEX IF NOT EXISTS ix_legs_transaction_id          ON transaction_legs (transaction_id)",
+                "CREATE INDEX IF NOT EXISTS ix_legs_account_legtype         ON transaction_legs (account_id, leg_type)",
+                "CREATE INDEX IF NOT EXISTS ix_exchange_rates_currency      ON exchange_rates (currency_code)",
+                "CREATE INDEX IF NOT EXISTS ix_exchange_rates_currency_date ON exchange_rates (currency_code, date DESC)",
+                "CREATE INDEX IF NOT EXISTS ix_audit_created_at             ON audit_logs (created_at) WHERE created_at IS NOT NULL",
+            ]
+            for idx_sql in perf_indexes:
+                try:
+                    conn.execute(text(idx_sql))
+                except Exception:
+                    pass  # index zaten varsa atla
         with engine.begin() as conn:
             if 'transaction_pnl' in tables:
                 pnl_new_cols = [
