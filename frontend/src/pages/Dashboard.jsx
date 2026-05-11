@@ -6,7 +6,8 @@ import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, StatCard, TrHover, C } from '../components/UI'
 import { Skeleton, SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
-import { STALE_30S, STALE_2MIN, STATUS_LABEL } from '../constants'
+import { STALE_30S, STALE_2MIN, getStatusLabel } from '../constants'
+import { useLang } from '../hooks/useLang'
 
 // ── ViewLink is stable — no props that change per render ──────────────────────
 function ViewLink({ to, label }) {
@@ -22,6 +23,9 @@ function ViewLink({ to, label }) {
 }
 
 export default function Dashboard() {
+  const { t } = useLang()
+  const STATUS_LABEL = getStatusLabel(t)
+
   const { data: pos,     isLoading: posLoading }    = useQuery({ queryKey: ['position'],    queryFn: () => reportsApi.position().then(r => r.data),          staleTime: STALE_30S  })
   const { data: income,  isLoading: incLoading }    = useQuery({ queryKey: ['income'],      queryFn: () => reportsApi.incomeStatement({}).then(r => r.data), staleTime: STALE_2MIN })
   const { data: locPnl,  isLoading: locLoading }    = useQuery({ queryKey: ['locPnl'],      queryFn: () => reportsApi.locationPnl({}).then(r => r.data),     staleTime: STALE_2MIN })
@@ -51,10 +55,10 @@ export default function Dashboard() {
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={96} radius={10} />)
         ) : (
           <>
-            <StatCard label="Toplam Sermaye"  value={`$${fmt(pos?.total_usd ?? 0, 0)}`}             sub="USD konsolide"  color={C.navy}  icon={({ size, color }) => <Icon name="building"   size={size} color={color} />} />
-            <StatCard label="Kur Farkı Kârı"  value={`$${fmt(income?.fx_gain_usd ?? 0, 0)}`}        sub="Dönem toplamı"  color={C.green} icon={({ size, color }) => <Icon name="trendUp"    size={size} color={color} />} />
-            <StatCard label="Komisyon Geliri" value={`$${fmt(income?.commission_usd ?? 0, 0)}`}     sub="Dönem toplamı"  color={C.accent}icon={({ size, color }) => <Icon name="briefcase"  size={size} color={color} />} />
-            <StatCard label="Net Kâr"         value={`$${fmt(income?.net_pnl_usd ?? 0, 0)}`}        sub={`${income?.transaction_count ?? 0} işlem`} color={C.green} icon={({ size, color }) => <Icon name="dollarSign" size={size} color={color} />} />
+            <StatCard label={t.totalCapital}     value={`$${fmt(pos?.total_usd ?? 0, 0)}`}             sub={t.usdConsolidated}  color={C.navy}  icon={({ size, color }) => <Icon name="building"   size={size} color={color} />} />
+            <StatCard label={t.fxProfit}         value={`$${fmt(income?.fx_gain_usd ?? 0, 0)}`}        sub={t.periodTotal}      color={C.green} icon={({ size, color }) => <Icon name="trendUp"    size={size} color={color} />} />
+            <StatCard label={t.commissionIncome} value={`$${fmt(income?.commission_usd ?? 0, 0)}`}     sub={t.periodTotal}      color={C.accent}icon={({ size, color }) => <Icon name="briefcase"  size={size} color={color} />} />
+            <StatCard label={t.netProfit}        value={`$${fmt(income?.net_pnl_usd ?? 0, 0)}`}        sub={`${income?.transaction_count ?? 0} ${t.nTransactions}`} color={C.green} icon={({ size, color }) => <Icon name="dollarSign" size={size} color={color} />} />
           </>
         )}
       </div>
@@ -62,9 +66,9 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {/* Location PnL */}
         <Card>
-          <CardHeader action={<ViewLink to="/reports" label="Tümü" />}>Lokasyon Kârı</CardHeader>
+          <CardHeader action={<ViewLink to="/reports" label={t.viewAll} />}>{t.locationProfit}</CardHeader>
           <Table>
-            <thead><tr><Th>Lokasyon</Th><Th right>Hacim</Th><Th right>Kur Kârı</Th><Th right>Net Kâr</Th></tr></thead>
+            <thead><tr><Th>{t.location}</Th><Th right>{t.volume}</Th><Th right>{t.fxGain}</Th><Th right>{t.netProfit}</Th></tr></thead>
             <tbody>
               {locLoading
                 ? Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} cols={4} />)
@@ -81,7 +85,7 @@ export default function Dashboard() {
                   ))
               }
               {!locLoading && !locPnl?.length && (
-                <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: C.text4, fontSize: 13 }}>Henüz veri yok</td></tr>
+                <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noDataYet}</td></tr>
               )}
             </tbody>
           </Table>
@@ -89,9 +93,9 @@ export default function Dashboard() {
 
         {/* Position */}
         <Card>
-          <CardHeader action={<ViewLink to="/accounts" label="Hesaplar" />}>Anlık Pozisyon</CardHeader>
+          <CardHeader action={<ViewLink to="/accounts" label={t.accountsLink} />}>{t.instantPosition}</CardHeader>
           <Table>
-            <thead><tr><Th>Kasa</Th><Th right>Bakiye</Th><Th right>USD</Th></tr></thead>
+            <thead><tr><Th>{t.safe}</Th><Th right>{t.balance}</Th><Th right>USD</Th></tr></thead>
             <tbody>
               {posLoading
                 ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={3} />)
@@ -111,7 +115,7 @@ export default function Dashboard() {
                   ))
               }
               {!posLoading && !pos?.accounts?.length && (
-                <tr><td colSpan={3} style={{ padding: 40, textAlign: 'center', color: C.text4, fontSize: 13 }}>Henüz hesap yok</td></tr>
+                <tr><td colSpan={3} style={{ padding: 40, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noAccountYet}</td></tr>
               )}
             </tbody>
           </Table>
@@ -120,13 +124,13 @@ export default function Dashboard() {
 
       {/* Recent Movements */}
       <Card>
-        <CardHeader action={<ViewLink to="/reports" label="Tüm Hareketler →" />}>
-          Son Kasa Hareketleri
+        <CardHeader action={<ViewLink to="/reports" label={t.allMovements} />}>
+          {t.recentMovements}
         </CardHeader>
         <Table>
           <thead><tr>
-            <Th>Tarih</Th><Th>İşlem No</Th><Th>Kasa</Th><Th>Tür</Th>
-            <Th>Karşı Taraf</Th><Th>Yön</Th><Th right>Tutar</Th><Th>Durum</Th>
+            <Th>{t.date}</Th><Th>{t.txnNo}</Th><Th>{t.safe}</Th><Th>{t.type}</Th>
+            <Th>{t.counterparty}</Th><Th>{t.direction}</Th><Th right>{t.amount}</Th><Th>{t.status}</Th>
           </tr></thead>
           <tbody>
             {cashLoading
@@ -139,7 +143,7 @@ export default function Dashboard() {
                       <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{m.txn_number}</span></Td>
                       <Td style={{ fontSize: 12.5 }}>
                         <span style={{ fontWeight: 500 }}>{m.account_name}</span>
-                        <span style={{ color: C.text3, fontSize: 11, marginLeft: 4 }}>{m.location}</span>
+                        <span style={{ color: C.text3, fontSize: 11, marginInlineStart: 4 }}>{m.location}</span>
                       </Td>
                       <Td style={{ fontSize: 12.5 }}>{m.type}</Td>
                       <Td style={{ fontSize: 12.5, color: C.text2 }}>{m.counterparty}</Td>
@@ -155,7 +159,7 @@ export default function Dashboard() {
                 })
             }
             {!cashLoading && !recentMoves.length && (
-              <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: C.text4, fontSize: 13 }}>Henüz hareket yok</td></tr>
+              <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noMovementYet}</td></tr>
             )}
           </tbody>
         </Table>

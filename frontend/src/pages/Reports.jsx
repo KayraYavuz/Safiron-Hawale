@@ -7,11 +7,13 @@ import { Card, CardHeader, Table, Th, Td, Badge, Select, Input, Info, TrHover, C
 import { SkeletonRow } from '../components/Skeleton'
 import { STALE_2MIN, STALE_5MIN, STATUS_LABEL } from '../constants'
 import { Icon } from '../components/Icons'
+import toast from 'react-hot-toast'
+import { useLang } from '../hooks/useLang'
 
 // ── PDF/Excel helpers ─────────────────────────────────────────────────────────
-function downloadPDF(title, headers, rows, filename) {
+function downloadPDF(title, headers, rows, filename, t) {
   const { jsPDF } = window.jspdf ?? {}
-  if (!jsPDF) { alert('PDF kütüphanesi yüklenemedi'); return }
+  if (!jsPDF) { alert(t.pdfLibError); return }
   const doc  = new jsPDF({ orientation: 'landscape' })
   const pageW = doc.internal.pageSize.getWidth()
   doc.setFontSize(13); doc.setFont('helvetica', 'bold')
@@ -35,9 +37,9 @@ function downloadPDF(title, headers, rows, filename) {
   doc.save(filename)
 }
 
-function downloadExcel(title, headers, rows, filename) {
+function downloadExcel(title, headers, rows, filename, t) {
   const XLSX = window.XLSX
-  if (!XLSX) { alert('Excel kütüphanesi yüklenemedi'); return }
+  if (!XLSX) { alert(t.excelLibError); return }
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31))
@@ -53,17 +55,8 @@ function DownloadButtons({ onPDF, onExcel }) {
   )
 }
 
-// ── Tab config (stable reference — outside component) ─────────────────────────
-const TABS = [
-  { k: 'position',  label: 'Pozisyon'         },
-  { k: 'cash',      label: 'Kasa Hareketleri' },
-  { k: 'location',  label: 'Lokasyon Kârı'    },
-  { k: 'income',    label: 'Gelir Tablosu'    },
-  { k: 'statement', label: 'Hesap Ekstresi'   },
-  { k: 'ai',        label: 'AI Analiz'        },
-]
-
 export default function Reports() {
+  const { t } = useLang()
   const [searchParams]         = useSearchParams()
   const [tab,      setTab]     = useState(searchParams.get('tab') || 'position')
   const [cpId,     setCpId]    = useState(searchParams.get('cp')  || '')
@@ -71,6 +64,14 @@ export default function Reports() {
   const [accId,    setAccId]   = useState('')
   const [fromDate, setFrom]    = useState('')
   const [toDate,   setTo]      = useState('')
+
+  const TABS = [
+    { k: 'position',  label: t.position  },
+    { k: 'cash',      label: t.cashMovements },
+    { k: 'location',  label: t.locationPnl },
+    { k: 'income',    label: t.incomeStatement },
+    { k: 'statement', label: t.accountStatement },
+  ]
 
   const { data: pos }      = useQuery({ queryKey: ['position'],                          queryFn: () => reportsApi.position().then(r => r.data),                                                                                    enabled: tab === 'position'  })
   const { data: locPnl }   = useQuery({ queryKey: ['locPnl',  fromDate, toDate],          queryFn: () => reportsApi.locationPnl({ from_date: fromDate || undefined, to_date: toDate || undefined }).then(r => r.data),               enabled: tab === 'location'  })
@@ -81,12 +82,6 @@ export default function Reports() {
   const { data: locs = [] }= useQuery({ queryKey: ['locations'],      queryFn: () => locationsApi.list().then(r => r.data),        staleTime: STALE_5MIN })
   const { data: accs = [] }= useQuery({ queryKey: ['accounts'],       queryFn: () => accountsApi.list({}).then(r => r.data),        staleTime: STALE_2MIN })
 
-  const { data: aiData, refetch: refetchAI, isFetching: isAiLoading } = useQuery({
-    queryKey: ['aiAnalysis'],
-    queryFn: () => reportsApi.aiAnalysis().then(r => r.data),
-    enabled: false
-  })
-
   const filteredAccs = useMemo(() =>
     locId ? accs.filter(a => a.location_id === locId) : accs,
     [accs, locId]
@@ -94,118 +89,101 @@ export default function Reports() {
 
   const clearDates = useCallback(() => { setFrom(''); setTo('') }, [])
 
-  // ── Export functions (memoized — stable reference until data changes) ───────
   const exportFns = useMemo(() => ({
     position: (type) => {
-      const h = ['Lokasyon', 'Kasa', 'Döviz', 'Bakiye', '≈ USD']
+      const h = [t.location, t.safe, t.currency, t.balance, '≈ USD']
       const r = (pos?.accounts ?? []).map(a => [a.location_name_tr, a.account_name, a.currency_code, `${fmt(a.balance)} ${a.currency_code}`, `$${fmt(a.balance_usd)}`])
-      r.push(['', '', 'TOPLAM', '', `$${fmt(pos?.total_usd ?? 0)}`])
-      const t = `Anlık Pozisyon — ${new Date().toLocaleDateString('tr-TR')}`
-      type === 'pdf' ? downloadPDF(t, h, r, 'pozisyon.pdf') : downloadExcel(t, h, r, 'pozisyon.xlsx')
+      r.push(['', '', t.total, '', `$${fmt(pos?.total_usd ?? 0)}`])
+      const title = `${t.position} — ${new Date().toLocaleDateString()}`
+      type === 'pdf' ? downloadPDF(title, h, r, 'pozisyon.pdf', t) : downloadExcel(title, h, r, 'pozisyon.xlsx', t)
     },
     cash: (type) => {
-      const h = ['Kasa', 'Lokasyon', 'Tarih', 'İşlem No', 'Tür', 'Karşı Taraf', 'Yön', 'Tutar', 'Bakiye']
+      const h = [t.safe, t.location, t.date, t.txnNo, t.type, t.counterparty, t.direction, t.amount, t.balance]
       const r = []
       ;(cashMov ?? []).forEach(acc => acc.movements.forEach(m =>
         r.push([acc.account_name, acc.location_name_tr, m.txn_date, m.txn_number, m.type, m.counterparty, m.direction, `${m.amount} ${acc.currency_code}`, `${m.balance} ${acc.currency_code}`])
       ))
-      type === 'pdf' ? downloadPDF('Kasa Hareketleri', h, r, 'kasa-hareketleri.pdf') : downloadExcel('Kasa Hareketleri', h, r, 'kasa-hareketleri.xlsx')
+      type === 'pdf' ? downloadPDF(t.cashMovements, h, r, 'kasa-hareketleri.pdf', t) : downloadExcel(t.cashMovements, h, r, 'kasa-hareketleri.xlsx', t)
     },
     location: (type) => {
-      const h = ['Lokasyon', 'İşlem', 'Hacim (USD)', 'Kur Kârı', 'Komisyon', 'Net Kâr']
+      const h = [t.location, t.action, t.volumeUsd, t.fxGain, t.commission, t.netProfit]
       const r = (locPnl ?? []).map(l => [l.location_name_tr, l.transaction_count, `$${fmt(l.volume_usd, 0)}`, `$${fmt(l.fx_gain_usd)}`, `$${fmt(l.commission_usd)}`, `$${fmt(l.net_pnl_usd)}`])
-      type === 'pdf' ? downloadPDF('Lokasyon Kârı', h, r, 'lokasyon-kar.pdf') : downloadExcel('Lokasyon Kârı', h, r, 'lokasyon-kar.xlsx')
+      type === 'pdf' ? downloadPDF(t.locationPnl, h, r, 'lokasyon-kar.pdf', t) : downloadExcel(t.locationPnl, h, r, 'lokasyon-kar.xlsx', t)
     },
     income: (type) => {
-      const h = ['Kalem', 'Tutar (USD)']
+      const h = [t.type, `${t.amount} (USD)`]
       const r = [
-        ['Kur Farkı Kârı', `$${fmt(income?.fx_gain_usd)}`],
-        ['Komisyon',       `$${fmt(income?.commission_usd)}`],
-        ['Brüt Gelir',     `$${fmt(income?.gross_income_usd)}`],
-        ['Net Kâr',        `$${fmt(income?.net_pnl_usd)}`],
+        [t.fxGainProfit, `$${fmt(income?.fx_gain_usd)}`],
+        [t.commissionRevenue, `$${fmt(income?.commission_usd)}`],
+        [t.grossIncome, `$${fmt(income?.gross_income_usd)}`],
+        [t.netProfitUsdLabel, `$${fmt(income?.net_pnl_usd)}`],
       ]
-      type === 'pdf' ? downloadPDF('Gelir Tablosu', h, r, 'gelir-tablosu.pdf') : downloadExcel('Gelir Tablosu', h, r, 'gelir-tablosu.xlsx')
+      type === 'pdf' ? downloadPDF(t.incomeStatement, h, r, 'gelir-tablosu.pdf', t) : downloadExcel(t.incomeStatement, h, r, 'gelir-tablosu.xlsx', t)
     },
     statement: (type) => {
       if (!stmt) return
-      const h = ['İşlem No', 'Tarih', 'Tür', 'Açıklama', 'Borç', 'Alacak', 'USD', 'Bakiye (USD)', 'Durum']
+      const h = [t.txnNo, t.date, t.type, t.description, t.debit, t.credit, 'USD', t.balance, t.status]
       const r = (stmt?.rows ?? []).map(s => [s.txn_number, s.txn_date, s.type, s.description, s.debit, s.credit, `$${fmt(s.amount_usd)}`, `$${fmt(s.balance_usd)}`, s.status])
-      type === 'pdf' ? downloadPDF(`Ekstre — ${stmt.counterparty?.name ?? ''}`, h, r, 'ekstre.pdf') : downloadExcel('Ekstre', h, r, 'ekstre.xlsx')
+      type === 'pdf' ? downloadPDF(`${t.statement} — ${stmt.counterparty?.name ?? ''}`, h, r, 'ekstre.pdf', t) : downloadExcel(t.statement, h, r, 'ekstre.xlsx', t)
     },
-    ai: (type) => {
-      if (!aiData?.analysis) return
-      const t = "AI Finansal Analiz Raporu"
-      const h = ["Analiz Sonucu"]
-      const r = [[aiData.analysis]]
-      type === 'pdf' ? downloadPDF(t, h, r, 'ai-analiz.pdf') : downloadExcel(t, h, r, 'ai-analiz.xlsx')
-    },
-  }), [pos, cashMov, locPnl, income, stmt, aiData])
+  }), [pos, cashMov, locPnl, income, stmt, t])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-      {/* Tab bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 4, background: 'white', border: `1px solid ${C.border}`, borderRadius: 10, padding: 4 }}>
-          {TABS.map(t => (
-            <button key={t.k} onClick={() => setTab(t.k)} style={{
+          {TABS.map(t_item => (
+            <button key={t_item.k} onClick={() => setTab(t_item.k)} style={{
               padding: '7px 14px', borderRadius: 7, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font)',
-              border: 'none', transition: 'background 0.12s, color 0.12s', fontWeight: tab === t.k ? 600 : 400,
-              background: tab === t.k ? C.navy : 'transparent',
-              color:      tab === t.k ? 'white' : C.text2,
-            }}>{t.label}</button>
+              border: 'none', transition: 'background 0.12s, color 0.12s', fontWeight: tab === t_item.k ? 600 : 400,
+              background: tab === t_item.k ? C.navy : 'transparent',
+              color:      tab === t_item.k ? 'white' : C.text2,
+            }}>{t_item.label}</button>
           ))}
         </div>
         <div style={{ flex: 1 }} />
         <DownloadButtons onPDF={() => exportFns[tab]?.('pdf')} onExcel={() => exportFns[tab]?.('excel')} />
       </div>
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        {tab === 'ai' && (
-          <Btn onClick={() => refetchAI()} disabled={isAiLoading}>
-            {isAiLoading ? 'Analiz Ediliyor...' : 'Yapay Zeka Analizini Başlat'}
-          </Btn>
-        )}
         {tab === 'statement' && (
           <Select value={cpId} onChange={e => setCpId(e.target.value)} style={{ width: 200 }}>
-            <option value="">— karşı taraf seç —</option>
+            <option value="">{t.selectCounterparty}</option>
             {cps.map(cp => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
           </Select>
         )}
         {tab === 'cash' && (
           <>
             <Select value={locId} onChange={e => { setLocId(e.target.value); setAccId('') }} style={{ width: 160 }}>
-              <option value="">Tüm Lokasyonlar</option>
+              <option value="">{t.allLocations}</option>
               {locs.map(l => <option key={l.id} value={l.id}>{l.name_tr}</option>)}
             </Select>
             <Select value={accId} onChange={e => setAccId(e.target.value)} style={{ width: 180 }}>
-              <option value="">Tüm Kasalar</option>
+              <option value="">{t.allSafes}</option>
               {filteredAccs.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency?.code})</option>)}
             </Select>
           </>
         )}
         {['cash', 'location', 'income', 'statement'].includes(tab) && (
           <>
-            <Input type="date" label="Başlangıç" value={fromDate} onChange={e => setFrom(e.target.value)} style={{ width: 150 }} />
-            <Input type="date" label="Bitiş"     value={toDate}   onChange={e => setTo(e.target.value)}   style={{ width: 150 }} />
+            <Input type="date" label={t.startDate} value={fromDate} onChange={e => setFrom(e.target.value)} style={{ width: 150 }} />
+            <Input type="date" label={t.endDate}     value={toDate}   onChange={e => setTo(e.target.value)}   style={{ width: 150 }} />
             {(fromDate || toDate) && (
               <button onClick={clearDates} style={{ padding: '7px 12px', borderRadius: 7, border: `1px solid ${C.border}`, background: 'white', color: C.text3, cursor: 'pointer', fontSize: 12.5, fontFamily: 'var(--font)', marginBottom: 1 }}>
-                × Temizle
+                {t.clear}
               </button>
             )}
           </>
         )}
       </div>
 
-      {/* ── Position ── */}
       {tab === 'position' && (
         <Card>
-          <CardHeader action={<span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 16, color: C.green }}>Toplam: ${fmt(pos?.total_usd ?? 0, 0)}</span>}>
-            Anlık Pozisyon
+          <CardHeader action={<span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 16, color: C.green }}>{t.total}: ${fmt(pos?.total_usd ?? 0, 0)}</span>}>
+            {t.position}
           </CardHeader>
           <Table>
-            <thead><tr><Th>Lokasyon</Th><Th>Kasa</Th><Th>Döviz</Th><Th right>Bakiye</Th><Th right>≈ USD</Th></tr></thead>
+            <thead><tr><Th>{t.location}</Th><Th>{t.safe}</Th><Th>{t.currency}</Th><Th right>{t.balance}</Th><Th right>≈ USD</Th></tr></thead>
             <tbody>
               {!pos && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={5} />)}
               {pos?.accounts?.map(a => {
@@ -221,23 +199,22 @@ export default function Reports() {
                   </TrHover>
                 )
               })}
-              {pos && !pos.accounts?.length && <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>Veri yok</td></tr>}
+              {pos && !pos.accounts?.length && <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>{t.noData}</td></tr>}
             </tbody>
           </Table>
         </Card>
       )}
 
-      {/* ── Cash Movements ── */}
       {tab === 'cash' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {!cashMov?.length && <Info>Filtre seçin veya bekleyin...</Info>}
+          {!cashMov?.length && <Info>{t.selectFilter}</Info>}
           {cashMov?.map(acc => (
             <Card key={acc.account_id}>
               <CardHeader action={
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <span style={{ fontSize: 12, color: C.text3 }}>Açılış: <span style={{ fontFamily: 'var(--mono)', color: C.text2 }}>{fmt(acc.opening_balance)} {acc.currency_code}</span></span>
+                  <span style={{ fontSize: 12, color: C.text3 }}>{t.opening}: <span style={{ fontFamily: 'var(--mono)', color: C.text2 }}>{fmt(acc.opening_balance)} {acc.currency_code}</span></span>
                   <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, color: parseFloat(acc.closing_balance) >= 0 ? C.green : C.red }}>
-                    Kapanış: {fmt(acc.closing_balance)} {acc.currency_code}
+                    {t.closing}: {fmt(acc.closing_balance)} {acc.currency_code}
                   </span>
                 </div>
               }>
@@ -245,12 +222,12 @@ export default function Reports() {
                 <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 99, background: C.surface3, fontSize: 11.5, fontWeight: 600, color: C.navy }}>{acc.currency_code}</span>
               </CardHeader>
               {!acc.movements.length
-                ? <div style={{ padding: 24, textAlign: 'center', color: C.text4, fontSize: 13 }}>Bu dönemde hareket yok</div>
+                ? <div style={{ padding: 24, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noMovementInPeriod}</div>
                 : <Table>
-                    <thead><tr><Th>Tarih</Th><Th>İşlem No</Th><Th>Tür</Th><Th>Karşı Taraf</Th><Th>Yön</Th><Th right>Tutar</Th><Th right>Bakiye</Th><Th>Durum</Th></tr></thead>
+                    <thead><tr><Th>{t.date}</Th><Th>{t.txnNo}</Th><Th>{t.type}</Th><Th>{t.counterparty}</Th><Th>{t.direction}</Th><Th right>{t.amount}</Th><Th right>{t.balance}</Th><Th>{t.status}</Th></tr></thead>
                     <tbody>
                       {acc.movements.map((m, i) => {
-                        const isIn = m.direction === 'Giriş'
+                        const isIn = m.direction === 'Giriş' || m.direction === 'Inflow'
                         return (
                           <TrHover key={i}>
                             <Td style={{ color: C.text2, fontSize: 12.5 }}>{m.txn_date}</Td>
@@ -272,12 +249,11 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── Location PnL ── */}
       {tab === 'location' && (
         <Card>
-          <CardHeader>Lokasyon Kâr/Zarar — Tamamlanan FX & Havale</CardHeader>
+          <CardHeader>{t.locationPnlTitle}</CardHeader>
           <Table>
-            <thead><tr><Th>Lokasyon</Th><Th right>İşlem</Th><Th right>Hacim (USD)</Th><Th right>Kur Kârı</Th><Th right>Komisyon</Th><Th right>Net Kâr</Th></tr></thead>
+            <thead><tr><Th>{t.location}</Th><Th right>{t.txnCount}</Th><Th right>{t.volumeUsd}</Th><Th right>{t.fxGain}</Th><Th right>{t.commission}</Th><Th right>{t.netProfit}</Th></tr></thead>
             <tbody>
               {!locPnl && Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={6} />)}
               {locPnl?.map(l => {
@@ -293,25 +269,24 @@ export default function Reports() {
                   </TrHover>
                 )
               })}
-              {locPnl && !locPnl.length && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>Tamamlanan FX/Havale işlemi yok</td></tr>}
+              {locPnl && !locPnl.length && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>{t.noCompletedFx}</td></tr>}
             </tbody>
           </Table>
         </Card>
       )}
 
-      {/* ── Income Statement ── */}
       {tab === 'income' && (
         <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16, alignItems: 'start' }}>
           <Card>
-            <CardHeader>Gelir Tablosu</CardHeader>
+            <CardHeader>{t.incomeStatementTitle}</CardHeader>
             <div style={{ padding: '16px 20px' }}>
               {income ? (
                 <>
                   {[
-                    { label: 'Kur Farkı Kârı',  value: `+$${fmt(income?.fx_gain_usd ?? 0)}`,     color: C.green },
-                    { label: 'Komisyon Geliri',  value: `+$${fmt(income?.commission_usd ?? 0)}`,  color: C.green },
-                    { label: 'Brüt Gelir',       value: `$${fmt(income?.gross_income_usd ?? 0)}`, color: C.navy, bold: true, hr: true },
-                    { label: 'Net Kâr (USD)',     value: `$${fmt(income?.net_pnl_usd ?? 0)}`,     color: parseFloat(income?.net_pnl_usd ?? 0) >= 0 ? C.green : C.red, bold: true, hr: true },
+                    { label: t.fxGainProfit,  value: `+$${fmt(income?.fx_gain_usd ?? 0)}`,     color: C.green },
+                    { label: t.commissionRevenue,  value: `+$${fmt(income?.commission_usd ?? 0)}`,  color: C.green },
+                    { label: t.grossIncome,       value: `$${fmt(income?.gross_income_usd ?? 0)}`, color: C.navy, bold: true, hr: true },
+                    { label: t.netProfitUsd,     value: `$${fmt(income?.net_pnl_usd ?? 0)}`,     color: parseFloat(income?.net_pnl_usd ?? 0) >= 0 ? C.green : C.red, bold: true, hr: true },
                   ].map((row, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: row.hr ? `1px solid ${C.border}` : 'none', marginTop: row.hr ? 6 : 0 }}>
                       <span style={{ fontSize: 14, color: row.bold ? C.text1 : C.text2, fontWeight: row.bold ? 600 : 400 }}>{row.label}</span>
@@ -319,26 +294,24 @@ export default function Reports() {
                     </div>
                   ))}
                   <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.text3 }}>
-                    {income.transaction_count} tamamlanan FX/Havale
+                    {income.transaction_count} {t.completedFxRemittance}
                     {(income.from_date || income.to_date) && ` · ${income.from_date ?? '…'} – ${income.to_date ?? '…'}`}
                   </div>
                 </>
               ) : (
-                <div style={{ padding: 24, textAlign: 'center', color: C.text4 }}>Yükleniyor...</div>
+                <div style={{ padding: 24, textAlign: 'center', color: C.text4 }}>{t.loadingText}</div>
               )}
             </div>
           </Card>
           <Info type="info">
-            <strong>Not:</strong> Sadece <strong>tamamlanan</strong> Havale, Döviz ve SWIFT işlemleri dahildir.
-            Para yatırma/çekme ve iç transferler kâr hesabına dahil edilmez.
+            <strong>{t.note}:</strong> {t.incomeNote}
           </Info>
         </div>
       )}
 
-      {/* ── Account Statement ── */}
       {tab === 'statement' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {!cpId && <Info>Ekstreyi görüntülemek için bir karşı taraf seçin.</Info>}
+          {!cpId && <Info>{t.viewStatement}</Info>}
           {stmt && (
             <>
               <Card>
@@ -346,24 +319,24 @@ export default function Reports() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>{stmt.counterparty?.name}</div>
                     <div style={{ fontSize: 12, color: C.text3, marginTop: 2 }}>
-                      {stmt.counterparty?.code} · {{ customer: 'Müşteri', supplier: 'Tedarikçi', both: 'Müşteri & Tedarikçi', founder: 'Ortak' }[stmt.counterparty?.type] ?? stmt.counterparty?.type}
+                      {stmt.counterparty?.code} · {{ customer: t.customer, supplier: t.supplier, both: t.both, founder: t.founder }[stmt.counterparty?.type] ?? stmt.counterparty?.type}
                       {stmt.counterparty?.name_ar && <span style={{ marginLeft: 10, direction: 'rtl' }}>{stmt.counterparty.name_ar}</span>}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: C.text3, marginBottom: 3 }}>Net Bakiye (USD)</div>
+                    <div style={{ fontSize: 11, color: C.text3, marginBottom: 3 }}>{t.netBalanceUsd}</div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 24, fontWeight: 700, color: parseFloat(stmt.closing_balance_usd) >= 0 ? C.green : C.red }}>
                       {parseFloat(stmt.closing_balance_usd) >= 0 ? '+' : ''}{fmt(stmt.closing_balance_usd)}
                     </div>
                     <div style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>
-                      {parseFloat(stmt.closing_balance_usd) > 0 ? '→ Müşteri borçlu' : parseFloat(stmt.closing_balance_usd) < 0 ? '→ Biz borçluyuz' : '→ Sıfır'}
+                      {parseFloat(stmt.closing_balance_usd) > 0 ? t.customerOwes : parseFloat(stmt.closing_balance_usd) < 0 ? t.weOwe : t.zero}
                     </div>
                   </div>
                 </div>
               </Card>
               <Card>
                 <Table>
-                  <thead><tr><Th>İşlem No</Th><Th>Tarih</Th><Th>Tür</Th><Th>Açıklama</Th><Th>Borç</Th><Th>Alacak</Th><Th right>USD</Th><Th right>Bakiye</Th><Th>Durum</Th></tr></thead>
+                  <thead><tr><Th>{t.txnNo}</Th><Th>{t.date}</Th><Th>{t.type}</Th><Th>{t.description}</Th><Th>{t.debit}</Th><Th>{t.credit}</Th><Th right>USD</Th><Th right>{t.balance}</Th><Th>{t.status}</Th></tr></thead>
                   <tbody>
                     {stmt.rows?.map((r, i) => (
                       <TrHover key={i}>
@@ -378,39 +351,12 @@ export default function Reports() {
                         <Td><Badge type={r.status} dot>{STATUS_LABEL[r.status] ?? r.status}</Badge></Td>
                       </TrHover>
                     ))}
-                    {!stmt.rows?.length && <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>İşlem bulunamadı</td></tr>}
+                    {!stmt.rows?.length && <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>{t.noTransactionFound}</td></tr>}
                   </tbody>
                 </Table>
               </Card>
             </>
           )}
-        </div>
-      )}
-
-      {/* ── AI Analysis ── */}
-      {tab === 'ai' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card>
-            <CardHeader>AI Finansal Analiz (Gemini 1.5 Flash)</CardHeader>
-            <div style={{ padding: 20, minHeight: 200, whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: 14, color: C.text1 }}>
-              {isAiLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
-                  <div className="spinning" style={{ width: 30, height: 30, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: C.navy, borderRadius: '50%' }} />
-                  <div style={{ color: C.text3, fontWeight: 500 }}>Son 30 günlük veriler analiz ediliyor...</div>
-                </div>
-              ) : aiData?.analysis ? (
-                <div>{aiData.analysis}</div>
-              ) : (
-                <div style={{ textAlign: 'center', color: C.text4, padding: 40 }}>
-                  <Icon name="refresh" size={32} color={C.border2} style={{ marginBottom: 12 }} />
-                  <div>Analiz başlatmak için yukarıdaki butona tıklayın.</div>
-                </div>
-              )}
-            </div>
-          </Card>
-          <Info type="info">
-            <strong>Güvenlik Notu:</strong> Yapay zeka sadece anonimleştirilmiş rakamları görür. Müşteri isimleri, telefonları veya özel bilgiler AI modeline gönderilmez. AI sadece "okuma" yetkisine sahiptir, işlem yapamaz.
-          </Info>
         </div>
       )}
     </div>

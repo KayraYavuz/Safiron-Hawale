@@ -75,6 +75,11 @@ export const reportsApi = {
   statement: (cpId, params) => api.get(`/api/reports/counterparty-statement/${cpId}`, { params }),
   cashMovements: (params) => api.get('/api/reports/cash-movements', { params }),
   aiAnalysis: (params) => api.get('/api/reports/ai-analysis', { params }),
+  aiChat: (data) => api.post('/api/reports/ai-chat', data),
+  listSavedReports: () => api.get('/api/reports/saved-reports'),
+  createSavedReport: (data) => api.post('/api/reports/saved-reports', data),
+  toggleFavoriteReport: (id) => api.patch(`/api/reports/saved-reports/${id}/favorite`),
+  deleteSavedReport: (id) => api.delete(`/api/reports/saved-reports/${id}`),
 }
 
 export const usersApi = {

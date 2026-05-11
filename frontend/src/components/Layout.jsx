@@ -25,6 +25,7 @@ const BASE_NAV = [
   { path: '/rates',          key: 'rates',          icon: 'rates'         },
   { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'      },
   { path: '/reports',        key: 'reports',        icon: 'reports'       },
+  { path: '/analysis',       key: 'aiAnalysis',     icon: 'sparkles'      },
 ]
 
 const ADMIN_NAV = [
@@ -32,39 +33,32 @@ const ADMIN_NAV = [
   { path: '/audit', key: 'audit', icon: 'shield' },
 ]
 
-const LABELS = {
-  dashboard: 'Ana Sayfa', transactions: 'İşlemler', counterparties: 'Karşı Taraflar',
-  accounts: 'Hesaplar', rates: 'Kur Tablosu', reconciliation: 'Günlük Mutabakat',
-  reports: 'Raporlar', audit: 'Denetim Kaydı', users: 'Kullanıcılar',
-}
-
-const ROLE_LABEL = {
-  admin:      'Yönetici',
-  accounting: 'Muhasebe',
-  viewer:     'Görüntüleyici',
-}
-
 function Layout({ children }) {
-  const { lang, setLang, dir } = useLang()
+  const { lang, setLang, t, dir } = useLang()
   const { user, logout }       = useAuthStore()
   const location  = useLocation()
   const navigate  = useNavigate()
 
+  const isRtl = dir === 'rtl'
   const nav = user?.role === 'admin' ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV
 
-  const pageLabel  = LABELS[nav.find(i => i.path === location.pathname)?.key] || ''
+  const ROLE_LABEL = { admin: t.roleAdmin, accounting: t.roleAccounting, viewer: t.roleViewer }
+
+  const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
   const handleLogout = () => { logout(); navigate('/login') }
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   const roleLabel  = ROLE_LABEL[user?.role] || user?.role
 
   return (
-    <div style={{ display: 'flex', height: '100%', background: S.bg, fontFamily: 'var(--font)' }} dir={dir}>
+    <div style={{ display: 'flex', height: '100%', background: S.bg, fontFamily: 'var(--font)', direction: dir }}>
 
       {/* ── Sidebar ── */}
       <aside style={{
         width: 232, background: S.navy,
         display: 'flex', flexDirection: 'column', flexShrink: 0,
-        zIndex: 20, borderRight: '1px solid rgba(255,255,255,0.04)',
+        zIndex: 20,
+        borderRight: isRtl ? 'none' : '1px solid rgba(255,255,255,0.04)',
+        borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.04)' : 'none',
       }}>
 
         {/* Wordmark */}
@@ -90,7 +84,7 @@ function Layout({ children }) {
         <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 16px' }} />
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }} aria-label="Gezinti">
+        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }} aria-label={t.dashboard}>
           {nav.map((item, idx) => {
             const active  = location.pathname === item.path
             // Visual separator before "rates"
@@ -116,15 +110,18 @@ function Layout({ children }) {
                   {/* Active indicator bar — GPU-composited, no reflow */}
                   {active && (
                     <div style={{
-                      position: 'absolute', left: -10, top: '50%',
+                      position: 'absolute',
+                      ...(isRtl
+                        ? { right: -10, borderRadius: '2px 0 0 2px' }
+                        : { left: -10, borderRadius: '0 2px 2px 0' }
+                      ),
+                      top: '50%',
                       transform: 'translateY(-50%)',
                       width: 3, height: 16, background: S.accent,
-                      borderRadius: '0 2px 2px 0',
-                      /* willChange: 'transform' already composited as transform used */
                     }} />
                   )}
                   <Icon name={item.icon} size={15} color={active ? S.accent : 'rgba(255,255,255,0.35)'} />
-                  <span>{LABELS[item.key]}</span>
+                  <span>{t[item.key]}</span>
                 </Link>
               </div>
             )
@@ -164,11 +161,12 @@ function Layout({ children }) {
               background: 'transparent', color: 'rgba(255,255,255,0.28)',
               fontSize: 12.5, cursor: 'pointer', fontFamily: 'var(--font)',
               display: 'flex', alignItems: 'center', gap: 7,
-              letterSpacing: '-0.005em', textAlign: 'left',
+              letterSpacing: '-0.005em',
+              textAlign: isRtl ? 'right' : 'left',
             }}
           >
             <Icon name="logout" size={13} color="currentColor" />
-            <span>Çıkış Yap</span>
+            <span>{t.logout}</span>
           </button>
         </div>
       </aside>
@@ -188,7 +186,7 @@ function Layout({ children }) {
           </span>
 
           {/* Language switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }} role="group" aria-label="Dil seçimi">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }} role="group" aria-label={t.langLabel}>
             {['tr', 'ar', 'en'].map(l => (
               <button
                 key={l}

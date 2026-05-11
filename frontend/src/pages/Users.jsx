@@ -5,11 +5,14 @@ import { Card, Table, Th, Td, Btn, Input, Select, C } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
-import { ROLE_INFO } from '../constants'
+import { getRoleInfo } from '../constants'
+import { useLang } from '../hooks/useLang'
 
 const BLANK_FORM = { name: '', email: '', password: '', role: 'accounting' }
 
 export default function Users() {
+  const { t } = useLang()
+  const ROLE_INFO = getRoleInfo(t)
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [resetId,  setResetId]  = useState(null)
@@ -23,51 +26,51 @@ export default function Users() {
 
   const createMut = useMutation({
     mutationFn: usersApi.create,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); setShowForm(false); setForm(BLANK_FORM); toast.success('Kullanıcı oluşturuldu') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); setShowForm(false); setForm(BLANK_FORM); toast.success(t.userCreated) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const deleteMut = useMutation({
     mutationFn: usersApi.delete,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Silindi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success(t.deleted) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const resetMut = useMutation({
     mutationFn: ({ id, password }) => usersApi.resetPassword(id, password),
-    onSuccess:  () => { setResetId(null); setNewPass(''); toast.success('Şifre güncellendi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { setResetId(null); setNewPass(''); toast.success(t.passwordUpdated) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
 
   const handleDelete = useCallback((u) => {
-    if (window.confirm(`${u.name} silinsin mi?`)) deleteMut.mutate(u.id)
-  }, [deleteMut])
+    if (window.confirm(`${u.name} ${t.deleteUserConfirm}`)) deleteMut.mutate(u.id)
+  }, [deleteMut, t])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Btn onClick={() => setShowForm(!showForm)}>
-          <Icon name="plus" size={14} color="white" /> Yeni Kullanıcı
+          <Icon name="plus" size={14} color="white" /> {t.newUser}
         </Btn>
       </div>
 
       {showForm && (
         <Card>
-          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>Yeni Kullanıcı</div>
+          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>{t.newUser}</div>
           <div style={{ padding: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Input label="Ad Soyad"  value={form.name}     onChange={e => setForm(x => ({ ...x, name: e.target.value }))}     placeholder="Ahmed Al-Rashidi" />
-              <Input label="E-posta"   type="email" value={form.email}    onChange={e => setForm(x => ({ ...x, email: e.target.value }))}    placeholder="ahmed@sirket.com" />
-              <Input label="Şifre"     type="password" value={form.password} onChange={e => setForm(x => ({ ...x, password: e.target.value }))} placeholder="En az 6 karakter" />
-              <Select label="Rol"      value={form.role}     onChange={e => setForm(x => ({ ...x, role: e.target.value }))}>
-                <option value="admin">Admin — her şeyi yapabilir</option>
-                <option value="accounting">Muhasebe — işlem girer ve onaylar</option>
-                <option value="viewer">Görüntüleyici — sadece görür</option>
+              <Input label={t.fullName}      value={form.name}     onChange={e => setForm(x => ({ ...x, name: e.target.value }))}     placeholder="Ahmed Al-Rashidi" />
+              <Input label={t.email}         type="email" value={form.email}    onChange={e => setForm(x => ({ ...x, email: e.target.value }))}    placeholder="ahmed@sirket.com" />
+              <Input label={t.passwordLabel} type="password" value={form.password} onChange={e => setForm(x => ({ ...x, password: e.target.value }))} placeholder={t.minChars} />
+              <Select label={t.role}         value={form.role}     onChange={e => setForm(x => ({ ...x, role: e.target.value }))}>
+                <option value="admin">{t.adminDesc}</option>
+                <option value="accounting">{t.accountingDesc}</option>
+                <option value="viewer">{t.viewerDesc}</option>
               </Select>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <Btn onClick={() => createMut.mutate(form)} disabled={createMut.isPending || !form.name || !form.email || !form.password}>
-                {createMut.isPending ? 'Oluşturuluyor...' : 'Oluştur'}
+                {createMut.isPending ? t.creating : t.create}
               </Btn>
-              <Btn variant="ghost" onClick={() => setShowForm(false)}>İptal</Btn>
+              <Btn variant="ghost" onClick={() => setShowForm(false)}>{t.cancel}</Btn>
             </div>
           </div>
         </Card>
@@ -75,7 +78,7 @@ export default function Users() {
 
       <Card>
         <Table>
-          <thead><tr><Th>Ad</Th><Th>E-posta</Th><Th>Rol</Th><Th>Durum</Th><Th right>İşlem</Th></tr></thead>
+          <thead><tr><Th>{t.nameLabel}</Th><Th>{t.email}</Th><Th>{t.role}</Th><Th>{t.status}</Th><Th right>{t.action}</Th></tr></thead>
           <tbody>
             {isLoading && Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} cols={5} />)}
             {data.map(u => {
@@ -85,18 +88,18 @@ export default function Users() {
                   <Td style={{ fontWeight: 500 }}>{u.name}</Td>
                   <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.text2 }}>{u.email}</span></Td>
                   <Td><span style={{ fontSize: 11.5, padding: '3px 10px', borderRadius: 100, background: ri.bg, color: ri.color }}>{ri.label}</span></Td>
-                  <Td><span style={{ fontSize: 12, fontWeight: 500, color: u.is_active ? C.green : C.red }}>{u.is_active ? '● Aktif' : '○ Pasif'}</span></Td>
+                  <Td><span style={{ fontSize: 12, fontWeight: 500, color: u.is_active ? C.green : C.red }}>{u.is_active ? t.active : t.inactive}</span></Td>
                   <Td>
                     {resetId === u.id ? (
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <Input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="Yeni şifre" style={{ width: 140, padding: '6px 10px' }} />
-                        <Btn style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => resetMut.mutate({ id: u.id, password: newPass })} disabled={!newPass || resetMut.isPending}>Kaydet</Btn>
-                        <Btn variant="ghost" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setResetId(null); setNewPass('') }}>İptal</Btn>
+                        <Input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder={t.newPassword} style={{ width: 140, padding: '6px 10px' }} />
+                        <Btn style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => resetMut.mutate({ id: u.id, password: newPass })} disabled={!newPass || resetMut.isPending}>{t.save}</Btn>
+                        <Btn variant="ghost" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setResetId(null); setNewPass('') }}>{t.cancel}</Btn>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <Btn variant="ghost"  style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => setResetId(u.id)}>Şifre</Btn>
-                        <Btn variant="danger" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => handleDelete(u)}>Sil</Btn>
+                        <Btn variant="ghost"  style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => setResetId(u.id)}>{t.passwordBtn}</Btn>
+                        <Btn variant="danger" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => handleDelete(u)}>{t.delete}</Btn>
                       </div>
                     )}
                   </Td>

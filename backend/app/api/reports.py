@@ -14,7 +14,7 @@ Kasa / Lokasyon Hareketi:
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import date
 from decimal import Decimal
@@ -422,10 +422,51 @@ def counterparty_statement(
     }
 
 # ── AI Analizcisi ─────────────────────────────────────────────────────────────
-from app.services.ai_analyst import get_ai_financial_analysis
+from app.services.ai_analyst import get_ai_financial_analysis, get_ai_chat_response
+from app.models.report import SavedReport
+from app.schemas.schemas import SavedReportCreate, SavedReportOut
 
 @router.get("/ai-analysis")
 def ai_analysis(prompt: Optional[str] = None, db: Session = Depends(get_db), _=Depends(get_current_user)):
     """AI Finansal Analiz Raporu"""
     analysis = get_ai_financial_analysis(db, prompt)
     return {"analysis": analysis}
+
+@router.post("/ai-chat")
+def ai_chat(payload: dict, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """AI Finansal Sohbet"""
+    message = payload.get("message")
+    history = payload.get("history", [])
+    response = get_ai_chat_response(db, message, history)
+    return {"response": response}
+
+@router.get("/saved-reports", response_model=List[SavedReportOut])
+def list_saved_reports(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return db.query(SavedReport).filter(SavedReport.user_id == user.id).order_by(SavedReport.created_at.desc()).all()
+
+@router.post("/saved-reports", response_model=SavedReportOut)
+def create_saved_report(report: SavedReportCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    db_report = SavedReport(**report.model_dump(), user_id=user.id)
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+    return db_report
+
+@router.patch("/saved-reports/{report_id}/favorite", response_model=SavedReportOut)
+def toggle_favorite_report(report_id: UUID, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    db_report = db.query(SavedReport).filter(SavedReport.id == report_id, SavedReport.user_id == user.id).first()
+    if not db_report:
+        raise HTTPException(404, "Rapor bulunamadı")
+    db_report.is_favorite = not db_report.is_favorite
+    db.commit()
+    db.refresh(db_report)
+    return db_report
+
+@router.delete("/saved-reports/{report_id}")
+def delete_saved_report(report_id: UUID, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    db_report = db.query(SavedReport).filter(SavedReport.id == report_id, SavedReport.user_id == user.id).first()
+    if not db_report:
+        raise HTTPException(404, "Rapor bulunamadı")
+    db.delete(db_report)
+    db.commit()
+    return {"status": "ok"}

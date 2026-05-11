@@ -5,14 +5,16 @@ export const STALE_2MIN = 2  * 60_000
 export const STALE_5MIN = 5  * 60_000
 export const STALE_10MIN = 10 * 60_000
 
-// ── Transaction type labels / colors ──────────────────────────────────────────
-export const TXN_TYPE_LABEL = {
-  remittance:        'Havale',
-  fx:                'Döviz (FX)',
-  swift:             'SWIFT',
-  deposit:           'Para Yatırma',
-  withdrawal:        'Para Çekme',
-  internal_transfer: 'İç Transfer',
+// ── Transaction type labels / colors (language-aware) ─────────────────────────
+export function getTxnTypeLabel(t) {
+  return {
+    remittance:        t.remittance,
+    fx:                t.fx,
+    swift:             t.swift,
+    deposit:           t.deposit,
+    withdrawal:        t.withdrawal,
+    internal_transfer: t.internalTransfer,
+  }
 }
 
 export const TXN_TYPE_COLOR = {
@@ -24,29 +26,41 @@ export const TXN_TYPE_COLOR = {
   internal_transfer: { bg: 'rgba(201,123,6,0.08)',   color: '#C97B06' },
 }
 
-// ── Status display ─────────────────────────────────────────────────────────────
+// ── Status display (language-aware) ────────────────────────────────────────────
 export const STATUS_LABEL = {
   pending:   'Bekliyor',
   completed: 'Tamamlandı',
-  cancelled: 'İptal',
+  cancelled: 'İptal Edildi',
 }
 
-// ── Counterparty type labels ──────────────────────────────────────────────────
-export const CP_TYPE_LABEL = {
-  customer: 'Müşteri',
-  supplier: 'Tedarikçi',
-  both:     'Her ikisi',
-  founder:  'Ortak',
+export function getStatusLabel(t) {
+  return {
+    pending:   t.pending,
+    completed: t.completed,
+    cancelled: t.cancelled,
+  }
+}
+
+// ── Counterparty type labels (language-aware) ─────────────────────────────────
+export function getCpTypeLabel(t) {
+  return {
+    customer: t.customer,
+    supplier: t.supplier,
+    both:     t.both,
+    founder:  t.founder,
+  }
 }
 
 // ── Account type icons ────────────────────────────────────────────────────────
 export const ACC_ICONS = { cash: '💵', bank: '🏦', crypto: '₿' }
 
-// ── Role info ─────────────────────────────────────────────────────────────────
-export const ROLE_INFO = {
-  admin:      { label: 'Admin',         bg: 'rgba(229,62,62,0.08)',   color: '#E53E3E' },
-  accounting: { label: 'Muhasebe',      bg: 'rgba(37,99,235,0.08)',   color: '#2563EB' },
-  viewer:     { label: 'Görüntüleyici', bg: '#F8FAFC',                color: '#4A5568' },
+// ── Role info (language-aware) ────────────────────────────────────────────────
+export function getRoleInfo(t) {
+  return {
+    admin:      { label: t.roleAdmin,      bg: 'rgba(229,62,62,0.08)',   color: '#E53E3E' },
+    accounting: { label: t.roleAccounting, bg: 'rgba(37,99,235,0.08)',   color: '#2563EB' },
+    viewer:     { label: t.roleViewer,     bg: '#F8FAFC',                color: '#4A5568' },
+  }
 }
 
 // ── Audit action colors ───────────────────────────────────────────────────────

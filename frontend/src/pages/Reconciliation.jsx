@@ -4,9 +4,12 @@ import { reconciliationApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, Btn, Input, Info, TrHover, C } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
-import { STATUS_LABEL } from '../constants'
+import { getStatusLabel } from '../constants'
+import { useLang } from '../hooks/useLang'
 
 export default function Reconciliation() {
+  const { t } = useLang()
+  const STATUS_LABEL = getStatusLabel(t)
   const today = new Date().toISOString().split('T')[0]
   const [reportDate, setReportDate] = useState(today)
 
@@ -23,36 +26,36 @@ export default function Reconciliation() {
 
       {/* Date picker */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-        <Input label="Tarih" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} style={{ width: 180 }} />
-        <Btn variant="ghost" onClick={() => refetch()}>Yenile</Btn>
+        <Input label={t.date} type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} style={{ width: 180 }} />
+        <Btn variant="ghost" onClick={() => refetch()}>{t.refresh}</Btn>
         {data && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
+          <div style={{ marginInlineStart: 'auto', display: 'flex', gap: 16 }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: C.text3 }}>Toplam İşlem</div>
+              <div style={{ fontSize: 11, color: C.text3 }}>{t.totalTransactions}</div>
               <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 20 }}>{data.transaction_count}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: C.amber }}>Bekliyor</div>
+              <div style={{ fontSize: 11, color: C.amber }}>{t.pending}</div>
               <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 20, color: C.amber }}>{data.pending_count}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: C.green }}>Tamamlandı</div>
+              <div style={{ fontSize: 11, color: C.green }}>{t.completed}</div>
               <div style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 20, color: C.green }}>{data.completed_count}</div>
             </div>
           </div>
         )}
       </div>
 
-      {isLoading && <Info>Yükleniyor...</Info>}
+      {isLoading && <Info>{t.loading}</Info>}
 
       {data && (
         <>
           {/* PnL summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {[
-              { label: 'Hacim (USD)',    value: `$${fmt(pnl?.total_volume_usd ?? 0, 0)}`, sub: `${pnl?.fx_tx_count ?? 0} FX/Havale işlemi`, color: C.navy  },
-              { label: 'Kur Farkı Kârı', value: `+$${fmt(pnl?.total_profit_usd ?? 0)}`,   sub: null,                                          color: C.green },
-              { label: 'Net Kâr (USD)',  value: `${parseFloat(pnl?.net_pnl_usd ?? 0) >= 0 ? '+' : ''}${fmt(pnl?.net_pnl_usd ?? 0)}`, sub: null, color: parseFloat(pnl?.net_pnl_usd ?? 0) >= 0 ? C.green : C.red },
+              { label: `${t.volume} (USD)`,  value: `$${fmt(pnl?.total_volume_usd ?? 0, 0)}`, sub: `${pnl?.fx_tx_count ?? 0} ${t.fxTxnCount}`, color: C.navy  },
+              { label: t.fxProfit,            value: `+$${fmt(pnl?.total_profit_usd ?? 0)}`,   sub: null,                                         color: C.green },
+              { label: t.netProfitUsd,        value: `${parseFloat(pnl?.net_pnl_usd ?? 0) >= 0 ? '+' : ''}${fmt(pnl?.net_pnl_usd ?? 0)}`, sub: null, color: parseFloat(pnl?.net_pnl_usd ?? 0) >= 0 ? C.green : C.red },
             ].map((card, i) => (
               <div key={i} style={{ background: 'white', border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{card.label}</div>
@@ -65,9 +68,9 @@ export default function Reconciliation() {
           {/* Cash summary */}
           {data.cash_summary?.length > 0 && (
             <Card>
-              <CardHeader>Kasa Hareketleri Özeti</CardHeader>
+              <CardHeader>{t.cashSummary}</CardHeader>
               <Table>
-                <thead><tr><Th>Lokasyon</Th><Th>Kasa</Th><Th>Döviz</Th><Th right>Giriş</Th><Th right>Çıkış</Th><Th right>Net</Th></tr></thead>
+                <thead><tr><Th>{t.location}</Th><Th>{t.safe}</Th><Th>{t.currencyCol}</Th><Th right>{t.inflow}</Th><Th right>{t.outflow}</Th><Th right>{t.net}</Th></tr></thead>
                 <tbody>
                   {data.cash_summary.map((s, i) => (
                     <TrHover key={i}>
@@ -88,27 +91,27 @@ export default function Reconciliation() {
 
           {/* Transaction list */}
           <Card>
-            <CardHeader>{reportDate} — Tüm İşlemler</CardHeader>
+            <CardHeader>{reportDate} — {t.allTransactions}</CardHeader>
             <Table>
-              <thead><tr><Th>İşlem No</Th><Th>Tür</Th><Th>Karşı Taraf</Th><Th>Çıkan</Th><Th>Giren</Th><Th right>USD</Th><Th right>Kâr</Th><Th>Durum</Th></tr></thead>
+              <thead><tr><Th>{t.txnNo}</Th><Th>{t.type}</Th><Th>{t.counterparty}</Th><Th>{t.outgoing}</Th><Th>{t.incoming}</Th><Th right>USD</Th><Th right>{t.profit}</Th><Th>{t.status}</Th></tr></thead>
               <tbody>
                 {isLoading && Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={8} />)}
-                {data.transactions?.map((t, i) => (
+                {data.transactions?.map((txn, i) => (
                   <TrHover key={i}>
-                    <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{t.txn_number}</span></Td>
-                    <Td style={{ fontSize: 12.5 }}>{t.txn_type}</Td>
-                    <Td style={{ fontSize: 12.5, color: C.text2 }}>{t.counterparty}</Td>
-                    <Td mono style={{ color: C.red,   fontSize: 12.5 }}>{t.from}</Td>
-                    <Td mono style={{ color: C.green, fontSize: 12.5 }}>{t.to}</Td>
-                    <Td right mono>${fmt(t.usd_amount)}</Td>
-                    <Td right mono style={{ color: parseFloat(t.profit_usd) >= 0 ? C.green : C.red }}>
-                      {parseFloat(t.profit_usd) > 0 ? '+' : ''}{fmt(t.profit_usd)}
+                    <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{txn.txn_number}</span></Td>
+                    <Td style={{ fontSize: 12.5 }}>{txn.txn_type}</Td>
+                    <Td style={{ fontSize: 12.5, color: C.text2 }}>{txn.counterparty}</Td>
+                    <Td mono style={{ color: C.red,   fontSize: 12.5 }}>{txn.from}</Td>
+                    <Td mono style={{ color: C.green, fontSize: 12.5 }}>{txn.to}</Td>
+                    <Td right mono>${fmt(txn.usd_amount)}</Td>
+                    <Td right mono style={{ color: parseFloat(txn.profit_usd) >= 0 ? C.green : C.red }}>
+                      {parseFloat(txn.profit_usd) > 0 ? '+' : ''}{fmt(txn.profit_usd)}
                     </Td>
-                    <Td><Badge type={t.status} dot>{STATUS_LABEL[t.status] ?? t.status}</Badge></Td>
+                    <Td><Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge></Td>
                   </TrHover>
                 ))}
                 {!data.transactions?.length && (
-                  <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>Bu tarihte işlem yok</td></tr>
+                  <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: C.text4 }}>{t.noTxnOnDate}</td></tr>
                 )}
               </tbody>
             </Table>

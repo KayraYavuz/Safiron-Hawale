@@ -12,7 +12,7 @@ export default function Login() {
   const [loading, setLoading]   = useState(false)
   const { setToken, setUser }   = useAuthStore()
   const navigate = useNavigate()
-  const { lang, setLang } = useLang()
+  const { lang, setLang, t } = useLang()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,7 +24,7 @@ export default function Login() {
       setUser(me)
       navigate('/')
     } catch {
-      toast.error('Hatalı email veya şifre')
+      toast.error(t.loginError)
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ export default function Login() {
       minHeight:'100vh', display:'flex', fontFamily:'var(--font)',
       background:'#0D1B2E',
     }}>
-      {/* Sol — Form */}
+      {/* Left — Form */}
       <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
         <div style={{ maxWidth:380, width:'100%' }}>
           {/* Logo */}
@@ -54,8 +54,8 @@ export default function Login() {
               fontSize:20, fontWeight:700, color:C.navy,
             }}>H</div>
             <div>
-              <div style={{ color:'white', fontWeight:700, fontSize:20 }}>Hawala System</div>
-              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:12 }}>نظام المحاسبة للحوالة</div>
+              <div style={{ color:'white', fontWeight:700, fontSize:20 }}>{t.loginTitle}</div>
+              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:12 }}>{t.loginSubtitle}</div>
             </div>
           </div>
 
@@ -63,7 +63,7 @@ export default function Login() {
             background:'rgba(255,255,255,0.06)', backdropFilter:'blur(20px)',
             borderRadius:20, padding:32, border:'1px solid rgba(255,255,255,0.1)',
           }}>
-            {/* Dil */}
+            {/* Lang */}
             <div style={{ display:'flex', gap:6, justifyContent:'flex-end', marginBottom:24 }}>
               {['tr','ar','en'].map(l => (
                 <button key={l} onClick={() => setLang(l)} style={{
@@ -78,13 +78,13 @@ export default function Login() {
               ))}
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }} aria-label="Giriş formu">
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }} aria-label={t.loginFormLabel}>
               <div>
-                <label htmlFor="login-email" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>E-posta</label>
+                <label htmlFor="login-email" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>{t.email}</label>
                 <input id="login-email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required style={inp} />
               </div>
               <div>
-                <label htmlFor="login-password" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>Şifre</label>
+                <label htmlFor="login-password" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>{t.password}</label>
                 <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp} />
               </div>
               <button type="submit" disabled={loading} style={{
@@ -92,22 +92,22 @@ export default function Login() {
                 background: loading ? 'rgba(201,168,76,0.5)' : `linear-gradient(135deg, ${C.accent}, ${C.accent})`,
                 color:C.navy, fontSize:14, fontWeight:700, fontFamily:'var(--font)', opacity: loading ? 0.7 : 1,
               }}>
-                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap →'}
+                {loading ? t.loggingIn : t.loginBtn}
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* Sağ — Dekoratif */}
+      {/* Right — Decorative */}
       <div style={{
         width:380, borderLeft:'1px solid rgba(255,255,255,0.06)',
         display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, gap:16,
       }}>
         {[
-          { label:'Aktif Lokasyon', value:'5', sub:'IST · CAI · RYD · DXB · CHN' },
-          { label:'Para Birimi', value:'22+', sub:'Majör ve bölgesel' },
-          { label:'Dil Desteği', value:'3', sub:'TR · AR · EN' },
+          { label: t.activeLocation, value:'5', sub:'IST · CAI · RYD · DXB · CHN' },
+          { label: t.currency, value:'22+', sub: t.majorRegional },
+          { label: t.langSupport, value:'3', sub:'TR · AR · EN' },
         ].map((s,i) => (
           <div key={i} style={{
             width:'100%', padding:'18px 24px',

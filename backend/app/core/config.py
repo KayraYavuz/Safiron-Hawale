@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     GEMINI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     ALLOWED_ORIGINS: str = ""

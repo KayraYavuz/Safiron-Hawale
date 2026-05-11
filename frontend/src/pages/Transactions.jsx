@@ -10,9 +10,13 @@ import { Icon } from '../components/Icons'
 import TransactionForm from '../components/TransactionForm'
 import SupplierSettlementModal from '../components/SupplierSettlementModal'
 import toast from 'react-hot-toast'
-import { TXN_TYPE_LABEL, TXN_TYPE_COLOR, STATUS_LABEL, STALE_2MIN } from '../constants'
+import { getTxnTypeLabel, TXN_TYPE_COLOR, getStatusLabel, STALE_2MIN } from '../constants'
+import { useLang } from '../hooks/useLang'
 
 export default function Transactions() {
+  const { t } = useLang()
+  const TXN_TYPE_LABEL = getTxnTypeLabel(t)
+  const STATUS_LABEL = getStatusLabel(t)
   const { user } = useAuthStore()
   const qc = useQueryClient()
   const [showForm, setShowForm]     = useState(false)
@@ -29,19 +33,18 @@ export default function Transactions() {
 
   const approveMutation = useMutation({
     mutationFn: transactionsApi.approve,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success('Onaylandı') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success(t.approved) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success('Silindi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success(t.deleted) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
 
   const isAdmin      = user?.role === 'admin'
   const isAccounting = user?.role === 'admin' || user?.role === 'accounting'
 
-  // Memoize filter — avoids re-scan on every unrelated state change
   const filtered = useMemo(() =>
     txns.filter(t =>
       (!filterStatus || t.status   === filterStatus) &&
@@ -57,8 +60,8 @@ export default function Transactions() {
   }, [txns, approveMutation])
 
   const handleDelete = useCallback((id) => {
-    if (window.confirm('Bu işlem silinsin mi?')) deleteMutation.mutate(id)
-  }, [deleteMutation])
+    if (window.confirm(t.deleteConfirm)) deleteMutation.mutate(id)
+  }, [deleteMutation, t])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -69,8 +72,8 @@ export default function Transactions() {
         background: 'white', border: `1px solid ${C.border}`,
         borderRadius: 10, padding: '10px 14px', boxShadow: C.shSm,
       }}>
-        <div style={{ fontSize: 12, color: C.text3, fontWeight: 500, paddingRight: 10, borderRight: `1px solid ${C.border}`, marginRight: 2 }}>
-          {filtered.length} kayıt
+        <div style={{ fontSize: 12, color: C.text3, fontWeight: 500, paddingInlineEnd: 10, borderInlineEnd: `1px solid ${C.border}`, marginInlineEnd: 2 }}>
+          {filtered.length} {t.records}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
@@ -79,16 +82,16 @@ export default function Transactions() {
             className="filter-select"
             style={{ padding: '6px 11px', borderRadius: 7, border: `1.5px solid ${filterStatus ? C.navy3 : C.border}`, fontSize: 12.5, background: filterStatus ? 'rgba(28,49,82,0.04)' : 'white', fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer', color: filterStatus ? C.navy : C.text2 }}
           >
-            <option value="">Tüm Durumlar</option>
-            <option value="pending">Bekliyor</option>
-            <option value="completed">Tamamlandı</option>
+            <option value="">{t.allStatuses}</option>
+            <option value="pending">{t.pending}</option>
+            <option value="completed">{t.completed}</option>
           </select>
           <select
             value={filterType} onChange={e => setType(e.target.value)}
             className="filter-select"
             style={{ padding: '6px 11px', borderRadius: 7, border: `1.5px solid ${filterType ? C.navy3 : C.border}`, fontSize: 12.5, background: filterType ? 'rgba(28,49,82,0.04)' : 'white', fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer', color: filterType ? C.navy : C.text2 }}
           >
-            <option value="">Tüm Türler</option>
+            <option value="">{t.allTypes}</option>
             {Object.entries(TXN_TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
@@ -96,7 +99,7 @@ export default function Transactions() {
         {isAccounting && pendingCount > 0 && (
           <Btn variant="ghost" size="sm" style={{ color: C.green, borderColor: 'rgba(14,164,114,0.3)', background: C.greenBg }} onClick={approveAll}>
             <Icon name="check" size={13} color={C.green} />
-            Tümünü Onayla ({pendingCount})
+            {t.approveAll} ({pendingCount})
           </Btn>
         )}
 
@@ -105,7 +108,7 @@ export default function Transactions() {
         {isAccounting && (
           <Btn onClick={() => setShowForm(true)}>
             <Icon name="plus" size={14} color="white" />
-            Yeni İşlem
+            {t.newTransaction}
           </Btn>
         )}
       </div>
@@ -114,8 +117,8 @@ export default function Transactions() {
         <Table>
           <thead>
             <tr>
-              <Th>İşlem No</Th><Th>Tarih</Th><Th>Karşı Taraf</Th><Th>Tür</Th>
-              <Th>Özet</Th><Th right>Net Kâr</Th><Th>Durum</Th><Th>Tedarikçi</Th>
+              <Th>{t.txnNo}</Th><Th>{t.date}</Th><Th>{t.counterparty}</Th><Th>{t.type}</Th>
+              <Th>{t.summary}</Th><Th right>{t.netProfit}</Th><Th>{t.status}</Th><Th>{t.supplierCol}</Th>
               {isAccounting && <Th />}
             </tr>
           </thead>
@@ -130,7 +133,7 @@ export default function Transactions() {
                   const ssName = !ss ? null
                     : ss.settlement_type === 'registered' ? (ss.counterparty?.name ?? '—')
                     : ss.settlement_type === 'external'   ? (ss.external_name ?? '—')
-                    : 'İç Kasa'
+                    : t.internalSafe
 
                   return (
                     <TrHover key={txn.id}>
@@ -175,7 +178,7 @@ export default function Transactions() {
                       <Td><Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge></Td>
                       <Td>
                         {!ss
-                          ? <span style={{ fontSize: 11.5, color: C.text4 }}>Atanmadı</span>
+                          ? <span style={{ fontSize: 11.5, color: C.text4 }}>{t.notAssigned}</span>
                           : <div>
                               <span style={{ fontSize: 11.5, fontWeight: 500, color: ss.settlement_type === 'internal' ? C.text3 : C.blue }}>{ssName}</span>
                               {ss.supplier_rate && <div style={{ fontSize: 10.5, color: C.text3, fontFamily: 'var(--mono)' }}>{ss.supplier_rate}</div>}
@@ -186,11 +189,11 @@ export default function Transactions() {
                         <Td>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                             <Btn variant="ghost" size="sm" style={{ color: C.purple, borderColor: 'rgba(107,70,193,0.25)', background: C.purpleBg }} onClick={() => setSettleTxn(txn)}>
-                              Tedarikçi Ata
+                              {t.assignSupplier}
                             </Btn>
                             {txn.status === 'pending' && (
                               <Btn variant="ghost" size="sm" style={{ color: C.blue, borderColor: 'rgba(43,108,176,0.25)', background: C.blueBg }} onClick={() => approveMutation.mutate(txn.id)}>
-                                <Icon name="check" size={12} color={C.blue} /> Onayla
+                                <Icon name="check" size={12} color={C.blue} /> {t.approve}
                               </Btn>
                             )}
                             {isAdmin && (
@@ -206,7 +209,7 @@ export default function Transactions() {
                 })
             }
             {!isLoading && !filtered.length && (
-              <tr><td colSpan={isAccounting ? 9 : 8} style={{ padding: 52, textAlign: 'center', color: C.text4, fontSize: 13 }}>Kayıt bulunamadı</td></tr>
+              <tr><td colSpan={isAccounting ? 9 : 8} style={{ padding: 52, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noRecords}</td></tr>
             )}
           </tbody>
         </Table>

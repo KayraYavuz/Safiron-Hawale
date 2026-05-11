@@ -21,17 +21,7 @@ import { transactionsApi, locationsApi } from '../utils/api'
 import { fmt, stripCommas, addCommas, calcPnl } from '../utils/format'
 import { Modal, Btn, Steps, AmountInput, RateInput, SumRow, Info, CPSearch, LocAccPicker, Input, C } from './UI'
 import toast from 'react-hot-toast'
-
-// ── Sabitler ──────────────────────────────────────────────────────────────────
-const TXN_TYPES = [
-  { v:'remittance',        label:'Havale',       desc:'Ülkeler arası para transferi' },
-  { v:'fx',                label:'Döviz (FX)',   desc:'Döviz alım / satım' },
-  { v:'swift',             label:'SWIFT',        desc:'Banka havalesi' },
-  { v:'deposit',           label:'Para Yatırma', desc:'Kasaya nakit giriş / tahsilat' },
-  { v:'withdrawal',        label:'Para Çekme',   desc:'Kasadan nakit çıkış / teslim' },
-  { v:'internal_transfer', label:'İç Transfer',  desc:'Kasalar arası transfer' },
-]
-const ROLE_LABELS = { customer: 'Müşteri', supplier: 'Tedarikçi', founder: 'Ortak' }
+import { useLang } from '../hooks/useLang'
 
 // ── buildLegs — saf fonksiyon, state bağımlılığı yok ─────────────────────────
 function buildLegs({ txnType, fromAcc, toAcc, sourceCur, destCur, usdAmount, customerRate, dwAcc, dwAmount, itFromAcc, itToAcc, itAmount, itRate }) {
@@ -98,8 +88,19 @@ function safeCalc(a, op, b) {
 
 // ── Ana bileşen ───────────────────────────────────────────────────────────────
 export default function TransactionForm({ onClose, accounts = [], counterparties = [] }) {
+  const { t } = useLang()
   const qc    = useQueryClient()
   const today = new Date().toISOString().split('T')[0]
+
+  const TXN_TYPES = [
+    { v:'remittance',        label: t.remittance,       desc: t.remittanceDesc },
+    { v:'fx',                label: t.fx,               desc: t.fxDesc },
+    { v:'swift',             label: t.swift,            desc: t.swiftDesc },
+    { v:'deposit',           label: t.deposit,          desc: t.depositDesc },
+    { v:'withdrawal',        label: t.withdrawal,       desc: t.withdrawalDesc },
+    { v:'internal_transfer', label: t.internalTransfer, desc: t.internalTransferDesc },
+  ]
+  const ROLE_LABELS = { customer: t.customer, supplier: t.supplier, founder: t.founder }
 
   const { data: locations = [] } = useQuery({
     queryKey: ['locations'],
@@ -164,15 +165,9 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   : destCur
 
   // ── Çift yönlü tutar handler'ları ─────────────────────────────────────────
-  // Her handler: kendi state'ini günceller + karşı state'i hesaplar.
-  // lastEdited ref'i günceller (render tetiklemez, sadece useEffect için).
-  // Kur her zaman güncel customerRate'ten okunur — stale closure yok.
-
   const handleUsdChange = useCallback((val) => {
     lastEdited.current = 'usd'
     setUsdAmount(val)
-    // Karşı tarafı hesapla — customerRate'in güncel değerini functional update ile değil,
-    // doğrudan okuyoruz; bu OK çünkü bu callback her render'da yeniden oluşur.
     setLocalAmount(prev => {
       const usd  = parseFloat(stripCommas(val) || 0)
       const rate = parseFloat(customerRate || 0)
@@ -192,9 +187,6 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
     })
   }, [customerRate])
 
-  // Kur değiştiğinde: lastEdited ref'e göre karşı alanı yeniden hesapla.
-  // Bağımlılık listesi: sadece customerRate. usdAmount/localAmount closure'dan
-  // okunmaz; setX(fn) functional form ile güncel değer alınır → stale yok.
   useEffect(() => {
     const rate = parseFloat(customerRate || 0)
     if (rate <= 0) return
@@ -203,22 +195,20 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
       setUsdAmount(prev => {
         const usd = parseFloat(stripCommas(prev) || 0)
         if (usd <= 0) return prev
-        // local'i de güncelle
         setLocalAmount(safeCalc(usd, '*', rate))
-        return prev  // usd değişmez
+        return prev
       })
     } else {
       setLocalAmount(prev => {
         const local = parseFloat(stripCommas(prev) || 0)
         if (local <= 0) return prev
         setUsdAmount(safeCalc(local, '/', rate))
-        return prev  // local değişmez
+        return prev
       })
     }
-  }, [customerRate])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [customerRate])
 
   // ── Kâr önizlemesi ────────────────────────────────────────────────────────
-  // Bağımlılıklar: hesaba katkıda bulunan tüm değerler.
   const pnl = useMemo(() => {
     if (!sourceCur || !destCur) return null
     const usd = parseFloat(stripCommas(usdAmount) || 0)
@@ -245,10 +235,10 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['position'] })
-      toast.success('İşlem kaydedildi ✓')
+      toast.success(t.txnSaved)
       onClose()
     },
-    onError: e => toast.error(e.response?.data?.detail || 'Kaydetme hatası'),
+    onError: e => toast.error(e.response?.data?.detail || t.saveError),
   })
 
   const handleSubmit = () => {
@@ -260,7 +250,7 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
     })
 
     if (!legs.length || legs.some(l => !l.account_id || !(l.amount > 0))) {
-      return toast.error('Eksik bilgi — kasa ve tutar zorunlu')
+      return toast.error(t.missingInfo)
     }
 
     const usdNum = parseFloat(stripCommas(usdAmount))
@@ -306,33 +296,33 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
   }
 
   const subtitle = txnType
-    ? `${TXN_TYPES.find(t => t.v === txnType)?.label ?? ''}${fromAcc && toAcc ? ` · ${fromAcc.location?.name_tr ?? ''} → ${toAcc.location?.name_tr ?? ''}` : ''}`
+    ? `${TXN_TYPES.find(t_opt => t_opt.v === txnType)?.label ?? ''}${fromAcc && toAcc ? ` · ${fromAcc.location?.name_tr ?? ''} → ${toAcc.location?.name_tr ?? ''}` : ''}`
     : ''
 
   // ── Kâr koşul metni (adım 3) ──────────────────────────────────────────────
   const profitConditionText = () => {
     if (!sourceCur || !destCur || sameCur) return ''
-    if (destCur === 'USD')   return `Müşteri ${sourceCur} veriyor, USD alıyor — kâr için: Müşteri Kuru > Tedarikçi Kuru`
-    if (sourceCur === 'USD') return `Müşteri USD veriyor, ${destCur} alıyor — kâr için: Tedarikçi Kuru > Müşteri Kuru`
-    return `Çapraz işlem: ${sourceCur} → ${destCur} — her iki kur da 1 USD = X formatında`
+    if (destCur === 'USD')   return t.profitConditionA.replace('{source}', sourceCur)
+    if (sourceCur === 'USD') return t.profitConditionB.replace('{dest}', destCur)
+    return `${t.crossTxn}: ${sourceCur} → ${destCur} — ${t.bothRatesUsd}`
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Modal
-      title="Yeni İşlem"
+      title={t.newTxnTitle}
       subtitle={subtitle}
       onClose={onClose}
       footer={step > 0 && (
         <>
           <Btn variant="ghost" onClick={() => step === 1 ? setStep(0) : setStep(s => s - 1)}>
-            ← Geri
+            {t.back}
           </Btn>
           <div style={{ flex: 1 }}><Steps current={step} total={totalSteps} /></div>
           {step < totalSteps
-            ? <Btn onClick={() => setStep(s => s + 1)} disabled={!canNext()}>İleri →</Btn>
+            ? <Btn onClick={() => setStep(s => s + 1)} disabled={!canNext()}>{t.next}</Btn>
             : <Btn variant="success" onClick={handleSubmit} disabled={mutation.isPending}>
-                {mutation.isPending ? '⏳ Kaydediliyor...' : '✓ Kaydet'}
+                {mutation.isPending ? `⏳ ${t.saving}` : `✓ ${t.save}`}
               </Btn>
           }
         </>
@@ -344,7 +334,7 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
         {step === 0 && (
           <div>
             <div style={{ fontSize: 13.5, color: C.text2, marginBottom: 12 }}>
-              Ne yapmak istiyorsun?
+              {t.whatToDo}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {TXN_TYPES.map(opt => (
@@ -374,8 +364,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
         {/* ── Tarih satırı ──────────────────────────────────────────────── */}
         {step > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
-            <Input label="İşlem tarihi" type="date" value={txnDate} onChange={e => setTxnDate(e.target.value)} />
-            <Input label="Valör tarihi"  type="date" value={valueDate} onChange={e => setValueDate(e.target.value)} />
+            <Input label={t.txnDate} type="date" value={txnDate} onChange={e => setTxnDate(e.target.value)} />
+            <Input label={t.valueDate}  type="date" value={valueDate} onChange={e => setValueDate(e.target.value)} />
           </div>
         )}
 
@@ -383,11 +373,9 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
         {isSimple && step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <Info type={txnType === 'deposit' ? 'info' : 'warning'}>
-              {txnType === 'deposit'
-                ? '💡 Kasaya para girişi. Karşı taraf seçilirse cari hesabına yansır.'
-                : '💡 Kasadan para çıkışı. Karşı taraf seçilirse hesabından düşer.'}
+              {txnType === 'deposit' ? t.depositInfo : t.withdrawalInfo}
             </Info>
-            <CPSearch list={counterparties} value={cpId} onChange={setCpId} label="Karşı taraf (opsiyonel)" />
+            <CPSearch list={counterparties} value={cpId} onChange={setCpId} label={t.counterpartyOptional} />
             {cpId && (
               <div style={{ display: 'flex', gap: 8 }}>
                 {['customer', 'supplier', 'founder'].map(r => (
@@ -406,44 +394,44 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
             <LocAccPicker
               locations={locations} accounts={accounts}
               locVal={dwLocId} onLoc={setDwLocId} accVal={dwAccId} onAcc={setDwAccId}
-              label={txnType === 'deposit' ? '↓ Para girişi yapılacak kasa' : '↑ Para çıkışı yapılacak kasa'}
+              label={txnType === 'deposit' ? t.depositTarget : t.withdrawalTarget}
             />
             {dwAccId && (
-              <AmountInput value={dwAmount} onChange={setDwAmount} currency={dwAcc?.currency?.code} label="Tutar" />
+              <AmountInput value={dwAmount} onChange={setDwAmount} currency={dwAcc?.currency?.code} label={t.amount} />
             )}
-            <Input label="Not (opsiyonel)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Açıklama..." />
+            <Input label={t.noteOptional} value={notes} onChange={e => setNotes(e.target.value)} placeholder={t.descPlaceholder} />
           </div>
         )}
 
         {/* ══ İÇ TRANSFER ═════════════════════════════════════════════════ */}
         {isTransfer && step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Info>💡 Aynı şirketteki iki kasa arasında para hareketi.</Info>
+            <Info>{t.internalTransferInfo}</Info>
             <LocAccPicker locations={locations} accounts={accounts}
               locVal={itFromLocId} onLoc={setItFromLocId} accVal={itFromAccId} onAcc={setItFromAccId}
-              label="Çıkan kasa" />
+              label={t.outgoingSafe} />
             <LocAccPicker locations={locations} accounts={accounts}
               locVal={itToLocId} onLoc={setItToLocId} accVal={itToAccId} onAcc={setItToAccId}
-              label="Giren kasa" />
+              label={t.incomingSafe} />
           </div>
         )}
         {isTransfer && step === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <AmountInput value={itAmount} onChange={setItAmount} currency={itFromAcc?.currency?.code} label="Tutar" />
+            <AmountInput value={itAmount} onChange={setItAmount} currency={itFromAcc?.currency?.code} label={t.amount} />
             {itFromAcc && itToAcc && itFromAcc.currency?.code !== itToAcc.currency?.code && (
               <RateInput value={itRate} onChange={setItRate} accent="amber"
-                label={`Dönüşüm kuru — 1 ${itToAcc.currency?.code} = ? ${itFromAcc.currency?.code}`} />
+                label={`${t.conversionRate} — 1 ${itToAcc.currency?.code} = ? ${itFromAcc.currency?.code}`} />
             )}
-            <Input label="Not (opsiyonel)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Açıklama..." />
+            <Input label={t.noteOptional} value={notes} onChange={e => setNotes(e.target.value)} placeholder={t.descPlaceholder} />
           </div>
         )}
         {isTransfer && step === 3 && (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Özet</div>
-            <SumRow label="Çıkan" value={`${itFromAcc?.location?.name_tr ?? ''} · ${itFromAcc?.name ?? ''} (${itFromAcc?.currency?.code ?? ''})`} />
-            <SumRow label="Giren" value={`${itToAcc?.location?.name_tr ?? ''} · ${itToAcc?.name ?? ''} (${itToAcc?.currency?.code ?? ''})`} />
-            <SumRow label="Tutar" value={`${fmt(stripCommas(itAmount))} ${itFromAcc?.currency?.code ?? ''}`} />
-            {itRate && <SumRow label="Kur" value={`1 ${itToAcc?.currency?.code ?? ''} = ${itRate} ${itFromAcc?.currency?.code ?? ''}`} />}
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t.summaryTitle}</div>
+            <SumRow label={t.outgoing} value={`${itFromAcc?.location?.name_tr ?? ''} · ${itFromAcc?.name ?? ''} (${itFromAcc?.currency?.code ?? ''})`} />
+            <SumRow label={t.incoming} value={`${itToAcc?.location?.name_tr ?? ''} · ${itToAcc?.name ?? ''} (${itToAcc?.currency?.code ?? ''})`} />
+            <SumRow label={t.amount} value={`${fmt(stripCommas(itAmount))} ${itFromAcc?.currency?.code ?? ''}`} />
+            {itRate && <SumRow label={t.rateLabel} value={`1 ${itToAcc?.currency?.code ?? ''} = ${itRate} ${itFromAcc?.currency?.code ?? ''}`} />}
           </div>
         )}
 
@@ -452,8 +440,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
         {/* Adım 1: Karşı taraf */}
         {isFX && step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Info>💡 İşlem cari hesaba yazılır. Fiziksel teslim için ayrıca "Para Yatırma/Çekme" gir.</Info>
-            <CPSearch list={counterparties} value={cpId} onChange={setCpId} label="Karşı taraf (opsiyonel)" />
+            <Info>{t.fxInfo}</Info>
+            <CPSearch list={counterparties} value={cpId} onChange={setCpId} label={t.counterpartyOptional} />
             {cpId && (
               <div style={{ display: 'flex', gap: 8 }}>
                 {['customer', 'supplier', 'founder'].map(r => (
@@ -477,19 +465,19 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <LocAccPicker locations={locations} accounts={accounts}
               locVal={fromLocId} onLoc={setFromLocId} accVal={fromAccId} onAcc={setFromAccId}
-              label="Müşterinin para verdiği kasa (source)" />
+              label={t.sourceAccount} />
             <LocAccPicker locations={locations} accounts={accounts}
               locVal={toLocId} onLoc={setToLocId} accVal={toAccId} onAcc={setToAccId}
-              label="Müşterinin para aldığı kasa (destination)" />
+              label={t.destAccount} />
             {sourceCur && destCur && !sameCur && (
               <Info type="info">
-                <strong>Yön:</strong> {sourceCur} → {destCur}<br />
-                Müşteri <strong>{sourceCur}</strong> veriyor, <strong>{destCur}</strong> alıyor.<br />
-                Kur formatı: <strong>1 USD = X {nonUsdCur}</strong>
+                <strong>{t.directionLabel}:</strong> {sourceCur} → {destCur}<br />
+                {t.customerGives} <strong>{sourceCur}</strong>, {t.customerGets} <strong>{destCur}</strong>.<br />
+                {t.rateFormatTitle}: <strong>1 USD = X {nonUsdCur}</strong>
               </Info>
             )}
             {sameCur && (
-              <Info>💱 Aynı para birimi ({sourceCur}) — kur farkı yok, sadece komisyon.</Info>
+              <Info>💱 {t.sameCurrencyInfo.replace('{cur}', sourceCur)}</Info>
             )}
           </div>
         )}
@@ -499,8 +487,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {sameCur ? (
               <>
-                <Info>💡 Aynı para birimi — kur farkı yok. Sadece komisyon alabilirsin.</Info>
-                <AmountInput value={commission} onChange={setCommission} currency="USD" label="Komisyon (opsiyonel)" />
+                <Info>{t.sameCurrencyNoFx}</Info>
+                <AmountInput value={commission} onChange={setCommission} currency="USD" label={t.commissionOptional} />
               </>
             ) : (
               <>
@@ -510,17 +498,17 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   borderRadius: 9, padding: '12px 14px', fontSize: 12.5, lineHeight: 1.7,
                 }}>
                   <div style={{ fontWeight: 700, color: C.navy, marginBottom: 6, fontSize: 13 }}>
-                    Kur Formatı: 1 USD = X {nonUsdCur}
+                    {t.rateFormatTitle}: 1 USD = X {nonUsdCur}
                   </div>
                   <div style={{ color: C.text2 }}>{profitConditionText()}</div>
                   {destCur === 'USD' && (
                     <div style={{ marginTop: 6, fontSize: 12, color: C.text3 }}>
-                      Örnek: Müşteri Kuru = 3.86, Tedarikçi = 3.80 → Kâr = 60 SAR / 1,000 USD
+                      {t.exampleProfit}: {t.customerRate} = 3.86, {t.supplierRate} = 3.80 → {t.profit} = 60 SAR / 1,000 USD
                     </div>
                   )}
                   {sourceCur === 'USD' && (
                     <div style={{ marginTop: 6, fontSize: 12, color: C.text3 }}>
-                      Örnek: Tedarikçi = 3.86, Müşteri = 3.80 → Kâr = 60 SAR / 1,000 USD
+                      {t.exampleProfit}: {t.supplierRate} = 3.86, {t.customerRate} = 3.80 → {t.profit} = 60 SAR / 1,000 USD
                     </div>
                   )}
                 </div>
@@ -530,10 +518,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   value={customerRate}
                   onChange={setCustomerRate}
                   accent="green"
-                  label={`Müşteri Kuru — 1 USD = ? ${nonUsdCur}`}
-                  hint={destCur === 'USD'
-                    ? `Müşteriden aldığın kur — kâr için yüksek olmalı`
-                    : `Müşteriye verdiğin kur — kâr için düşük olmalı`}
+                  label={`${t.customerRate} — 1 USD = ? ${nonUsdCur}`}
+                  hint={destCur === 'USD' ? t.customerRateHintHigh : t.customerRateHintLow}
                 />
 
                 {/* Tedarikçi Kuru */}
@@ -541,10 +527,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   value={supplierRate}
                   onChange={setSupplierRate}
                   accent="red"
-                  label={`Tedarikçi Kuru — 1 USD = ? ${nonUsdCur}`}
-                  hint={destCur === 'USD'
-                    ? `Piyasaya ödediğin kur — kâr için düşük olmalı`
-                    : `Piyasadan aldığın kur — kâr için yüksek olmalı`}
+                  label={`${t.supplierRate} — 1 USD = ? ${nonUsdCur}`}
+                  hint={destCur === 'USD' ? t.supplierRateHintLow : t.supplierRateHintHigh}
                 />
 
                 {/* Anlık kâr önizlemesi */}
@@ -555,12 +539,12 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                     borderRadius: 8, padding: '10px 13px', fontSize: 12.5,
                   }}>
                     <span style={{ fontWeight: 600, color: ratePreview.isProfit ? C.green : C.red }}>
-                      {ratePreview.isProfit ? '✅ KÂR' : '❌ ZARAR'}
+                      {ratePreview.isProfit ? t.profitLabel : t.lossLabel}
                     </span>
                     <span style={{ color: C.text2, marginLeft: 8 }}>
                       {destCur === 'USD'
-                        ? `Müşteri(${ratePreview.cr}) - Tedarikçi(${ratePreview.sr})`
-                        : `Tedarikçi(${ratePreview.sr}) - Müşteri(${ratePreview.cr})`}
+                        ? `${t.customerRate}(${ratePreview.cr}) - ${t.supplierRate}(${ratePreview.sr})`
+                        : `${t.supplierRate}(${ratePreview.sr}) - ${t.customerRate}(${ratePreview.cr})`}
                       {' → '}
                       <span style={{ fontFamily: 'var(--mono)', fontWeight: 600, color: ratePreview.isProfit ? C.green : C.red }}>
                         {ratePreview.isProfit ? '+' : ''}{ratePreview.spread} {nonUsdCur} / USD
@@ -569,7 +553,7 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   </div>
                 )}
 
-                <AmountInput value={commission} onChange={setCommission} currency="USD" label="Komisyon (opsiyonel)" />
+                <AmountInput value={commission} onChange={setCommission} currency="USD" label={t.commissionOptional} />
               </>
             )}
           </div>
@@ -582,8 +566,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
             {/* Açıklama — sadece farklı para birimleri varsa */}
             {!sameCur && nonUsdCur && (
               <Info>
-                💡 USD veya {nonUsdCur} alanından birini gir — diğeri otomatik hesaplanır.<br />
-                Kur: 1 USD = {customerRate || '?'} {nonUsdCur}
+                {t.autoCalcInfo.replace('{cur}', nonUsdCur)}<br />
+                {t.rateLabel}: 1 USD = {customerRate || '?'} {nonUsdCur}
               </Info>
             )}
 
@@ -592,8 +576,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
               value={usdAmount}
               onChange={handleUsdChange}
               currency="USD"
-              label="USD Miktarı"
-              hint="İşlemin USD bazında tutarı"
+              label={t.usdAmount}
+              hint={t.usdHint}
             />
 
             {/* Yerel para birimi alanı — çift yönlü, sadece farklı para biriminde göster */}
@@ -602,8 +586,8 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                 value={localAmount}
                 onChange={handleLocalChange}
                 currency={nonUsdCur}
-                label={`${nonUsdCur} Miktarı`}
-                hint={`1 USD = ${customerRate || '?'} ${nonUsdCur} üzerinden hesaplanır`}
+                label={`${nonUsdCur} ${t.localAmount}`}
+                hint={`${t.localHint} 1 USD = ${customerRate || '?'} ${nonUsdCur}`}
                 highlight={lastEdited.current === 'local'}
               />
             )}
@@ -618,64 +602,64 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   fontSize: 11, fontWeight: 600, color: C.text3,
                   textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12,
                 }}>
-                  İşlem Özeti
+                  {t.txnSummary}
                 </div>
 
                 {cpId && (
-                  <SumRow label="Karşı Taraf" value={counterparties.find(c => c.id === cpId)?.name ?? '—'} />
+                  <SumRow label={t.counterparty} value={counterparties.find(c => c.id === cpId)?.name ?? '—'} />
                 )}
 
-                <SumRow label="Yön" value={`${sourceCur} → ${destCur}`} />
+                <SumRow label={t.direction} value={`${sourceCur} → ${destCur}`} />
 
                 {pnl.customerPays > 0 && (
                   <SumRow
-                    label="Müşteri Öder"
+                    label={t.customerPays}
                     value={`${fmt(pnl.customerPays)} ${pnl.customerPaysCur ?? ''}`}
                   />
                 )}
                 {pnl.customerReceives > 0 && (
                   <SumRow
-                    label="Müşteri Alır"
+                    label={t.customerReceives}
                     value={`${fmt(pnl.customerReceives)} ${pnl.customerReceivesCur ?? ''}`}
                   />
                 )}
                 {pnl.supplierSettlement > 0 && (
                   <SumRow
-                    label="Tedarikçi Uzlaşma"
+                    label={t.supplierSettlement}
                     value={`${fmt(pnl.supplierSettlement)} ${pnl.supplierSettlementCur ?? ''}`}
                   />
                 )}
                 {customerRate && (
-                  <SumRow label="Müşteri Kuru" value={`1 USD = ${customerRate} ${nonUsdCur}`} />
+                  <SumRow label={t.customerRate} value={`1 USD = ${customerRate} ${nonUsdCur}`} />
                 )}
                 {supplierRate && (
-                  <SumRow label="Tedarikçi Kuru" value={`1 USD = ${supplierRate} ${nonUsdCur}`} />
+                  <SumRow label={t.supplierRate} value={`1 USD = ${supplierRate} ${nonUsdCur}`} />
                 )}
                 {pnl.hasRates && (
                   <SumRow
-                    label={pnl.isProfit ? '✅ Kâr' : '❌ Zarar'}
+                    label={pnl.isProfit ? t.profitText : t.lossText}
                     value={`${pnl.isProfit ? '+' : ''}${fmt(pnl.profit ?? 0)} ${pnl.profitCur ?? ''}`}
                     warn={!pnl.isProfit}
                     highlight
                   />
                 )}
                 {commission && parseFloat(stripCommas(commission)) > 0 && (
-                  <SumRow label="Komisyon" value={`+$${fmt(stripCommas(commission))}`} />
+                  <SumRow label={t.commission} value={`+$${fmt(stripCommas(commission))}`} />
                 )}
                 {pnl.hasRates && (
                   <SumRow
-                    label="Net Kâr (USD)"
+                    label={t.netProfitUsdLabel}
                     value={`${(pnl.netPnlUsd ?? 0) >= 0 ? '+' : ''}$${fmt(Math.abs(pnl.netPnlUsd ?? 0))}`}
                     highlight
                   />
                 )}
                 {!pnl.hasRates && (
-                  <SumRow label="Not" value="Tedarikçi kuru girilmedi — kâr tahmini yok" warn />
+                  <SumRow label={t.note} value={t.noSupplierRate} warn />
                 )}
               </div>
             )}
 
-            <Input label="Not (opsiyonel)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Açıklama..." />
+            <Input label={t.noteOptional} value={notes} onChange={e => setNotes(e.target.value)} placeholder={t.descPlaceholder} />
           </div>
         )}
 

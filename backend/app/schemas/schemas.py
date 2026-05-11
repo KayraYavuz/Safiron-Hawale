@@ -279,3 +279,18 @@ class SupplierSettlementOut(BaseModel):
 
 # Forward reference çözümü
 TransactionOut.model_rebuild()
+
+# ── AI Reports ────────────────────────────────────────────────────────────────
+class SavedReportCreate(BaseModel):
+    title: str
+    content: str
+    is_favorite: bool = False
+
+class SavedReportOut(BaseModel):
+    id: UUID
+    title: str
+    content: str
+    created_at: datetime
+    is_favorite: bool
+    class Config:
+        from_attributes = True

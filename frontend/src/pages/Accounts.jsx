@@ -8,6 +8,7 @@ import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { ACC_ICONS, STALE_2MIN, STALE_5MIN, STALE_30S } from '../constants'
+import { useLang } from '../hooks/useLang'
 
 const BLANK_ACC = {
   location_id: '', currency_id: '', account_type: 'cash',
@@ -17,6 +18,7 @@ const BLANK_ACC = {
 const BLANK_LOC = { code: '', name_tr: '', name_ar: '', name_en: '', country: '' }
 
 export default function Accounts() {
+  const { t } = useLang()
   const qc = useQueryClient()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'admin'
@@ -33,58 +35,55 @@ export default function Accounts() {
   const { data: curs = [] } = useQuery({ queryKey: ['currencies'], queryFn: () => currenciesApi.list().then(r => r.data),    staleTime: STALE_5MIN  })
   const { data: pos }       = useQuery({ queryKey: ['position'],   queryFn: () => reportsApi.position().then(r => r.data),   staleTime: STALE_30S   })
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
   const accMut = useMutation({
     mutationFn: accountsApi.create,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['accounts', 'position'] }); setShowAccForm(false); toast.success('Hesap oluşturuldu') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['accounts', 'position'] }); setShowAccForm(false); toast.success(t.accountCreated) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const delAccMut = useMutation({
     mutationFn: accountsApi.delete,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['accounts', 'position'] }); toast.success('Hesap silindi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Silinemedi — bakiye sıfır değil veya işlem var'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['accounts', 'position'] }); toast.success(t.accountDeleted) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.cannotDeleteBalance),
   })
   const createLocMut = useMutation({
     mutationFn: locationsApi.create,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations'] }); setShowLocForm(false); setLocForm(BLANK_LOC); toast.success('Lokasyon oluşturuldu') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Lokasyon oluşturulamadı'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations'] }); setShowLocForm(false); setLocForm(BLANK_LOC); toast.success(t.locationCreated) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.cannotCreateLoc),
   })
   const updateLocMut = useMutation({
     mutationFn: ({ id, data }) => locationsApi.update(id, data),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations'] }); setEditingLoc(null); toast.success('Lokasyon güncellendi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Güncellenemedi'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations'] }); setEditingLoc(null); toast.success(t.locationUpdated) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.cannotUpdateLoc),
   })
   const deleteLocMut = useMutation({
     mutationFn: locationsApi.delete,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations', 'accounts', 'position'] }); toast.success('Lokasyon silindi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Silinemedi — önce hesapları kaldırın'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['locations', 'accounts', 'position'] }); toast.success(t.locationDeleted) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.cannotDeleteLocAccounts),
   })
 
   const handleDeleteAcc = useCallback((e, acc) => {
     e.stopPropagation()
-    if (window.confirm(`"${acc.name}" hesabı silinsin mi?\nBakiye sıfır değilse veya işlem bacağı varsa silinemez.`))
+    if (window.confirm(`"${acc.name}" ${t.deleteAccountConfirm}`))
       delAccMut.mutate(acc.id)
-  }, [delAccMut])
+  }, [delAccMut, t])
 
   const handleDeleteLoc = useCallback((e, loc) => {
     e.stopPropagation()
-    if (window.confirm(`"${loc.name_tr}" lokasyonu silinsin mi?\nBağlı aktif hesap varsa silinemez.`))
+    if (window.confirm(`"${loc.name_tr}" ${t.deleteLocConfirm}`))
       deleteLocMut.mutate(loc.id)
-  }, [deleteLocMut])
+  }, [deleteLocMut, t])
 
   const handleEditLoc = useCallback((e, loc) => {
     e.stopPropagation()
     setEditingLoc({ id: loc.id, name_tr: loc.name_tr, name_ar: loc.name_ar || '', name_en: loc.name_en || '', country: loc.country || '' })
   }, [])
 
-  // Memoize position lookup map — O(1) vs O(n) per row
   const posMap = useMemo(() => {
     const map = {}
     pos?.accounts?.forEach(a => { map[a.account_id] = a })
     return map
   }, [pos])
 
-  // Memoize grouped accounts by location
   const byLoc = useMemo(() =>
     locs.map(l => ({ ...l, accounts: accs.filter(a => a.location_id === l.id) })),
     [locs, accs]
@@ -95,109 +94,105 @@ export default function Accounts() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      {/* Action bar */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         {isAdmin && (
           <Btn variant="ghost" onClick={() => { setShowLocForm(!showLocForm); setShowAccForm(false) }}>
-            <Icon name="plus" size={14} color={C.navy} /> Yeni Lokasyon
+            <Icon name="plus" size={14} color={C.navy} /> {t.newLocation}
           </Btn>
         )}
         <Btn onClick={() => { setShowAccForm(!showAccForm); setShowLocForm(false) }}>
-          <Icon name="plus" size={14} color="white" /> Yeni Hesap
+          <Icon name="plus" size={14} color="white" /> {t.newAccount}
         </Btn>
       </div>
 
-      {/* New Location Form — admin only */}
       {isAdmin && showLocForm && (
         <Card>
-          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>Yeni Lokasyon</div>
+          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>{t.newLocation}</div>
           <div style={{ padding: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Input label="Kod (maks 10)"    value={locForm.code}    onChange={e => setLocForm(x => ({ ...x, code: e.target.value.toUpperCase() }))}    placeholder="LDN" maxLength={10} />
-              <Input label="Ülke Kodu"        value={locForm.country} onChange={e => setLocForm(x => ({ ...x, country: e.target.value.toUpperCase() }))} placeholder="GBR" maxLength={3} />
-              <Input label="Türkçe İsim *"    value={locForm.name_tr} onChange={e => setLocForm(x => ({ ...x, name_tr: e.target.value }))}               placeholder="Londra" />
-              <Input label="Arapça İsim"      value={locForm.name_ar} onChange={e => setLocForm(x => ({ ...x, name_ar: e.target.value }))}               placeholder="لندن" />
-              <Input label="İngilizce İsim"   value={locForm.name_en} onChange={e => setLocForm(x => ({ ...x, name_en: e.target.value }))}               placeholder="London" />
+              <Input label={t.codeMax10}  value={locForm.code}    onChange={e => setLocForm(x => ({ ...x, code: e.target.value.toUpperCase() }))}    placeholder="LDN" maxLength={10} />
+              <Input label={t.countryCode} value={locForm.country} onChange={e => setLocForm(x => ({ ...x, country: e.target.value.toUpperCase() }))} placeholder="GBR" maxLength={3} />
+              <Input label={t.nameTr}     value={locForm.name_tr} onChange={e => setLocForm(x => ({ ...x, name_tr: e.target.value }))}               placeholder="Londra" />
+              <Input label={t.nameAr}     value={locForm.name_ar} onChange={e => setLocForm(x => ({ ...x, name_ar: e.target.value }))}               placeholder="لندن" />
+              <Input label={t.nameEn}     value={locForm.name_en} onChange={e => setLocForm(x => ({ ...x, name_en: e.target.value }))}               placeholder="London" />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <Btn onClick={() => createLocMut.mutate(locForm)} disabled={createLocMut.isPending || !locForm.code.trim() || !locForm.name_tr.trim()}>
-                {createLocMut.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                {createLocMut.isPending ? t.saving : t.save}
               </Btn>
-              <Btn variant="ghost" onClick={() => setShowLocForm(false)}>İptal</Btn>
+              <Btn variant="ghost" onClick={() => setShowLocForm(false)}>{t.cancel}</Btn>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Edit Location Modal */}
       {isAdmin && editingLoc && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setEditingLoc(null)}
         >
           <div style={{ background: 'white', borderRadius: 12, padding: 28, width: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, color: C.navy }}>Lokasyonu Düzenle</div>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, color: C.navy }}>{t.editLocation}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Input label="Türkçe İsim *" value={editingLoc.name_tr} onChange={e => setEditingLoc(x => ({ ...x, name_tr: e.target.value }))} />
-              <Input label="Arapça İsim"   value={editingLoc.name_ar} onChange={e => setEditingLoc(x => ({ ...x, name_ar: e.target.value }))} />
-              <Input label="İngilizce"     value={editingLoc.name_en} onChange={e => setEditingLoc(x => ({ ...x, name_en: e.target.value }))} />
-              <Input label="Ülke Kodu"     value={editingLoc.country} onChange={e => setEditingLoc(x => ({ ...x, country: e.target.value.toUpperCase() }))} maxLength={3} />
+              <Input label={t.nameTr} value={editingLoc.name_tr} onChange={e => setEditingLoc(x => ({ ...x, name_tr: e.target.value }))} />
+              <Input label={t.nameAr} value={editingLoc.name_ar} onChange={e => setEditingLoc(x => ({ ...x, name_ar: e.target.value }))} />
+              <Input label={t.nameEn} value={editingLoc.name_en} onChange={e => setEditingLoc(x => ({ ...x, name_en: e.target.value }))} />
+              <Input label={t.countryCode} value={editingLoc.country} onChange={e => setEditingLoc(x => ({ ...x, country: e.target.value.toUpperCase() }))} maxLength={3} />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <Btn
                 onClick={() => updateLocMut.mutate({ id: editingLoc.id, data: { name_tr: editingLoc.name_tr, name_ar: editingLoc.name_ar, name_en: editingLoc.name_en, country: editingLoc.country } })}
                 disabled={updateLocMut.isPending || !editingLoc.name_tr.trim()}
               >
-                {updateLocMut.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                {updateLocMut.isPending ? t.saving : t.save}
               </Btn>
-              <Btn variant="ghost" onClick={() => setEditingLoc(null)}>İptal</Btn>
+              <Btn variant="ghost" onClick={() => setEditingLoc(null)}>{t.cancel}</Btn>
             </div>
           </div>
         </div>
       )}
 
-      {/* New Account Form */}
       {showAccForm && (
         <Card>
-          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>Yeni Hesap</div>
+          <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 13 }}>{t.newAccount}</div>
           <div style={{ padding: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Select label="Lokasyon"   value={accForm.location_id}  onChange={e => setAccForm(x => ({ ...x, location_id: e.target.value }))}>
-                <option value="">— seç —</option>
+              <Select label={t.locationSelect} value={accForm.location_id} onChange={e => setAccForm(x => ({ ...x, location_id: e.target.value }))}>
+                <option value="">{t.selectPlaceholder}</option>
                 {locs.map(l => <option key={l.id} value={l.id}>{l.name_tr}</option>)}
               </Select>
-              <Select label="Para Birimi" value={accForm.currency_id} onChange={e => setAccForm(x => ({ ...x, currency_id: e.target.value }))}>
-                <option value="">— seç —</option>
+              <Select label={t.currencySelect} value={accForm.currency_id} onChange={e => setAccForm(x => ({ ...x, currency_id: e.target.value }))}>
+                <option value="">{t.selectPlaceholder}</option>
                 {sortedCurs.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name_tr}</option>)}
               </Select>
-              <Select label="Tür" value={accForm.account_type} onChange={e => setAccForm(x => ({ ...x, account_type: e.target.value }))}>
-                <option value="cash">💵 Nakit</option>
-                <option value="bank">🏦 Banka</option>
-                <option value="crypto">₿ Kripto</option>
+              <Select label={t.accountType} value={accForm.account_type} onChange={e => setAccForm(x => ({ ...x, account_type: e.target.value }))}>
+                <option value="cash">{t.cash}</option>
+                <option value="bank">{t.bank}</option>
+                <option value="crypto">{t.crypto}</option>
               </Select>
-              <Input label="Hesap Adı" value={accForm.name} onChange={e => setAccForm(x => ({ ...x, name: e.target.value }))}
+              <Input label={t.accountName} value={accForm.name} onChange={e => setAccForm(x => ({ ...x, name: e.target.value }))}
                 placeholder={accForm.account_type === 'cash' ? 'Ana Kasa' : accForm.account_type === 'bank' ? 'Garanti USD' : 'Binance USDT'} />
             </div>
             {accForm.account_type === 'bank' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-                <Input label="Banka Adı"     value={accForm.bank_name}      onChange={e => setAccForm(x => ({ ...x, bank_name: e.target.value }))}      placeholder="Garanti Bankası" />
-                <Input label="Hesap No/IBAN" value={accForm.account_number} onChange={e => setAccForm(x => ({ ...x, account_number: e.target.value }))} placeholder="TR12..." />
-                <Input label="SWIFT"         value={accForm.swift_code}     onChange={e => setAccForm(x => ({ ...x, swift_code: e.target.value }))}     placeholder="TGBATRISXXX" />
+                <Input label={t.bankName}      value={accForm.bank_name}      onChange={e => setAccForm(x => ({ ...x, bank_name: e.target.value }))} />
+                <Input label={t.accountNoIban} value={accForm.account_number} onChange={e => setAccForm(x => ({ ...x, account_number: e.target.value }))} placeholder="TR12..." />
+                <Input label="SWIFT"           value={accForm.swift_code}     onChange={e => setAccForm(x => ({ ...x, swift_code: e.target.value }))} />
               </div>
             )}
             {accForm.account_type === 'crypto' && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-                <Input label="Cüzdan Adresi" value={accForm.wallet_address} onChange={e => setAccForm(x => ({ ...x, wallet_address: e.target.value }))} placeholder="0x1234..." style={{ fontFamily: 'var(--mono)' }} />
+                <Input label={t.walletAddress} value={accForm.wallet_address} onChange={e => setAccForm(x => ({ ...x, wallet_address: e.target.value }))} placeholder="0x1234..." style={{ fontFamily: 'var(--mono)' }} />
               </div>
             )}
             <div style={{ marginTop: 14 }}>
-              <Input label="Açılış Bakiyesi" type="number" value={accForm.opening_balance} onChange={e => setAccForm(x => ({ ...x, opening_balance: e.target.value }))} />
+              <Input label={t.openingBalance} type="number" value={accForm.opening_balance} onChange={e => setAccForm(x => ({ ...x, opening_balance: e.target.value }))} />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <Btn onClick={() => accMut.mutate(accForm)} disabled={accMut.isPending || !accForm.location_id || !accForm.currency_id || !accForm.name}>
-                {accMut.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                {accMut.isPending ? t.saving : t.save}
               </Btn>
-              <Btn variant="ghost" onClick={() => setShowAccForm(false)}>İptal</Btn>
+              <Btn variant="ghost" onClick={() => setShowAccForm(false)}>{t.cancel}</Btn>
             </div>
           </div>
         </Card>
@@ -210,7 +205,7 @@ export default function Accounts() {
             <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <button
                 onClick={() => setSelLoc(selLoc === loc.id ? null : loc.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', flex: 1, textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', flex: 1, textAlign: 'start', padding: 0, fontFamily: 'var(--font)' }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.accent, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                   {loc.code}
@@ -219,44 +214,35 @@ export default function Accounts() {
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{loc.name_tr}</div>
                   <div style={{ fontSize: 11, color: C.text3, direction: 'rtl' }}>{loc.name_ar}</div>
                 </div>
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 100, background: C.navy, color: 'white', marginLeft: 4 }}>
-                  {loc.accounts.length} hesap
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 100, background: C.navy, color: 'white', marginInlineStart: 4 }}>
+                  {loc.accounts.length} {t.nAccounts}
                 </span>
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                 {isAdmin && (
                   <>
-                    <button
-                      onClick={e => handleEditLoc(e, loc)}
-                      className="icon-btn"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, color: C.text3, fontSize: 11.5, fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 4 }}
-                    >
-                      <Icon name="edit" size={13} color="currentColor" /> Düzenle
+                    <button onClick={e => handleEditLoc(e, loc)} className="icon-btn"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, color: C.text3, fontSize: 11.5, fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="edit" size={13} color="currentColor" /> {t.edit}
                     </button>
-                    <button
-                      onClick={e => handleDeleteLoc(e, loc)}
-                      disabled={deleteLocMut.isPending}
-                      className="icon-btn-danger"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, color: C.red, fontSize: 11.5, fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 4, opacity: deleteLocMut.isPending ? 0.5 : 1 }}
-                    >
-                      <Icon name="trash" size={13} color="currentColor" /> Sil
+                    <button onClick={e => handleDeleteLoc(e, loc)} disabled={deleteLocMut.isPending} className="icon-btn-danger"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, color: C.red, fontSize: 11.5, fontFamily: 'var(--font)', display: 'flex', alignItems: 'center', gap: 4, opacity: deleteLocMut.isPending ? 0.5 : 1 }}>
+                      <Icon name="trash" size={13} color="currentColor" /> {t.delete}
                     </button>
                   </>
                 )}
-                <span
-                  onClick={() => setSelLoc(selLoc === loc.id ? null : loc.id)}
-                  style={{ color: C.text3, display: 'inline-block', transform: selLoc === loc.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', cursor: 'pointer', padding: '4px 6px' }}
-                >▼</span>
+                <span onClick={() => setSelLoc(selLoc === loc.id ? null : loc.id)}
+                  style={{ color: C.text3, display: 'inline-block', transform: selLoc === loc.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', cursor: 'pointer', padding: '4px 6px' }}>▼</span>
               </div>
             </div>
 
             {selLoc === loc.id && (
               <div style={{ borderTop: `1px solid ${C.border}` }}>
                 {!loc.accounts.length
-                  ? <div style={{ padding: 32, textAlign: 'center', color: C.text3 }}>Bu lokasyonda hesap yok</div>
+                  ? <div style={{ padding: 32, textAlign: 'center', color: C.text3 }}>{t.noAccountInLoc}</div>
                   : <Table>
-                      <thead><tr><Th>Tür</Th><Th>Döviz</Th><Th>Ad</Th><Th>Banka</Th><Th right>Anlık Bakiye</Th><Th right>USD</Th><Th /></tr></thead>
+                      <thead><tr><Th>{t.accountType}</Th><Th>{t.currencyCol}</Th><Th>{t.name}</Th><Th>{t.bankCol}</Th><Th right>{t.instantBalance}</Th><Th right>USD</Th><Th /></tr></thead>
                       <tbody>
                         {loc.accounts.map(acc => {
                           const p      = posMap[acc.id]
@@ -272,11 +258,9 @@ export default function Accounts() {
                               <Td right mono style={{ color: balUsd >= 0 ? C.green : C.red, fontWeight: 500 }}>{balUsd >= 0 ? '+' : ''}{fmt(balUsd)}</Td>
                               <Td>
                                 {isAdmin && (
-                                  <button
-                                    onClick={e => handleDeleteAcc(e, acc)}
-                                    disabled={delAccMut.isPending}
+                                  <button onClick={e => handleDeleteAcc(e, acc)} disabled={delAccMut.isPending}
                                     style={{ fontSize: 11.5, color: C.red, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font)', padding: '2px 6px', borderRadius: 5, opacity: delAccMut.isPending ? 0.5 : 1 }}
-                                  >Sil</button>
+                                  >{t.delete}</button>
                                 )}
                               </Td>
                             </tr>

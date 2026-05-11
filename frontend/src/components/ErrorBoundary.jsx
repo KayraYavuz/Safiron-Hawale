@@ -1,4 +1,16 @@
 import { Component } from 'react'
+import tr from '../locales/tr'
+import ar from '../locales/ar'
+import en from '../locales/en'
+
+const T = { tr, ar, en }
+function getT() {
+  try {
+    const raw = localStorage.getItem('hawala-lang')
+    const parsed = raw ? JSON.parse(raw) : null
+    return T[parsed?.state?.lang] || T.tr
+  } catch { return T.tr }
+}
 
 /**
  * ErrorBoundary — catches render errors in child tree.
@@ -23,6 +35,7 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      const t = getT()
       return (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -38,10 +51,10 @@ export default class ErrorBoundary extends Component {
             ⚠️
           </div>
           <div style={{ fontWeight: 600, fontSize: 15, color: '#0D1B2E' }}>
-            Bir hata oluştu
+            {t.errorOccurred}
           </div>
           <div style={{ fontSize: 13, color: '#8898AA', maxWidth: 320 }}>
-            Bu sayfa yüklenirken beklenmedik bir hata oluştu.
+            {t.errorMessage}
           </div>
           {import.meta.env.DEV && this.state.error && (
             <pre style={{
@@ -62,7 +75,7 @@ export default class ErrorBoundary extends Component {
               fontFamily: 'var(--font)',
             }}
           >
-            Yeniden Dene
+            {t.retry}
           </button>
         </div>
       )
