@@ -120,7 +120,7 @@ def create_supplier_settlement(
     db: Session = Depends(get_db),
     cu: User = Depends(get_current_user),
 ):
-    _require(cu, UserRole.admin, UserRole.accounting)
+    _require(cu, UserRole.admin, UserRole.super_admin, UserRole.accounting, UserRole.manager, UserRole.branch_manager)
 
     # İşlemi al
     txn = (db.query(Transaction)
@@ -216,7 +216,7 @@ def delete_supplier_settlement(
     db: Session = Depends(get_db),
     cu: User = Depends(get_current_user),
 ):
-    _require(cu, UserRole.admin)
+    _require(cu, UserRole.admin, UserRole.super_admin)
     ss = db.query(SupplierSettlement).filter(SupplierSettlement.transaction_id == txn_id).first()
     if not ss:
         raise HTTPException(404, "Tedarikçi uzlaşması bulunamadı")

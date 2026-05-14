@@ -81,14 +81,45 @@ def get_all_usd_rates(db: Session) -> Dict[str, Decimal]:
         return cached_rates
 
     from sqlalchemy import text
+    # PostgreSQL-specific DISTINCT ON yerine SQLite uyumlu subquery kullan
     rows = db.execute(text("""
-        SELECT DISTINCT ON (currency_code) currency_code, rate_per_usd
-        FROM exchange_rates
-        ORDER BY currency_code, date DESC
+        SELECT e1.currency_code, e1.rate_per_usd
+        FROM exchange_rates e1
+        INNER JOIN (
+            SELECT currency_code, MAX(date) as max_date
+            FROM exchange_rates
+            GROUP BY currency_code
+        ) e2 ON e1.currency_code = e2.currency_code AND e1.date = e2.max_date
     """)).fetchall()
     rates: Dict[str, Decimal] = {"USD": Decimal("1")}
     for row in rows:
         rates[row.currency_code] = Decimal(str(row.rate_per_usd))
+
+    # Kurları girilmemiş olan para birimleri için son işlemlerden dinamik kur bul (Fallback)
+    pnl_rows = db.execute(text("""
+        SELECT source_currency, dest_currency, customer_rate, supplier_rate
+        FROM transaction_pnl
+        ORDER BY id DESC
+        LIMIT 500
+    """)).fetchall()
+    
+    for r in pnl_rows:
+        src = r.source_currency
+        dst = r.dest_currency
+        c_rate = r.customer_rate
+        s_rate = r.supplier_rate
+        
+        # Source currency için kur (Case A veya Case C)
+        if src and src != "USD" and src not in rates:
+            rate = s_rate if s_rate and s_rate > 0 else c_rate
+            if rate and rate > 0:
+                rates[src] = Decimal(str(rate))
+                
+        # Dest currency için kur (Case B veya Case C)
+        if dst and dst != "USD" and dst not in rates:
+            rate = c_rate if c_rate and c_rate > 0 else s_rate
+            if rate and rate > 0:
+                rates[dst] = Decimal(str(rate))
 
     _rates_cache = (time.time(), rates)
     return rates

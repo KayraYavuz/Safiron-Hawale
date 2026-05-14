@@ -7,9 +7,14 @@ from app.core.database import Base
 from app.core.types import GUID
 
 class UserRole(str, enum.Enum):
-    admin = "admin"
-    accounting = "accounting"
-    viewer = "viewer"
+    super_admin = "super_admin"       # Sistem hakimi, Audit Log ve PnL dahil her şeye tam yetki
+    admin = "admin"                   # Şirket yöneticisi, tam yetki (Logları sadece okur)
+    auditor = "auditor"               # Denetçi: Değişiklik yapamaz ama PnL ve Audit Log'lar dahil her şeyi görür
+    manager = "manager"               # Operasyon yöneticisi: Kurları yönetir, audit/log göremez
+    branch_manager = "branch_manager" # Şube yöneticisi: Sadece kendi şubesinin verilerini görür
+    accounting = "accounting"         # Muhasebe: Raporlar ve komisyon kayıtlarına bakar
+    data_entry = "data_entry"         # Vezne (Eski clerk): Sadece veri girer. Kasa toplamı, Kâr ve Audit GÖREMEZ!
+    viewer = "viewer"                 # İzleyici: Sınırlı okuma yetkisi
 
 class User(Base):
     __tablename__ = "users"

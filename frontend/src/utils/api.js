@@ -74,6 +74,7 @@ export const reportsApi = {
   incomeStatement: (params) => api.get('/api/reports/income-statement', { params }),
   statement: (cpId, params) => api.get(`/api/reports/counterparty-statement/${cpId}`, { params }),
   cashMovements: (params) => api.get('/api/reports/cash-movements', { params }),
+  cashflow: (params) => api.get('/api/reports/cashflow', { params }),
   aiAnalysis: (params) => api.get('/api/reports/ai-analysis', { params }),
   aiChat: (data) => api.post('/api/reports/ai-chat', data),
   listSavedReports: () => api.get('/api/reports/saved-reports'),

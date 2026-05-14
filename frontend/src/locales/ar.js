@@ -214,6 +214,15 @@ export default {
   enterSupplierRate: 'أدخل سعر المورد',
   deleteSettlement: 'هل تريد حذف التسوية؟',
   settlementNote: 'ملاحظة التسوية...',
+  // Cash Flow
+  cashFlow: 'التدفق النقدي', totalInflow: 'إجمالي الوارد', totalOutflow: 'إجمالي الصادر',
+  netFlow: 'صافي التدفق', dailyAverage: 'المتوسط اليومي',
+  daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري',
+  flowByLocation: 'التدفق حسب الموقع', flowByCurrency: 'التدفق حسب العملة',
+  inflowVsOutflow: 'الوارد مقابل الصادر', netTrend: 'اتجاه صافي',
+  periodLabel: 'الفترة', allCurrencies: 'جميع العملات',
+  nDays: 'يوم', cashFlowChart: 'رسم التدفق النقدي',
+  noFlowData: 'لا توجد بيانات تدفق نقدي في هذه الفترة',
   // Lang chooser
   langLabel: 'اختيار اللغة',
 }

@@ -18,6 +18,7 @@ const Reports        = lazy(() => import('./pages/Reports'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
 const AuditLog       = lazy(() => import('./pages/AuditLog'))
 const AiAnalysis     = lazy(() => import('./pages/AiAnalysis'))
+const CashFlow       = lazy(() => import('./pages/CashFlow'))
 const Users          = lazy(() => import('./pages/Users'))
 
 function Protected({ children }) {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/reconciliation" element={<Protected><Reconciliation /></Protected>} />
           <Route path="/audit"          element={<Protected><AuditLog /></Protected>} />
           <Route path="/analysis"       element={<Protected><AiAnalysis /></Protected>} />
+          <Route path="/cashflow"       element={<Protected><CashFlow /></Protected>} />
           <Route path="/users"          element={<Protected><Users /></Protected>} />
           <Route path="*"               element={<Navigate to="/" replace />} />
         </Routes>

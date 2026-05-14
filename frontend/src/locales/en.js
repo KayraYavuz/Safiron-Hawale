@@ -214,6 +214,15 @@ export default {
   enterSupplierRate: 'Enter supplier rate',
   deleteSettlement: 'Delete this settlement?',
   settlementNote: 'Settlement note...',
+  // Cash Flow
+  cashFlow: 'Cash Flow', totalInflow: 'Total Inflow', totalOutflow: 'Total Outflow',
+  netFlow: 'Net Flow', dailyAverage: 'Daily Average',
+  daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly',
+  flowByLocation: 'Flow by Location', flowByCurrency: 'Flow by Currency',
+  inflowVsOutflow: 'Inflow vs Outflow', netTrend: 'Net Trend',
+  periodLabel: 'Period', allCurrencies: 'All Currencies',
+  nDays: 'days', cashFlowChart: 'Cash Flow Chart',
+  noFlowData: 'No cash flow data in this period',
   // Lang chooser
   langLabel: 'Language selection',
 }

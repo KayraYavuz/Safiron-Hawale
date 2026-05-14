@@ -26,23 +26,30 @@ from app.models.transaction import (
     LegType, TxnType, TxnStatus
 )
 
+from app.models.user import User, UserRole
+
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 ZERO = Decimal("0")
 
-def _safe(v) -> Decimal:
-    if v is None:
-        return ZERO
-    return Decimal(str(v)) if not isinstance(v, Decimal) else v
-
-def _fmt2(v) -> str:
-    return str(_safe(v).quantize(Decimal("0.01")))
-
+def _require_role(*roles: UserRole):
+    def role_checker(cu: User = Depends(get_current_user)):
+        if cu.role not in roles and cu.role not in [UserRole.admin, UserRole.super_admin, UserRole.auditor]:
+            from app.services.audit import log as audit_log
+            # Yetkisiz erişim denemesini logla
+            # audit_log(None, "UNAUTHORIZED_ACCESS", user_id=cu.id, entity="Report") 
+            raise HTTPException(403, f"Yetkisiz: Bu rapor için {', '.join(roles)} yetkisi gerekli")
+        return cu
+    return role_checker
 
 # ── Pozisyon ──────────────────────────────────────────────────────────────────
 @router.get("/position")
-def position(db: Session = Depends(get_db), _=Depends(get_current_user)):
+def position(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     """Tüm kasaların anlık bakiyesi. Batch sorgularla N+1 önlendi."""
+    # Veri girişi (data_entry) kasaları göremez, sadece işlem girer
+    if cu.role == UserRole.data_entry:
+        raise HTTPException(403, "Veri giriş personeli kasa bakiyelerini göremez")
+
     from app.services.balance import get_all_balances, get_all_usd_rates
 
     accounts = (db.query(Account)
@@ -172,9 +179,12 @@ def location_pnl(
     from_date: Optional[date] = None,
     to_date:   Optional[date] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(_require_role(UserRole.admin, UserRole.manager, UserRole.accounting)),
 ):
     """Her lokasyon için kâr/zarar — sadece tamamlanan FX/Havale/SWIFT. Batch sorgularla N+1 önlendi."""
+    from app.services.audit import log as audit_log
+    audit_log(db, "VIEW_REPORT", user_id=cu.id, entity="LocationPnL", detail={"from": from_date, "to": to_date})
+    
     from sqlalchemy import distinct
     FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
     locations = db.query(Location).filter(Location.is_active == True).all()
@@ -237,9 +247,12 @@ def income_statement(
     from_date: Optional[date] = None,
     to_date:   Optional[date] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(_require_role(UserRole.admin, UserRole.manager)),
 ):
     """Gelir tablosu — sadece tamamlanan FX/Havale/SWIFT."""
+    from app.services.audit import log as audit_log
+    audit_log(db, "VIEW_REPORT", user_id=cu.id, entity="IncomeStatement", detail={"from": from_date, "to": to_date})
+    
     FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
 
     q = (db.query(TransactionPnL).join(Transaction)
@@ -421,22 +434,199 @@ def counterparty_statement(
         "to_date":             str(to_date)   if to_date   else None,
     }
 
+# ── Nakit Akışı (Cash Flow) ────────────────────────────────────────────────────
+@router.get("/cashflow")
+def cashflow(
+    from_date:     Optional[date] = None,
+    to_date:       Optional[date] = None,
+    location_id:   Optional[UUID] = None,
+    currency_code: Optional[str]  = None,
+    period:        Optional[str]  = "daily",   # daily | weekly | monthly
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Nakit Akışı grafiği için veri döndürür.
+    Giriş/çıkış hareketlerini tarih bazında gruplar.
+    """
+    from app.services.balance import get_all_usd_rates
+    from collections import defaultdict
+    from datetime import timedelta
+    import calendar
+
+    usd_rates = get_all_usd_rates(db)
+
+    # Tüm bacakları çek
+    leg_q = (db.query(TransactionLeg)
+             .options(
+                 joinedload(TransactionLeg.transaction).joinedload(Transaction.pnl),
+                 joinedload(TransactionLeg.account).joinedload(Account.location),
+                 joinedload(TransactionLeg.currency),
+             )
+             .join(Transaction)
+             .filter(Transaction.status == TxnStatus.completed))
+
+    if from_date:
+        leg_q = leg_q.filter(Transaction.txn_date >= from_date)
+    if to_date:
+        leg_q = leg_q.filter(Transaction.txn_date <= to_date)
+    if location_id:
+        leg_q = leg_q.filter(TransactionLeg.account.has(Account.location_id == location_id))
+    if currency_code:
+        leg_q = leg_q.filter(TransactionLeg.currency.has(Currency.code == currency_code))
+
+    legs = leg_q.all()
+
+    # ── Günlük seriler ──
+    daily_map = defaultdict(lambda: {"inflow": ZERO, "outflow": ZERO})
+    loc_inflow  = defaultdict(lambda: ZERO)
+    loc_outflow = defaultdict(lambda: ZERO)
+    cur_inflow  = defaultdict(lambda: ZERO)
+    cur_outflow = defaultdict(lambda: ZERO)
+    total_inflow  = ZERO
+    total_outflow = ZERO
+
+    for leg in legs:
+        txn      = leg.transaction
+        day_key  = str(txn.txn_date)
+        cur_code = leg.currency.code if leg.currency else "USD"
+        
+        # 1. PnL USD Amount'u kullan (Gerçek işlem hacmi)
+        if txn.pnl and txn.pnl.usd_amount and txn.pnl.usd_amount > 0:
+            amt_usd = _safe(txn.pnl.usd_amount)
+        else:
+            # 2. Küresel kur veya kayıtlı USD Amount'a düş
+            rate = usd_rates.get(cur_code, Decimal("1"))
+            if rate != Decimal("1"):
+                amt_usd = (_safe(leg.amount) / rate).quantize(Decimal("0.01"))
+            else:
+                amt_usd = _safe(leg.amount_usd) if leg.amount_usd else _safe(leg.amount)
+
+        loc_name = ""
+        if leg.account and leg.account.location:
+            loc_name = leg.account.location.name_tr
+
+        if leg.leg_type == LegType.incoming:
+            daily_map[day_key]["inflow"] += amt_usd
+            loc_inflow[loc_name]  += amt_usd
+            cur_inflow[cur_code]  += amt_usd
+            total_inflow += amt_usd
+        else:
+            daily_map[day_key]["outflow"] += amt_usd
+            loc_outflow[loc_name] += amt_usd
+            cur_outflow[cur_code] += amt_usd
+            total_outflow += amt_usd
+
+    # ── Periyoda göre grupla ──
+    if period == "weekly":
+        grouped = defaultdict(lambda: {"inflow": ZERO, "outflow": ZERO})
+        for day_str, vals in daily_map.items():
+            d = date.fromisoformat(day_str)
+            week_start = d - timedelta(days=d.weekday())
+            key = str(week_start)
+            grouped[key]["inflow"]  += vals["inflow"]
+            grouped[key]["outflow"] += vals["outflow"]
+        final_map = grouped
+    elif period == "monthly":
+        grouped = defaultdict(lambda: {"inflow": ZERO, "outflow": ZERO})
+        for day_str, vals in daily_map.items():
+            key = day_str[:7]  # YYYY-MM
+            grouped[key]["inflow"]  += vals["inflow"]
+            grouped[key]["outflow"] += vals["outflow"]
+        final_map = grouped
+    else:
+        final_map = daily_map
+
+    # Sıralı seri
+    series = []
+    for k in sorted(final_map.keys()):
+        v = final_map[k]
+        inf = v["inflow"]
+        out = v["outflow"]
+        series.append({
+            "date":    k,
+            "inflow":  _fmt2(inf),
+            "outflow": _fmt2(out),
+            "net":     _fmt2(inf - out),
+        })
+
+    # ── Lokasyon dağılımı ──
+    all_loc_names = set(list(loc_inflow.keys()) + list(loc_outflow.keys()))
+    location_breakdown = []
+    for ln in sorted(all_loc_names):
+        if not ln:
+            continue
+        location_breakdown.append({
+            "location": ln,
+            "inflow":   _fmt2(loc_inflow[ln]),
+            "outflow":  _fmt2(loc_outflow[ln]),
+            "net":      _fmt2(loc_inflow[ln] - loc_outflow[ln]),
+        })
+
+    # ── Para birimi dağılımı ──
+    all_cur_codes = set(list(cur_inflow.keys()) + list(cur_outflow.keys()))
+    currency_breakdown = []
+    for cc in sorted(all_cur_codes):
+        currency_breakdown.append({
+            "currency": cc,
+            "inflow":   _fmt2(cur_inflow[cc]),
+            "outflow":  _fmt2(cur_outflow[cc]),
+            "net":      _fmt2(cur_inflow[cc] - cur_outflow[cc]),
+        })
+
+    # ── Özet KPI ──
+    net_flow = total_inflow - total_outflow
+    num_days = len(daily_map) or 1
+    daily_avg = (total_inflow + total_outflow) / Decimal(str(num_days))
+
+    return {
+        "series":              series,
+        "location_breakdown":  location_breakdown,
+        "currency_breakdown":  currency_breakdown,
+        "summary": {
+            "total_inflow":  _fmt2(total_inflow),
+            "total_outflow": _fmt2(total_outflow),
+            "net_flow":      _fmt2(net_flow),
+            "daily_avg":     _fmt2(daily_avg.quantize(Decimal("0.01"))),
+            "num_days":      num_days,
+        },
+        "period":    period,
+        "from_date": str(from_date) if from_date else None,
+        "to_date":   str(to_date)   if to_date   else None,
+    }
+
+
 # ── AI Analizcisi ─────────────────────────────────────────────────────────────
 from app.services.ai_analyst import get_ai_financial_analysis, get_ai_chat_response
 from app.models.report import SavedReport
 from app.schemas.schemas import SavedReportCreate, SavedReportOut
 
 @router.get("/ai-analysis")
-def ai_analysis(prompt: Optional[str] = None, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def ai_analysis(
+    prompt: Optional[str] = None, 
+    db: Session = Depends(get_db), 
+    cu: User = Depends(_require_role(UserRole.admin, UserRole.manager))
+):
     """AI Finansal Analiz Raporu"""
+    from app.services.audit import log as audit_log
+    audit_log(db, "AI_ANALYSIS", user_id=cu.id, entity="AI", detail={"prompt": prompt})
+    
     analysis = get_ai_financial_analysis(db, prompt)
     return {"analysis": analysis}
 
 @router.post("/ai-chat")
-def ai_chat(payload: dict, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def ai_chat(
+    payload: dict, 
+    db: Session = Depends(get_db), 
+    cu: User = Depends(_require_role(UserRole.admin, UserRole.manager))
+):
     """AI Finansal Sohbet"""
     message = payload.get("message")
     history = payload.get("history", [])
+    
+    from app.services.audit import log as audit_log
+    audit_log(db, "AI_CHAT", user_id=cu.id, entity="AI", detail={"msg": message})
+    
     response = get_ai_chat_response(db, message, history)
     return {"response": response}
 

@@ -31,7 +31,7 @@ def list_locations(db: Session = Depends(get_db), _=Depends(get_current_user)):
 
 @router.post("/locations", response_model=LocationOut)
 def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin yeni lokasyon ekleyebilir")
     code = data.code.upper().strip()
     if not code:
@@ -57,7 +57,7 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: Use
 
 @router.put("/locations/{loc_id}", response_model=LocationOut)
 def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin lokasyon düzenleyebilir")
     loc = db.query(Location).filter(Location.id == loc_id, Location.is_active == True).first()
     if not loc:
@@ -78,7 +78,7 @@ def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(ge
 
 @router.delete("/locations/{loc_id}")
 def delete_location(loc_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin lokasyon silebilir")
     loc = db.query(Location).filter(Location.id == loc_id, Location.is_active == True).first()
     if not loc:
@@ -115,7 +115,7 @@ def list_accounts(
 
 @router.post("/accounts", response_model=AccountOut)
 def create_account(data: AccountCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin yapabilir")
     acc = Account(**data.model_dump())
     db.add(acc)
@@ -162,7 +162,7 @@ def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db),
 
 @router.put("/counterparties/{cp_id}", response_model=CounterpartyOut)
 def update_counterparty(cp_id: UUID, data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    if cu.role not in (UserRole.admin, UserRole.accounting):
+    if cu.role not in (UserRole.admin, UserRole.super_admin, UserRole.accounting):
         raise HTTPException(403, "Yetkisiz")
     cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
     if not cp:
@@ -177,18 +177,15 @@ def update_counterparty(cp_id: UUID, data: CounterpartyCreate, db: Session = Dep
 def delete_counterparty(cp_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     """
     Karşı taraf silme — soft delete (is_active=False).
-    Bağlı işlemi olan taraflar silinemez.
+    Bağlı işlemi olsa dahi pasife alınabilir (geçmişi korumak için).
     """
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin silebilir")
     cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
     if not cp:
         raise HTTPException(404, "Karşı taraf bulunamadı")
-    # İşlem kontrolü
-    from app.models.transaction import Transaction
-    txn_count = db.query(Transaction).filter(Transaction.counterparty_id == cp_id).count()
-    if txn_count > 0:
-        raise HTTPException(400, f"Bu tarafa ait {txn_count} işlem var — silinemez. Önce işlemleri kaldırın.")
+
+    # Soft delete — işlemi olsa dahi artık listelerde görünmeyecek
     cp.is_active = False
     db.commit()
     return {"ok": True, "message": f"{cp.name} pasife alındı"}
@@ -197,23 +194,22 @@ def delete_counterparty(cp_id: UUID, db: Session = Depends(get_db), cu: User = D
 def delete_account(account_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     """
     Hesap silme — soft delete (is_active=False).
-    Bakiyesi olan veya işlem bacağı olan hesaplar silinemez.
+    Bakiyesi olan hesaplar silinemez (sıfırlanmalı).
+    İşlem geçmişi olsa dahi pasife alınabilir.
     """
-    if cu.role != UserRole.admin:
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin silebilir")
     acc = db.query(Account).filter(Account.id == account_id).first()
     if not acc:
         raise HTTPException(404, "Hesap bulunamadı")
-    # Bakiye kontrolü
+
+    # Bakiye kontrolü — bakiye varken pasife almak kafa karıştırır
     balance = get_account_balance(db, account_id)
     from decimal import Decimal
     if abs(balance) > Decimal("0.01"):
         raise HTTPException(400, f"Hesap bakiyesi {balance} — sıfırlanmadan silinemez")
-    # İşlem bacağı kontrolü
-    from app.models.transaction import TransactionLeg
-    leg_count = db.query(TransactionLeg).filter(TransactionLeg.account_id == account_id).count()
-    if leg_count > 0:
-        raise HTTPException(400, f"Bu hesapta {leg_count} işlem bacağı var — silinemez")
+
+    # Soft delete
     acc.is_active = False
     db.commit()
     return {"ok": True, "message": f"{acc.name} pasife alındı"}

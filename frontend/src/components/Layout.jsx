@@ -26,6 +26,7 @@ const BASE_NAV = [
   { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'      },
   { path: '/reports',        key: 'reports',        icon: 'reports'       },
   { path: '/analysis',       key: 'aiAnalysis',     icon: 'sparkles'      },
+  { path: '/cashflow',       key: 'cashFlow',       icon: 'cashflow'      },
 ]
 
 const ADMIN_NAV = [

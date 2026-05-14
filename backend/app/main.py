@@ -168,7 +168,7 @@ async def startup():
                 name="System Admin",
                 email="admin@hawala.com",
                 hashed_password=hash_password("admin123"),
-                role=UserRole.admin,
+                role=UserRole.super_admin,
             ))
 
         # Lokasyonlar
@@ -202,7 +202,7 @@ async def startup():
             ("INR", "Hint Rupisi", "الروبية الهندية", "Indian Rupee", "₹", 2),
             ("PKR", "Pakistan Rupisi", "الروبية الباكستانية", "Pakistani Rupee", "₨", 2),
             ("NGN", "Nijerya Nayrası", "النيرة النيجيرية", "Nigerian Naira", "₦", 2),
-            ("SDG", "Sudan Sterlini", "الجنيه السوداني", "Sudanese Pound", "SDG", 2),
+            ("SDG", "Sudan Lirası", "الجنيه السوداني", "Sudanese Pound", "SDG", 2),
             ("ETB", "Etiyopya Birr", "البر الإثيوبي", "Ethiopian Birr", "Br", 2),
             ("LBP", "Lübnan Lirası", "الليرة اللبنانية", "Lebanese Pound", "LL", 2),
             ("RUB", "Rus Rublesi", "الروبل الروسي", "Russian Ruble", "₽", 2),

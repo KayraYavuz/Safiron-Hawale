@@ -214,6 +214,15 @@ export default {
   enterSupplierRate: 'Tedarikçi kuru giriniz',
   deleteSettlement: 'Uzlaşma silinsin mi?',
   settlementNote: 'Uzlaşma notu...',
+  // Cash Flow
+  cashFlow: 'Nakit Akışı', totalInflow: 'Toplam Giriş', totalOutflow: 'Toplam Çıkış',
+  netFlow: 'Net Akış', dailyAverage: 'Günlük Ortalama',
+  daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık',
+  flowByLocation: 'Lokasyon Dağılımı', flowByCurrency: 'Para Birimi Dağılımı',
+  inflowVsOutflow: 'Giriş vs Çıkış', netTrend: 'Net Trend',
+  periodLabel: 'Periyod', allCurrencies: 'Tüm Para Birimleri',
+  nDays: 'gün', cashFlowChart: 'Nakit Akışı Grafiği',
+  noFlowData: 'Bu dönemde nakit akışı verisi yok',
   // Lang chooser
   langLabel: 'Dil seçimi',
 }

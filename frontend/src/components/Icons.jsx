@@ -183,6 +183,15 @@ export function Icon({ name, size = 16, color = 'currentColor', style = {} }) {
         <path d="M19 19h4"/>
       </svg>
     ),
+    cashflow: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+        <rect x="3" y="12" width="4" height="9" rx="1"/>
+        <rect x="10" y="8" width="4" height="13" rx="1"/>
+        <rect x="17" y="4" width="4" height="17" rx="1"/>
+        <path d="M3 3l4 4"/>
+        <path d="M3 7V3h4"/>
+      </svg>
+    ),
   }
   return icons[name] || null
 }

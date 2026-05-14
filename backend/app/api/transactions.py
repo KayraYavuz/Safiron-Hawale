@@ -102,7 +102,7 @@ def create_transaction(
     db: Session = Depends(get_db),
     cu: User = Depends(get_current_user),
 ):
-    _require(cu, UserRole.admin, UserRole.accounting)
+    _require(cu, UserRole.admin, UserRole.super_admin, UserRole.accounting, UserRole.manager, UserRole.branch_manager, UserRole.data_entry)
 
     if not data.legs:
         raise HTTPException(400, "En az bir bacak gerekli")
@@ -264,7 +264,7 @@ def _calculate_and_save_pnl(txn: Transaction, data: TransactionCreate, db: Sessi
 
 @router.patch("/{txn_id}/approve", response_model=TransactionOut)
 def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    _require(cu, UserRole.admin, UserRole.accounting)
+    _require(cu, UserRole.admin, UserRole.super_admin, UserRole.manager, UserRole.branch_manager, UserRole.accounting)
     txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
     if not txn:
         raise HTTPException(404, "İşlem bulunamadı")
@@ -279,7 +279,7 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
 
 @router.delete("/{txn_id}")
 def delete_transaction(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    _require(cu, UserRole.admin)
+    _require(cu, UserRole.admin, UserRole.super_admin)
     txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
     if not txn:
         raise HTTPException(404, "İşlem bulunamadı")

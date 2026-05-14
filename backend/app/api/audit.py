@@ -9,10 +9,10 @@ from app.models.transaction import AuditLog
 
 router = APIRouter(prefix="/api/audit", tags=["audit"])
 
-def _require_admin(user: User):
-    if user.role != UserRole.admin:
+def _require_admin_or_manager(user: User):
+    if user.role not in (UserRole.admin, UserRole.super_admin, UserRole.auditor, UserRole.manager):
         from fastapi import HTTPException
-        raise HTTPException(403, "Sadece admin görebilir")
+        raise HTTPException(403, "Sadece admin, super_admin, auditor veya manager görebilir")
 
 @router.get("")
 def list_audit(
@@ -24,7 +24,11 @@ def list_audit(
     db: Session = Depends(get_db),
     cu: User = Depends(get_current_user),
 ):
-    _require_admin(cu)
+    _require_admin_or_manager(cu)
+    
+    from app.services.audit import log as audit_log
+    audit_log(db, "VIEW_AUDIT", user_id=cu.id, entity="Audit")
+    
     q = db.query(AuditLog).options(joinedload(AuditLog.user))
     if from_date: q = q.filter(AuditLog.created_at >= from_date)
     if to_date:   q = q.filter(AuditLog.created_at <= to_date)
