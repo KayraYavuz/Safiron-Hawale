@@ -8,6 +8,15 @@ from app.core.database import Base
 from app.core.types import GUID
 
 
+class Company(Base):
+    __tablename__ = "companies"
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    code = Column(String(20), unique=True, nullable=False, index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Location(Base):
     __tablename__ = "locations"
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
@@ -18,6 +27,7 @@ class Location(Base):
     country = Column(String(3))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
     accounts = relationship("Account", back_populates="location")
 
 
@@ -54,6 +64,7 @@ class Account(Base):
     opening_balance = Column(Numeric(18, 4), default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
 
     location = relationship("Location", back_populates="accounts")
     currency = relationship("Currency", back_populates="accounts")
@@ -79,4 +90,5 @@ class Counterparty(Base):
     credit_limit_usd = Column(Numeric(18, 4), default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
     transactions = relationship("Transaction", back_populates="counterparty")

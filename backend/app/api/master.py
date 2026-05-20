@@ -6,6 +6,7 @@ from uuid import UUID
 from datetime import date
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
 from app.models.master import Location, Currency, Account, Counterparty, CounterpartyType
 from app.models.transaction import ExchangeRate
@@ -26,8 +27,10 @@ def _cache(seconds: int = 60) -> dict:
 
 # ── Locations ─────────────────────────────────────────────────────────────────
 @router.get("/locations", response_model=List[LocationOut])
-def list_locations(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    return db.query(Location).filter(Location.is_active == True).all()
+def list_locations(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    q = db.query(Location).filter(Location.is_active == True)
+    q = apply_company_filter(q, Location, cu)
+    return q.all()
 
 @router.post("/locations", response_model=LocationOut)
 def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
@@ -49,6 +52,7 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: Use
         name_ar=data.name_ar.strip() if data.name_ar else data.name_tr.strip(),
         name_en=data.name_en.strip() if data.name_en else data.name_tr.strip(),
         country=data.country.upper().strip() if data.country else None,
+        company_id=cu.company_id,
     )
     db.add(loc)
     db.commit()
@@ -59,7 +63,9 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: Use
 def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin lokasyon düzenleyebilir")
-    loc = db.query(Location).filter(Location.id == loc_id, Location.is_active == True).first()
+    q = db.query(Location).filter(Location.id == loc_id, Location.is_active == True)
+    q = apply_company_filter(q, Location, cu)
+    loc = q.first()
     if not loc:
         raise HTTPException(404, "Lokasyon bulunamadı")
     if data.name_tr is not None:
@@ -80,7 +86,9 @@ def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(ge
 def delete_location(loc_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin lokasyon silebilir")
-    loc = db.query(Location).filter(Location.id == loc_id, Location.is_active == True).first()
+    q = db.query(Location).filter(Location.id == loc_id, Location.is_active == True)
+    q = apply_company_filter(q, Location, cu)
+    loc = q.first()
     if not loc:
         raise HTTPException(404, "Lokasyon bulunamadı")
     # Bağlı aktif hesap varsa silinemez
@@ -106,9 +114,10 @@ def list_currencies(db: Session = Depends(get_db), _=Depends(get_current_user)):
 def list_accounts(
     location_id: Optional[UUID] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     q = db.query(Account).filter(Account.is_active == True)
+    q = apply_company_filter(q, Account, cu)
     if location_id:
         q = q.filter(Account.location_id == location_id)
     return q.all()
@@ -117,7 +126,7 @@ def list_accounts(
 def create_account(data: AccountCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin yapabilir")
-    acc = Account(**data.model_dump())
+    acc = Account(**data.model_dump(), company_id=cu.company_id)
     db.add(acc)
     db.commit()
     db.refresh(acc)
@@ -142,19 +151,20 @@ def account_balance(account_id: UUID, db: Session = Depends(get_db), _=Depends(g
 def list_counterparties(
     type: Optional[str] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     q = db.query(Counterparty).filter(Counterparty.is_active == True)
+    q = apply_company_filter(q, Counterparty, cu)
     if type:
         q = q.filter(Counterparty.type == type)
     return q.order_by(Counterparty.name).all()
 
 @router.post("/counterparties", response_model=CounterpartyOut)
-def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     from datetime import datetime
     count = db.query(Counterparty).count()
     code = f"CP-{datetime.now().year}-{str(count+1).zfill(5)}"
-    cp = Counterparty(**data.model_dump(), code=code)
+    cp = Counterparty(**data.model_dump(), code=code, company_id=cu.company_id)
     db.add(cp)
     db.commit()
     db.refresh(cp)
@@ -164,7 +174,9 @@ def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db),
 def update_counterparty(cp_id: UUID, data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin, UserRole.accounting):
         raise HTTPException(403, "Yetkisiz")
-    cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
+    q = db.query(Counterparty).filter(Counterparty.id == cp_id)
+    q = apply_company_filter(q, Counterparty, cu)
+    cp = q.first()
     if not cp:
         raise HTTPException(404, "Bulunamadı")
     for k, v in data.model_dump().items():
@@ -181,7 +193,9 @@ def delete_counterparty(cp_id: UUID, db: Session = Depends(get_db), cu: User = D
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin silebilir")
-    cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
+    q = db.query(Counterparty).filter(Counterparty.id == cp_id)
+    q = apply_company_filter(q, Counterparty, cu)
+    cp = q.first()
     if not cp:
         raise HTTPException(404, "Karşı taraf bulunamadı")
 
@@ -199,7 +213,9 @@ def delete_account(account_id: UUID, db: Session = Depends(get_db), cu: User = D
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin silebilir")
-    acc = db.query(Account).filter(Account.id == account_id).first()
+    q = db.query(Account).filter(Account.id == account_id)
+    q = apply_company_filter(q, Account, cu)
+    acc = q.first()
     if not acc:
         raise HTTPException(404, "Hesap bulunamadı")
 
@@ -216,20 +232,28 @@ def delete_account(account_id: UUID, db: Session = Depends(get_db), cu: User = D
 
 # ── Exchange Rates ────────────────────────────────────────────────────────────
 @router.get("/exchange-rates", response_model=List[ExchangeRateOut])
-def list_rates(rate_date: Optional[date] = None, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def list_rates(rate_date: Optional[date] = None, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    from sqlalchemy import or_
+    from app.core.tenant import get_company_id
+    company_id = get_company_id(cu)
     q = db.query(ExchangeRate)
+    if company_id is not None:
+        # Şirkete ait manuel kurlar + global (auto) kurlar
+        q = q.filter(or_(ExchangeRate.company_id == company_id, ExchangeRate.company_id == None))
     if rate_date:
         q = q.filter(ExchangeRate.date == rate_date)
     return q.order_by(ExchangeRate.date.desc(), ExchangeRate.currency_code).limit(500).all()
 
 @router.post("/exchange-rates", response_model=ExchangeRateOut)
-def create_rate(data: ExchangeRateCreate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def create_rate(data: ExchangeRateCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     from app.services.balance import invalidate_rates_cache
-    # Aynı tarih + para birimi varsa güncelle
-    existing = db.query(ExchangeRate).filter(
+    # Aynı tarih + para birimi + şirket varsa güncelle
+    q = db.query(ExchangeRate).filter(
         ExchangeRate.date == data.date,
         ExchangeRate.currency_code == data.currency_code.upper(),
-    ).first()
+    )
+    q = apply_company_filter(q, ExchangeRate, cu)
+    existing = q.first()
     if existing:
         existing.rate_per_usd = data.rate_per_usd
         existing.source = "manual"
@@ -237,7 +261,7 @@ def create_rate(data: ExchangeRateCreate, db: Session = Depends(get_db), _=Depen
         db.refresh(existing)
         invalidate_rates_cache()
         return existing
-    rate = ExchangeRate(**data.model_dump(), source="manual")
+    rate = ExchangeRate(**data.model_dump(), source="manual", company_id=cu.company_id)
     rate.currency_code = rate.currency_code.upper()
     db.add(rate)
     db.commit()

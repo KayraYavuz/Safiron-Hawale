@@ -31,14 +31,22 @@ export default function Transactions() {
   const { data: cps  = [] } = useQuery({ queryKey: ['counterparties'], queryFn: () => counterpartiesApi.list({}).then(r => r.data), staleTime: STALE_2MIN })
   const { data: accs = [] } = useQuery({ queryKey: ['accounts'],       queryFn: () => accountsApi.list({}).then(r => r.data),        staleTime: STALE_2MIN })
 
+  const _invalidateDashboard = () => {
+    qc.invalidateQueries({ queryKey: ['transactions'] })
+    qc.invalidateQueries({ queryKey: ['income'] })
+    qc.invalidateQueries({ queryKey: ['locPnl'] })
+    qc.invalidateQueries({ queryKey: ['position'] })
+    qc.invalidateQueries({ queryKey: ['cashMovDash'] })
+  }
+
   const approveMutation = useMutation({
     mutationFn: transactionsApi.approve,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success(t.approved) },
+    onSuccess:  () => { _invalidateDashboard(); toast.success(t.approved) },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['transactions'] }); toast.success(t.deleted) },
+    onSuccess:  () => { _invalidateDashboard(); toast.success(t.deleted) },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
 

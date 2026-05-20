@@ -17,6 +17,7 @@ from datetime import date
 from decimal import Decimal
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
 from app.models.master import Account, Currency
 from app.models.transaction import Transaction, TransactionLeg, TransactionPnL, SupplierSettlement, TxnType, TxnStatus, LegType
@@ -71,7 +72,7 @@ def list_transactions(
     limit:  int = 200,  # default page size — prevents loading 10k rows at once
     offset: int = 0,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     # Cap limit to avoid accidental huge queries
     limit = min(limit, 500)
@@ -83,6 +84,7 @@ def list_transactions(
         joinedload(Transaction.pnl),
         joinedload(Transaction.supplier_settlement).joinedload(SupplierSettlement.counterparty),
     )
+    q = apply_company_filter(q, Transaction, cu)
     if status:
         q = q.filter(Transaction.status == status)
     if txn_type:
@@ -125,6 +127,7 @@ def create_transaction(
         counterparty_role=data.counterparty_role,
         notes=data.notes,
         created_by=cu.id,
+        company_id=cu.company_id,
     )
     db.add(txn)
     db.flush()
@@ -265,7 +268,9 @@ def _calculate_and_save_pnl(txn: Transaction, data: TransactionCreate, db: Sessi
 @router.patch("/{txn_id}/approve", response_model=TransactionOut)
 def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     _require(cu, UserRole.admin, UserRole.super_admin, UserRole.manager, UserRole.branch_manager, UserRole.accounting)
-    txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
+    q = db.query(Transaction).filter(Transaction.id == txn_id)
+    q = apply_company_filter(q, Transaction, cu)
+    txn = q.first()
     if not txn:
         raise HTTPException(404, "İşlem bulunamadı")
     txn.status = TxnStatus.completed
@@ -280,7 +285,9 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
 @router.delete("/{txn_id}")
 def delete_transaction(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     _require(cu, UserRole.admin, UserRole.super_admin)
-    txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
+    q = db.query(Transaction).filter(Transaction.id == txn_id)
+    q = apply_company_filter(q, Transaction, cu)
+    txn = q.first()
     if not txn:
         raise HTTPException(404, "İşlem bulunamadı")
     audit_log(db, "DELETE", user_id=cu.id, entity="Transaction",

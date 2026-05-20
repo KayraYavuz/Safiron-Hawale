@@ -2,15 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.database import engine, Base, SessionLocal
+from app.core.config import settings
 from app.models import *
 from app.api.auth import router as auth_router
 from app.api.master import router as master_router
 from app.api.transactions import router as txn_router
 from app.api.reports import router as reports_router
-from app.api.users import router as users_router
+from app.api.users import router as users_router, companies_router
 from app.api.supplier_settlement import router as supplier_router
 from app.api.audit import router as audit_router
 from app.api.reconciliation import router as reconciliation_router
+from app.api.settings import router as settings_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -59,9 +61,11 @@ app.include_router(master_router)
 app.include_router(txn_router)
 app.include_router(reports_router)
 app.include_router(users_router)
+app.include_router(companies_router)
 app.include_router(supplier_router)
 app.include_router(audit_router)
 app.include_router(reconciliation_router)
+app.include_router(settings_router)
 
 @app.get("/")
 def root():
@@ -72,6 +76,13 @@ async def startup():
     from app.core.security import hash_password
     from app.models.user import User, UserRole
     from app.models.master import Location, Currency
+
+    # Multi-tenancy migrations — run first, idempotent
+    try:
+        from app.core.migrations import run_migrations
+        run_migrations()
+    except Exception as e:
+        print(f"Multi-tenancy migration uyarısı: {e}")
 
     # Migration: mevcut DB'ye eksik kolonları ve indexleri ekle (idempotent — güvenli tekrar çalıştırılabilir)
     try:
@@ -211,6 +222,20 @@ async def startup():
         for code, tr, ar, en, sym, dec in currencies:
             if not db.query(Currency).filter(Currency.code == code).first():
                 db.add(Currency(code=code, name_tr=tr, name_ar=ar, name_en=en, symbol=sym, decimal_places=dec))
+
+        # Seed API keys from .env into system_settings (only if not already set)
+        from app.models.system_setting import SystemSetting
+        env_keys = {
+            "GROQ_API_KEY":   settings.GROQ_API_KEY,
+            "GEMINI_API_KEY": settings.GEMINI_API_KEY,
+        }
+        from app.api.settings import KNOWN_KEYS
+        for key, val in env_keys.items():
+            if val and not db.query(SystemSetting).filter(SystemSetting.key == key).first():
+                meta = KNOWN_KEYS.get(key, {})
+                db.add(SystemSetting(key=key, value=val,
+                                     description=meta.get("description", ""),
+                                     is_secret=meta.get("is_secret", True)))
 
         db.commit()
 

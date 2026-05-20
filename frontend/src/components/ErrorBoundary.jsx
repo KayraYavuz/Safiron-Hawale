@@ -27,10 +27,7 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // In production, send to error tracking (Sentry, etc.)
-    if (import.meta.env.DEV) {
-      console.error('[ErrorBoundary]', error, info.componentStack)
-    }
+    console.error('[ErrorBoundary]', error, info.componentStack)
   }
 
   render() {

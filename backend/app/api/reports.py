@@ -20,6 +20,7 @@ from datetime import date
 from decimal import Decimal
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.tenant import apply_company_filter, get_company_id
 from app.models.master import Account, Location, Currency, Counterparty
 from app.models.transaction import (
     Transaction, TransactionLeg, TransactionPnL,
@@ -31,6 +32,22 @@ from app.models.user import User, UserRole
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 ZERO = Decimal("0")
+
+def _fmt2(v) -> str:
+    try:
+        return str(Decimal(str(v)).quantize(Decimal("0.01")))
+    except Exception:
+        try:
+            return str(Decimal(v).quantize(Decimal("0.01")))
+        except Exception:
+            return "0.00"
+
+def _safe(v) -> Decimal:
+    """None veya hatalı değerleri 0'a çevirir."""
+    try:
+        return Decimal(str(v)) if v is not None else ZERO
+    except Exception:
+        return ZERO
 
 def _require_role(*roles: UserRole):
     def role_checker(cu: User = Depends(get_current_user)):
@@ -52,9 +69,11 @@ def position(db: Session = Depends(get_db), cu: User = Depends(get_current_user)
 
     from app.services.balance import get_all_balances, get_all_usd_rates
 
-    accounts = (db.query(Account)
-                .options(joinedload(Account.location), joinedload(Account.currency))
-                .filter(Account.is_active == True).all())
+    acc_q = (db.query(Account)
+             .options(joinedload(Account.location), joinedload(Account.currency))
+             .filter(Account.is_active == True))
+    acc_q = apply_company_filter(acc_q, Account, cu)
+    accounts = acc_q.all()
 
     # N+1 yerine 2 toplu sorgu
     balances  = get_all_balances(db)
@@ -92,7 +111,7 @@ def cash_movements(
     from_date:   Optional[date] = None,
     to_date:     Optional[date] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     """
     Kasa / Lokasyon bazlı tüm hareketler.
@@ -110,6 +129,7 @@ def cash_movements(
     acc_q = db.query(Account).options(
         joinedload(Account.location), joinedload(Account.currency)
     ).filter(Account.is_active == True)
+    acc_q = apply_company_filter(acc_q, Account, cu)
 
     if location_id:
         acc_q = acc_q.filter(Account.location_id == location_id)
@@ -187,7 +207,9 @@ def location_pnl(
     
     from sqlalchemy import distinct
     FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
-    locations = db.query(Location).filter(Location.is_active == True).all()
+    loc_q = db.query(Location).filter(Location.is_active == True)
+    loc_q = apply_company_filter(loc_q, Location, cu)
+    locations = loc_q.all()
 
     # Tüm lokasyonları tek sorguda çöz: txn → location join
     q_base = (db.query(
@@ -200,6 +222,7 @@ def location_pnl(
                   Transaction.txn_type.in_(FX_TYPES),
                   Transaction.status == TxnStatus.completed,
               ))
+    q_base = apply_company_filter(q_base, Transaction, cu)
     if from_date: q_base = q_base.filter(Transaction.txn_date >= from_date)
     if to_date:   q_base = q_base.filter(Transaction.txn_date <= to_date)
 
@@ -257,6 +280,7 @@ def income_statement(
 
     q = (db.query(TransactionPnL).join(Transaction)
          .filter(Transaction.txn_type.in_(FX_TYPES), Transaction.status == TxnStatus.completed))
+    q = apply_company_filter(q, Transaction, cu)
     if from_date: q = q.filter(Transaction.txn_date >= from_date)
     if to_date:   q = q.filter(Transaction.txn_date <= to_date)
     rows = q.all()
@@ -286,7 +310,7 @@ def counterparty_statement(
     from_date: Optional[date] = None,
     to_date:   Optional[date] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     """
     Karşı taraf hesap ekstresi — işlem bazlı (bacak bazlı değil).
@@ -303,7 +327,9 @@ def counterparty_statement(
     Deposit (müşteri para yatırdı): bize geldi → alacağımız kapandı → bakiye azalır
     Withdrawal (müşteriye para verdik): bakiye artar
     """
-    cp = db.query(Counterparty).filter(Counterparty.id == cp_id).first()
+    cp_q = db.query(Counterparty).filter(Counterparty.id == cp_id)
+    cp_q = apply_company_filter(cp_q, Counterparty, cu)
+    cp = cp_q.first()
     if not cp:
         raise HTTPException(404, "Karşı taraf bulunamadı")
 
@@ -315,6 +341,7 @@ def counterparty_statement(
              joinedload(Transaction.pnl),
          )
          .filter(Transaction.counterparty_id == cp_id))
+    q = apply_company_filter(q, Transaction, cu)
     if from_date: q = q.filter(Transaction.txn_date >= from_date)
     if to_date:   q = q.filter(Transaction.txn_date <= to_date)
 
@@ -443,7 +470,7 @@ def cashflow(
     currency_code: Optional[str]  = None,
     period:        Optional[str]  = "daily",   # daily | weekly | monthly
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     """
     Nakit Akışı grafiği için veri döndürür.
@@ -465,6 +492,7 @@ def cashflow(
              )
              .join(Transaction)
              .filter(Transaction.status == TxnStatus.completed))
+    leg_q = apply_company_filter(leg_q, Transaction, cu)
 
     if from_date:
         leg_q = leg_q.filter(Transaction.txn_date >= from_date)

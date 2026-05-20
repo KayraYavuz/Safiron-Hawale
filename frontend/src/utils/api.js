@@ -86,8 +86,15 @@ export const reportsApi = {
 export const usersApi = {
   list: () => api.get('/api/users'),
   create: (data) => api.post('/api/users', data),
+  approve: (id) => api.patch(`/api/users/${id}/approve`),
   resetPassword: (id, password) => api.patch(`/api/users/${id}/password`, { password }),
   delete: (id) => api.delete(`/api/users/${id}`),
+}
+
+export const companiesApi = {
+  list:   ()     => api.get('/api/companies'),
+  create: (data) => api.post('/api/companies', data),
+  toggle: (id)   => api.patch(`/api/companies/${id}/toggle`),
 }
 
 export const supplierSettlementApi = {

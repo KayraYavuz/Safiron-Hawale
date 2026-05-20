@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '../utils/api'
 import { useAuthStore } from '../store'
@@ -7,12 +7,15 @@ import toast from 'react-hot-toast'
 import { C } from '../components/UI'
 
 export default function Login() {
-  const [email, setEmail]       = useState('admin@hawala.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
-  const { setToken, setUser }   = useAuthStore()
+  const [showPwd, setShowPwd]   = useState(false)
+  const { setToken, setUser, logout } = useAuthStore()
   const navigate = useNavigate()
   const { lang, setLang, t } = useLang()
+
+  useEffect(() => { logout() }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -46,17 +49,12 @@ export default function Login() {
       <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:40 }}>
         <div style={{ maxWidth:380, width:'100%' }}>
           {/* Logo */}
-          <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:32 }}>
-            <div style={{
-              width:44, height:44, borderRadius:12,
-              background:`linear-gradient(135deg, ${C.accent}, ${C.accent})`,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:20, fontWeight:700, color:C.navy,
-            }}>H</div>
-            <div>
-              <div style={{ color:'white', fontWeight:700, fontSize:20 }}>{t.loginTitle}</div>
-              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:12 }}>{t.loginSubtitle}</div>
-            </div>
+          <div style={{ marginBottom:36, display:'flex', justifyContent:'center' }}>
+            <img
+              src="/emblem.png"
+              alt="Safiron"
+              style={{ width:90, height:90, objectFit:'contain' }}
+            />
           </div>
 
           <div style={{
@@ -85,7 +83,16 @@ export default function Login() {
               </div>
               <div>
                 <label htmlFor="login-password" style={{ display:'block', color:'rgba(255,255,255,0.6)', fontSize:12, fontWeight:500, marginBottom:6 }}>{t.password}</label>
-                <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required style={inp} />
+                <div style={{ position:'relative' }}>
+                  <input id="login-password" type={showPwd ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required style={{ ...inp, paddingRight:42 }} />
+                  <button type="button" onClick={() => setShowPwd(v => !v)} style={{
+                    position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                    background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)',
+                    fontSize:13, padding:0, lineHeight:1,
+                  }}>
+                    {showPwd ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
               <button type="submit" disabled={loading} style={{
                 marginTop:4, padding:'12px', borderRadius:10, border:'none', cursor: loading ? 'not-allowed' : 'pointer',

@@ -20,9 +20,12 @@ const AuditLog       = lazy(() => import('./pages/AuditLog'))
 const AiAnalysis     = lazy(() => import('./pages/AiAnalysis'))
 const CashFlow       = lazy(() => import('./pages/CashFlow'))
 const Users          = lazy(() => import('./pages/Users'))
+const Companies      = lazy(() => import('./pages/Companies'))
+const Integrations   = lazy(() => import('./pages/Integrations'))
 
 function Protected({ children }) {
   const { token, logout } = useAuthStore()
+  const { user }    = useAuthStore()
   const { t } = useLang()
   const timerRef = useRef(null)
 
@@ -50,6 +53,10 @@ function Protected({ children }) {
   }, [token, logout, t])
 
   if (!token) return <Navigate to="/login" replace />
+  // Super admin goes to company management, not dashboard
+  if (user?.role === 'super_admin' && window.location.pathname === '/') {
+    return <Navigate to="/companies" replace />
+  }
   return <Layout>{children}</Layout>
 }
 
@@ -70,7 +77,9 @@ export default function App() {
           <Route path="/analysis"       element={<Protected><AiAnalysis /></Protected>} />
           <Route path="/cashflow"       element={<Protected><CashFlow /></Protected>} />
           <Route path="/users"          element={<Protected><Users /></Protected>} />
-          <Route path="*"               element={<Navigate to="/" replace />} />
+          <Route path="/companies"     element={<Protected><Companies /></Protected>} />
+          <Route path="/integrations"  element={<Protected><Integrations /></Protected>} />
+          <Route path="*"              element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

@@ -22,6 +22,7 @@ from uuid import UUID
 from decimal import Decimal
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
 from app.models.transaction import Transaction, TransactionLeg, SupplierSettlement, SupplierSettlementType, LegType
 from app.models.master import Account, Counterparty, Location
@@ -98,8 +99,13 @@ def _calculate_settlement(
 def get_supplier_settlement(
     txn_id: UUID,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
+    # Verify the transaction belongs to the user's company first
+    txn_q = db.query(Transaction).filter(Transaction.id == txn_id)
+    txn_q = apply_company_filter(txn_q, Transaction, cu)
+    if not txn_q.first():
+        raise HTTPException(404, "İşlem bulunamadı")
     ss = (db.query(SupplierSettlement)
           .options(
               joinedload(SupplierSettlement.counterparty),
@@ -122,15 +128,17 @@ def create_supplier_settlement(
 ):
     _require(cu, UserRole.admin, UserRole.super_admin, UserRole.accounting, UserRole.manager, UserRole.branch_manager)
 
-    # İşlemi al
-    txn = (db.query(Transaction)
-           .options(
-               joinedload(Transaction.legs).joinedload(TransactionLeg.account).joinedload(Account.location),
-               joinedload(Transaction.legs).joinedload(TransactionLeg.account).joinedload(Account.currency),
-               joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
-               joinedload(Transaction.pnl),
-           )
-           .filter(Transaction.id == txn_id).first())
+    # İşlemi al — şirket filtresi uygula
+    txn_q = (db.query(Transaction)
+             .options(
+                 joinedload(Transaction.legs).joinedload(TransactionLeg.account).joinedload(Account.location),
+                 joinedload(Transaction.legs).joinedload(TransactionLeg.account).joinedload(Account.currency),
+                 joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
+                 joinedload(Transaction.pnl),
+             )
+             .filter(Transaction.id == txn_id))
+    txn_q = apply_company_filter(txn_q, Transaction, cu)
+    txn = txn_q.first()
     if not txn:
         raise HTTPException(404, "İşlem bulunamadı")
 
@@ -217,6 +225,11 @@ def delete_supplier_settlement(
     cu: User = Depends(get_current_user),
 ):
     _require(cu, UserRole.admin, UserRole.super_admin)
+    # Verify the transaction belongs to the user's company
+    txn_q = db.query(Transaction).filter(Transaction.id == txn_id)
+    txn_q = apply_company_filter(txn_q, Transaction, cu)
+    if not txn_q.first():
+        raise HTTPException(404, "İşlem bulunamadı")
     ss = db.query(SupplierSettlement).filter(SupplierSettlement.transaction_id == txn_id).first()
     if not ss:
         raise HTTPException(404, "Tedarikçi uzlaşması bulunamadı")

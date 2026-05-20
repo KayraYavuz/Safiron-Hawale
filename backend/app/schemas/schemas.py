@@ -12,12 +12,30 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+# ── Company ───────────────────────────────────────────────────────────────────
+class CompanyCreate(BaseModel):
+    name: str
+    code: str
+    admin_name: str
+    admin_email: EmailStr
+    admin_password: str
+
+class CompanyOut(BaseModel):
+    id: UUID
+    name: str
+    code: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+    class Config:
+        from_attributes = True
+
 # ── User ──────────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
     role: UserRole = UserRole.viewer
+    company_id: Optional[UUID] = None
 
 class UserOut(BaseModel):
     id: UUID
@@ -25,7 +43,9 @@ class UserOut(BaseModel):
     email: str
     role: UserRole
     is_active: bool
+    is_approved: bool = True
     created_at: datetime
+    company_id: Optional[UUID] = None
     class Config:
         from_attributes = True
 

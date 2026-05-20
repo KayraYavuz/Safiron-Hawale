@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import Optional
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
 from app.models.transaction import Transaction, TransactionLeg, TransactionPnL, LegType, TxnType, TxnStatus
 from app.models.master import Account, Location
@@ -28,7 +29,7 @@ FX_TYPES = {TxnType.remittance, TxnType.fx, TxnType.swift}
 def daily_reconciliation(
     report_date: Optional[date] = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    cu: User = Depends(get_current_user),
 ):
     """Belirli bir günün mutabakat raporu."""
     if not report_date:
@@ -36,17 +37,17 @@ def daily_reconciliation(
         report_date = dt.today()
 
     # O günün işlemleri
-    txns = (db.query(Transaction)
-            .options(
-                joinedload(Transaction.legs).joinedload(TransactionLeg.account)
-                    .joinedload(Account.location),
-                joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
-                joinedload(Transaction.pnl),
-                joinedload(Transaction.counterparty),
-            )
-            .filter(Transaction.txn_date == report_date)
-            .order_by(Transaction.created_at)
-            .all())
+    txn_q = (db.query(Transaction)
+             .options(
+                 joinedload(Transaction.legs).joinedload(TransactionLeg.account)
+                     .joinedload(Account.location),
+                 joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
+                 joinedload(Transaction.pnl),
+                 joinedload(Transaction.counterparty),
+             )
+             .filter(Transaction.txn_date == report_date))
+    txn_q = apply_company_filter(txn_q, Transaction, cu)
+    txns = txn_q.order_by(Transaction.created_at).all()
 
     TYPE_LABEL = {
         "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
@@ -77,9 +78,11 @@ def daily_reconciliation(
         })
 
     # Kasa özeti — o günün hareketleri
-    accs = (db.query(Account)
-            .options(joinedload(Account.location), joinedload(Account.currency))
-            .filter(Account.is_active == True).all())
+    acc_q = (db.query(Account)
+             .options(joinedload(Account.location), joinedload(Account.currency))
+             .filter(Account.is_active == True))
+    acc_q = apply_company_filter(acc_q, Account, cu)
+    accs = acc_q.all()
 
     cash_summary = []
     for acc in accs:

@@ -235,6 +235,7 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['position'] })
+      qc.invalidateQueries({ queryKey: ['cashMovDash'] })
       toast.success(t.txnSaved)
       onClose()
     },

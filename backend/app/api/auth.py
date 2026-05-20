@@ -49,6 +49,8 @@ def login(
         audit_log(db, "LOGIN_FAIL", entity="User", detail={"email": form.username}, ip_address=ip)
         db.commit()
         raise HTTPException(status_code=401, detail="Hatalı email veya şifre")
+    if not user.is_approved:
+        raise HTTPException(status_code=403, detail="Hesabınız henüz onaylanmadı. Şirket yöneticinizle iletişime geçin.")
 
     # Başarılı giriş — attempt'leri temizle
     _login_attempts[ip] = []

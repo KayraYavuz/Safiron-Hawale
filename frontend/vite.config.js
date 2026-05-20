@@ -26,17 +26,6 @@ export default defineConfig({
 
     rollupOptions: {
       output: {
-        // Fine-grained chunk strategy — each group has its own cache lifetime.
-        // React/router rarely change → browser serves from cache even after app updates.
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react-router')) return 'react-core'
-            if (id.includes('@tanstack'))                                  return 'query'
-            if (id.includes('zustand') || id.includes('react-hot-toast'))return 'state'
-            if (id.includes('axios'))                                     return 'http'
-            return 'vendor'
-          }
-        },
         // Content-hash filenames — enables aggressive (immutable) browser caching
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

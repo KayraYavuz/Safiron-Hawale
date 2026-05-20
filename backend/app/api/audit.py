@@ -25,11 +25,17 @@ def list_audit(
     cu: User = Depends(get_current_user),
 ):
     _require_admin_or_manager(cu)
-    
+
     from app.services.audit import log as audit_log
     audit_log(db, "VIEW_AUDIT", user_id=cu.id, entity="Audit")
-    
+
     q = db.query(AuditLog).options(joinedload(AuditLog.user))
+
+    # Company admins only see logs belonging to users in their own company
+    if cu.role != UserRole.super_admin:
+        company_user_ids = db.query(User.id).filter(User.company_id == cu.company_id).subquery()
+        q = q.filter(AuditLog.user_id.in_(company_user_ids))
+
     if from_date: q = q.filter(AuditLog.created_at >= from_date)
     if to_date:   q = q.filter(AuditLog.created_at <= to_date)
     if action:    q = q.filter(AuditLog.action == action)

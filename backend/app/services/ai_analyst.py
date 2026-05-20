@@ -28,16 +28,29 @@ def get_financial_summary(db: Session):
     
     return summary
 
+def _get_groq_key(db: Session) -> str | None:
+    """DB'den GROQ_API_KEY al, yoksa env'e bak."""
+    try:
+        from app.models.system_setting import SystemSetting
+        row = db.query(SystemSetting).filter(SystemSetting.key == "GROQ_API_KEY").first()
+        if row and row.value:
+            return row.value
+    except Exception:
+        pass
+    return settings.GROQ_API_KEY
+
+
 def get_ai_financial_analysis(db: Session, prompt: str = None):
     """Güvenli AI Analizi (Groq)"""
-    if not settings.GROQ_API_KEY:
+    groq_key = _get_groq_key(db)
+    if not groq_key:
         return "AI Analizcisi şu an aktif değil (Groq API Key eksik)."
 
     summary = get_financial_summary(db)
     
     try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        
+        client = Groq(api_key=groq_key)
+
         context = f"""
         Rol: Üst Düzey Finansal Stratejist ve Kurumsal Hazine Danışmanı (McKinsey/BCG Üslubu).
         Görev: Aşağıdaki 30 günlük operasyonel verileri derinlemesine analiz et ve kurum yönetimine sunulacak 'Stratejik Performans ve Risk Analizi' belgesi oluştur.
@@ -77,14 +90,15 @@ def get_ai_financial_analysis(db: Session, prompt: str = None):
 
 def get_ai_chat_response(db: Session, message: str, history: list = []):
     """Kullanıcı ile interaktif finansal sohbet."""
-    if not settings.GROQ_API_KEY:
+    groq_key = _get_groq_key(db)
+    if not groq_key:
         return "Chat servisi aktif değil."
 
     summary = get_financial_summary(db)
     
     try:
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        
+        client = Groq(api_key=groq_key)
+
         system_prompt = f"""
         Sen sistemin 'Akıllı Finansal Asistanı'sın.
         Kullanıcının finansal sorularını, sistemdeki verilere dayanarak veya genel finans bilgisiyle cevaplarsın.

@@ -30,8 +30,16 @@ const BASE_NAV = [
 ]
 
 const ADMIN_NAV = [
-  { path: '/users', key: 'users', icon: 'users'  },
-  { path: '/audit', key: 'audit', icon: 'shield' },
+  { path: '/users',         key: 'users',         icon: 'users'   },
+  { path: '/audit',         key: 'audit',         icon: 'shield'  },
+  { path: '/integrations',  key: 'integrations',  icon: 'plug'    },
+]
+
+// Super admin only sees company management
+const SUPER_ADMIN_NAV = [
+  { path: '/companies',    key: 'companies',    icon: 'building' },
+  { path: '/users',        key: 'users',        icon: 'users'    },
+  { path: '/integrations', key: 'integrations', icon: 'plug'     },
 ]
 
 function Layout({ children }) {
@@ -41,9 +49,17 @@ function Layout({ children }) {
   const navigate  = useNavigate()
 
   const isRtl = dir === 'rtl'
-  const nav = user?.role === 'admin' ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV
+  const isSuperAdmin = user?.role === 'super_admin'
+  const nav = isSuperAdmin
+    ? SUPER_ADMIN_NAV
+    : user?.role === 'admin' ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV
 
-  const ROLE_LABEL = { admin: t.roleAdmin, accounting: t.roleAccounting, viewer: t.roleViewer }
+  const ROLE_LABEL = {
+    super_admin: t.roleSuperAdmin || 'Sistem Yöneticisi',
+    admin: t.roleAdmin,
+    accounting: t.roleAccounting,
+    viewer: t.roleViewer,
+  }
 
   const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
   const handleLogout = () => { logout(); navigate('/login') }
@@ -62,23 +78,16 @@ function Layout({ children }) {
         borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.04)' : 'none',
       }}>
 
-        {/* Wordmark */}
-        <div style={{ padding: '22px 20px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 7, background: S.accent,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              {/* Inline SVG — no external image request */}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" fill={S.navy} fillOpacity="0.95"/>
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke={S.navy} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ color: 'white', fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em', lineHeight: 1 }}>Hawala</div>
-              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 10, marginTop: 3, letterSpacing: '0.01em' }}>نظام الحوالة</div>
-            </div>
+        {/* Logo */}
+        <div style={{ padding: '16px 20px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img
+            src="/emblem.png"
+            alt="Safiron"
+            style={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', lineHeight: 1.1 }}>Safiron</div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Global Solutions</div>
           </div>
         </div>
 

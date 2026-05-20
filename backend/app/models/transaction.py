@@ -48,6 +48,7 @@ class Transaction(Base):
     created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
     approved_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
 
     counterparty = relationship("Counterparty", back_populates="transactions")
     creator = relationship("User", foreign_keys=[created_by])
@@ -144,6 +145,7 @@ class ExchangeRate(Base):
     rate_per_usd = Column(Numeric(18, 8), nullable=False)  # 1 USD = ? currency
     source = Column(String, default="manual")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
 
 
 class SupplierSettlementType(str, enum.Enum):
