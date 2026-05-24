@@ -8,6 +8,7 @@ import { useLang } from './hooks/useLang'
 import toast from 'react-hot-toast'
 
 // ── Lazy-loaded pages — each route is its own JS chunk ────────────────────────
+const Landing        = lazy(() => import('./pages/Landing'))
 const Login          = lazy(() => import('./pages/Login'))
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Transactions   = lazy(() => import('./pages/Transactions'))
@@ -22,6 +23,16 @@ const CashFlow       = lazy(() => import('./pages/CashFlow'))
 const Users          = lazy(() => import('./pages/Users'))
 const Companies      = lazy(() => import('./pages/Companies'))
 const Integrations   = lazy(() => import('./pages/Integrations'))
+
+// Giriş yapmamış kullanıcılar için — giriş yapılmışsa dashboard'a yönlendir
+function PublicOnly({ children }) {
+  const { token } = useAuthStore()
+  const { user }  = useAuthStore()
+  if (token) {
+    return <Navigate to={user?.role === 'super_admin' ? '/companies' : '/dashboard'} replace />
+  }
+  return children
+}
 
 function Protected({ children }) {
   const { token, logout } = useAuthStore()
@@ -43,7 +54,7 @@ function Protected({ children }) {
 
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
     events.forEach(name => document.addEventListener(name, resetTimer))
-    
+
     resetTimer()
 
     return () => {
@@ -52,9 +63,9 @@ function Protected({ children }) {
     }
   }, [token, logout, t])
 
-  if (!token) return <Navigate to="/login" replace />
+  if (!token) return <Navigate to="/" replace />
   // Super admin goes to company management, not dashboard
-  if (user?.role === 'super_admin' && window.location.pathname === '/') {
+  if (user?.role === 'super_admin' && window.location.pathname === '/dashboard') {
     return <Navigate to="/companies" replace />
   }
   return <Layout>{children}</Layout>
@@ -65,8 +76,12 @@ export default function App() {
     <ErrorBoundary>
       <Suspense fallback={<PageSpinner />}>
         <Routes>
-          <Route path="/login"          element={<Login />} />
-          <Route path="/"               element={<Protected><Dashboard /></Protected>} />
+          {/* Genel (halka açık) sayfalar */}
+          <Route path="/"               element={<PublicOnly><Landing /></PublicOnly>} />
+          <Route path="/login"          element={<PublicOnly><Login /></PublicOnly>} />
+
+          {/* Korumalı sayfalar */}
+          <Route path="/dashboard"      element={<Protected><Dashboard /></Protected>} />
           <Route path="/transactions"   element={<Protected><Transactions /></Protected>} />
           <Route path="/counterparties" element={<Protected><Counterparties /></Protected>} />
           <Route path="/accounts"       element={<Protected><Accounts /></Protected>} />
@@ -77,9 +92,9 @@ export default function App() {
           <Route path="/analysis"       element={<Protected><AiAnalysis /></Protected>} />
           <Route path="/cashflow"       element={<Protected><CashFlow /></Protected>} />
           <Route path="/users"          element={<Protected><Users /></Protected>} />
-          <Route path="/companies"     element={<Protected><Companies /></Protected>} />
-          <Route path="/integrations"  element={<Protected><Integrations /></Protected>} />
-          <Route path="*"              element={<Navigate to="/" replace />} />
+          <Route path="/companies"      element={<Protected><Companies /></Protected>} />
+          <Route path="/integrations"   element={<Protected><Integrations /></Protected>} />
+          <Route path="*"               element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

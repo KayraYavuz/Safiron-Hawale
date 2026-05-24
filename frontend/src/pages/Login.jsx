@@ -25,7 +25,7 @@ export default function Login() {
       setToken(data.access_token)
       const { data: me } = await authApi.me()
       setUser(me)
-      navigate('/')
+      navigate(me?.role === 'super_admin' ? '/companies' : '/dashboard')
     } catch {
       toast.error(t.loginError)
     } finally {
