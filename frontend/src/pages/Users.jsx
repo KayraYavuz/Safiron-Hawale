@@ -61,6 +61,15 @@ export default function Users() {
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Kullanıcı onaylandı') },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
+  const regenPinMut = useMutation({
+    mutationFn: usersApi.regeneratePin,
+    onSuccess:  (res) => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      navigator.clipboard.writeText(`bağla ${res.data.new_pin}`)
+      toast.success(`Yeni PIN: ${res.data.new_pin} — panoya kopyalandı`)
+    },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
 
   const handleDelete = useCallback((u) => {
     if (window.confirm(`${u.name} ${t.deleteUserConfirm}`)) deleteMut.mutate(u.id)
@@ -144,11 +153,12 @@ export default function Users() {
             <Th>{t.email}</Th>
             <Th>{t.role}</Th>
             {isSuperAdmin && <Th>Şirket</Th>}
+            <Th>Telegram PIN</Th>
             <Th>{t.status}</Th>
             <Th right>{t.action}</Th>
           </tr></thead>
           <tbody>
-            {isLoading && Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} cols={isSuperAdmin ? 6 : 5} />)}
+            {isLoading && Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} cols={isSuperAdmin ? 7 : 6} />)}
             {users.map(u => {
               const ri = ROLE_INFO[u.role] ?? ROLE_INFO.viewer
               return (
@@ -157,6 +167,32 @@ export default function Users() {
                   <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.text2 }}>{u.email}</span></Td>
                   <Td><span style={{ fontSize: 11.5, padding: '3px 10px', borderRadius: 100, background: ri.bg, color: ri.color }}>{ri.label}</span></Td>
                   {isSuperAdmin && <Td><span style={{ fontSize: 12, color: C.text2 }}>{companyName(u.company_id)}</span></Td>}
+                  <Td>
+                    {u.bot_pin ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <span style={{
+                          fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600,
+                          padding: '3px 8px', borderRadius: 6,
+                          background: u.telegram_id ? '#E8F5E9' : '#F3F4F6',
+                          color: u.telegram_id ? C.green : C.text2,
+                          letterSpacing: '0.05em',
+                        }}>
+                          {u.bot_pin}
+                        </span>
+                        {u.telegram_id
+                          ? <span title="Telegram'a bağlı" style={{ fontSize: 14 }}>🔗</span>
+                          : <span title="Henüz bağlı değil" style={{ fontSize: 14 }}>💬</span>
+                        }
+                        <button
+                          title="Kopyala"
+                          onClick={() => { navigator.clipboard.writeText(`bağla ${u.bot_pin}`); toast.success('Kopyalandı!') }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 4, color: C.text3, fontSize: 13 }}
+                        >📋</button>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 12, color: C.text4 }}>—</span>
+                    )}
+                  </Td>
                   <Td>
                     <span style={{ fontSize: 12, fontWeight: 500, color: u.is_active ? C.green : C.red }}>{u.is_active ? t.active : t.inactive}</span>
                     {!u.is_approved && (
@@ -167,7 +203,12 @@ export default function Users() {
                     {resetId === u.id ? (
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
                         <Input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder={t.newPassword} style={{ width: 140, padding: '6px 10px' }} />
-                        <Btn style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => resetMut.mutate({ id: u.id, password: newPass })} disabled={!newPass || resetMut.isPending}>{t.save}</Btn>
+                        <Btn style={{ fontSize: 12, padding: '6px 12px' }} disabled={!newPass || resetMut.isPending}
+                          onClick={() => {
+                            if (window.confirm(`${u.name} için şifre değiştirilsin mi?`))
+                              resetMut.mutate({ id: u.id, password: newPass })
+                          }}
+                        >{t.save}</Btn>
                         <Btn variant="ghost" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setResetId(null); setNewPass('') }}>{t.cancel}</Btn>
                       </div>
                     ) : (
@@ -175,7 +216,16 @@ export default function Users() {
                         {!u.is_approved && (
                           <Btn style={{ fontSize: 12, padding: '6px 12px', background: C.green }} onClick={() => approveMut.mutate(u.id)} disabled={approveMut.isPending}>Onayla</Btn>
                         )}
-                        <Btn variant="ghost"  style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => setResetId(u.id)}>{t.passwordBtn}</Btn>
+                        <Btn variant="ghost" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => setResetId(u.id)}>{t.passwordBtn}</Btn>
+                        <button
+                          title="PIN yenile — Telegram bağlantısı sıfırlanır"
+                          disabled={regenPinMut.isPending}
+                          onClick={() => {
+                            if (window.confirm(`${u.name} için yeni PIN oluşturulsun mu?\nEski PIN ve Telegram bağlantısı silinir.`))
+                              regenPinMut.mutate(u.id)
+                          }}
+                          style={{ fontSize: 13, background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, cursor: 'pointer', padding: '4px 8px', color: C.text2, opacity: regenPinMut.isPending ? 0.5 : 1 }}
+                        >🔄 PIN</button>
                         <Btn variant="danger" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => handleDelete(u)}>{t.delete}</Btn>
                       </div>
                     )}

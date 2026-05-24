@@ -163,12 +163,57 @@ def list_counterparties(
 def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     from datetime import datetime
     count = db.query(Counterparty).count()
-    code = f"CP-{datetime.now().year}-{str(count+1).zfill(5)}"
-    cp = Counterparty(**data.model_dump(), code=code, company_id=cu.company_id)
+    code  = f"CP-{datetime.now().year}-{str(count+1).zfill(5)}"
+    pin   = _generate_bot_pin(db)
+    cp = Counterparty(**data.model_dump(), code=code, company_id=cu.company_id, bot_pin=pin)
     db.add(cp)
     db.commit()
     db.refresh(cp)
     return cp
+
+
+def _generate_bot_pin(db) -> str:
+    """
+    Benzersiz 8 karakterlik bot erişim kodu üretir.
+    Format: XXX-XXXX (harf+rakam karışımı, okunabilir)
+    Örnek: SAF-7K2M
+    """
+    import random, string
+    chars = string.ascii_uppercase + string.digits
+    # I, O, 0, 1 gibi karıştırıcı karakterleri çıkar
+    chars = chars.translate(str.maketrans('', '', 'IO01'))
+    while True:
+        prefix = ''.join(random.choices(chars, k=3))
+        suffix = ''.join(random.choices(chars, k=4))
+        pin = f"{prefix}-{suffix}"
+        # Benzersizlik kontrolü
+        if not db.query(Counterparty).filter(Counterparty.bot_pin == pin).first():
+            return pin
+
+
+@router.post("/counterparties/{cp_id}/regenerate-pin")
+def regenerate_bot_pin(
+    cp_id: UUID,
+    db: Session = Depends(get_db),
+    cu: User = Depends(get_current_user),
+):
+    """
+    Müşterinin bot PIN'ini yenile (eski PIN geçersiz olur).
+    Güvenlik ihlali şüphesinde kullanılır.
+    """
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
+        raise HTTPException(403, "Sadece admin PIN yenileyebilir")
+    q  = db.query(Counterparty).filter(Counterparty.id == cp_id)
+    q  = apply_company_filter(q, Counterparty, cu)
+    cp = q.first()
+    if not cp:
+        raise HTTPException(404, "Müşteri bulunamadı")
+    old_pin = cp.bot_pin
+    cp.bot_pin     = _generate_bot_pin(db)
+    cp.telegram_id = None   # Eski bağlantıyı da sıfırla
+    db.commit()
+    return {"ok": True, "new_pin": cp.bot_pin, "old_pin": old_pin,
+            "note": "Müşterinin Telegram bağlantısı sıfırlandı. Yeni kodu iletin."}
 
 @router.put("/counterparties/{cp_id}", response_model=CounterpartyOut)
 def update_counterparty(cp_id: UUID, data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):

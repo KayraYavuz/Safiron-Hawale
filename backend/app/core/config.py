@@ -10,6 +10,19 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     ALLOWED_ORIGINS: str = ""
 
+    # ── Telegram Bot ─────────────────────────────────────────────────────
+    TELEGRAM_BOT_TOKEN:   Optional[str] = None  # @BotFather'dan alınan token
+    TELEGRAM_ALLOWED_IDS: Optional[str] = None  # Virgülle ayrılmış Telegram user ID'leri
+
+    # ── WhatsApp Cloud API ────────────────────────────────────────────────
+    # Meta for Developers → Uygulamanız → WhatsApp → Konfigürasyon
+    WHATSAPP_TOKEN:           Optional[str] = None  # Kalıcı erişim tokeni
+    WHATSAPP_PHONE_ID:        Optional[str] = None  # Phone Number ID (ondalık sayı)
+    WHATSAPP_APP_SECRET:      Optional[str] = None  # App Secret (HMAC doğrulama)
+    WHATSAPP_VERIFY_TOKEN:    Optional[str] = None  # Webhook verify token (siz belirleyin)
+    WHATSAPP_ALLOWED_NUMBERS: Optional[str] = None  # Virgülle ayrılmış numaralar
+    WHATSAPP_INTERNAL_SECRET: Optional[str] = None  # /notify endpoint için iç secret
+
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         # SQLAlchemy 1.4+ requires 'postgresql+psycopg2://' instead of 'postgres://'

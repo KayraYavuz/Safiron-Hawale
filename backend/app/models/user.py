@@ -27,3 +27,5 @@ class User(Base):
     is_approved = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    telegram_id = Column(String(20), nullable=True, index=True)  # Bot admin erişimi
+    bot_pin     = Column(String(12), nullable=True, unique=True, index=True)  # Telegram bağlama kodu

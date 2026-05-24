@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { getCpTypeLabel, STALE_2MIN } from '../constants'
 import { useLang } from '../hooks/useLang'
 
+
 const BLANK_CP = { name: '', name_ar: '', type: 'customer', country: '', phone: '', credit_limit_usd: 0 }
 
 export default function Counterparties() {
@@ -104,6 +105,7 @@ export default function Counterparties() {
               </Btn>
               <Btn variant="ghost" onClick={() => { setShowForm(false); setEditId(null) }}>{t.cancel}</Btn>
             </div>
+
           </div>
         </Card>
       )}

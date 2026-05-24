@@ -49,10 +49,11 @@ export const accountsApi = {
 }
 
 export const counterpartiesApi = {
-  list:   (params)     => api.get('/api/counterparties', { params }),
-  create: (data)       => api.post('/api/counterparties', data),
-  update: (id, data)   => api.put(`/api/counterparties/${id}`, data),
-  delete: (id)         => api.delete(`/api/counterparties/${id}`),
+  list:          (params)   => api.get('/api/counterparties', { params }),
+  create:        (data)     => api.post('/api/counterparties', data),
+  update:        (id, data) => api.put(`/api/counterparties/${id}`, data),
+  delete:        (id)       => api.delete(`/api/counterparties/${id}`),
+  regeneratePin: (id)       => api.post(`/api/counterparties/${id}/regenerate-pin`),
 }
 
 export const ratesApi = {
@@ -88,6 +89,7 @@ export const usersApi = {
   create: (data) => api.post('/api/users', data),
   approve: (id) => api.patch(`/api/users/${id}/approve`),
   resetPassword: (id, password) => api.patch(`/api/users/${id}/password`, { password }),
+  regeneratePin: (id) => api.post(`/api/users/${id}/regenerate-pin`),
   delete: (id) => api.delete(`/api/users/${id}`),
 }
 

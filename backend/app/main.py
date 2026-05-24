@@ -13,6 +13,7 @@ from app.api.supplier_settlement import router as supplier_router
 from app.api.audit import router as audit_router
 from app.api.reconciliation import router as reconciliation_router
 from app.api.settings import router as settings_router
+from app.api.whatsapp import router as whatsapp_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -66,6 +67,7 @@ app.include_router(supplier_router)
 app.include_router(audit_router)
 app.include_router(reconciliation_router)
 app.include_router(settings_router)
+app.include_router(whatsapp_router)
 
 @app.get("/")
 def root():
@@ -76,6 +78,13 @@ async def startup():
     from app.core.security import hash_password
     from app.models.user import User, UserRole
     from app.models.master import Location, Currency
+
+    # ── Telegram — her şirketin botunu başlat ────────────────────────────
+    try:
+        from app.services.telegram_multi_bot import start_all_bots
+        start_all_bots()
+    except Exception as e:
+        print(f"⚠️  Telegram bot başlatma hatası: {e}")
 
     # Multi-tenancy migrations — run first, idempotent
     try:

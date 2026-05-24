@@ -46,6 +46,8 @@ class UserOut(BaseModel):
     is_approved: bool = True
     created_at: datetime
     company_id: Optional[UUID] = None
+    bot_pin: Optional[str] = None       # Telegram bağlama kodu
+    telegram_id: Optional[str] = None  # Bağlı Telegram hesabı
     class Config:
         from_attributes = True
 
@@ -135,6 +137,8 @@ class CounterpartyOut(BaseModel):
     phone: Optional[str]
     credit_limit_usd: Decimal
     is_active: bool
+    bot_pin: Optional[str] = None          # Telegram bot erişim kodu
+    telegram_id: Optional[str] = None      # Bağlı Telegram kullanıcısı
     class Config:
         from_attributes = True
 

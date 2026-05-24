@@ -15,6 +15,7 @@ class Company(Base):
     code = Column(String(20), unique=True, nullable=False, index=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    telegram_bot_token = Column(String, nullable=True)  # @BotFather'dan alınan token
 
 
 class Location(Base):
@@ -91,4 +92,6 @@ class Counterparty(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    telegram_id = Column(String(20), nullable=True, index=True)  # Telegram user ID bağlantısı
+    bot_pin     = Column(String(12), nullable=True, unique=True, index=True)  # Bot erişim kodu (ör: SAF-7K2M)
     transactions = relationship("Transaction", back_populates="counterparty")
