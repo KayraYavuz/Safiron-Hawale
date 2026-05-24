@@ -24,7 +24,7 @@ class CompanyOut(BaseModel):
     id: UUID
     name: str
     code: str
-    is_active: bool
+    is_active: bool = True
     created_at: Optional[datetime] = None
     class Config:
         from_attributes = True

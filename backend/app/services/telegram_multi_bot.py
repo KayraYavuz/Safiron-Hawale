@@ -21,13 +21,266 @@ from decimal import Decimal
 from datetime import date, datetime, timedelta
 from typing import Dict, Optional
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, CallbackQueryHandler, filters
 
 logger = logging.getLogger(__name__)
 
 # company_id → Thread
 _running_bots: Dict[str, threading.Thread] = {}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Çok dilli bot metinleri
+# ─────────────────────────────────────────────────────────────────────────────
+BOT_L = {
+    "tr": {
+        # Menü butonları
+        "btn_balance":  "💰 Bakiye",
+        "btn_report":   "📊 Rapor",
+        "btn_rates":    "💱 Kurlar",
+        "btn_txns":     "📋 İşlemler",
+        "btn_new_txn":  "➕ Yeni İşlem",
+        "btn_add_cp":   "👤 Müşteri Ekle",
+        "btn_lang":     "🌐 Dil",
+        "btn_help":     "❓ Yardım",
+        # Genel
+        "welcome":      "👋 *{company} — Yönetici Paneli*\n\nHoş geldiniz, *{name}*!\n\nAşağıdaki menüyü kullanabilirsiniz.",
+        "not_linked":   "🔐 *Hesabınız bağlı değil.*\n\n`bağla PİNİNİZ` yazın.\n_Örnek: `bağla SAF-7K2M`_",
+        "link_success": "✅ *Bağlandınız!*\n\nHoş geldiniz, *{name}*! 👋\n\nAşağıdaki menüyü kullanabilirsiniz.",
+        "link_fail":    "❌ Geçersiz pin. Uygulamadan pininizi kopyalayın.",
+        "link_taken":   "⚠️ Bu pin zaten başka bir hesaba bağlı.",
+        "cancelled":    "❌ İptal edildi.",
+        "server_err":   "❌ Sunucu hatası. Lütfen tekrar deneyin.",
+        "timeout":      "⚠️ Oturum zaman aşımına uğradı. Tekrar başlatın.",
+        "unknown_cmd":  "❓ Komut tanınmadı.\n\nMenüdeki butonları kullanın veya `❓ Yardım` yazın.",
+        # Dil
+        "lang_select":  "🌐 *Dil / Language / اللغة*\n\nDil seçin:",
+        "lang_set_tr":  "✅ Dil *Türkçe* olarak ayarlandı.",
+        "lang_set_ar":  "✅ تم تعيين اللغة *العربية*.",
+        "lang_set_en":  "✅ Language set to *English*.",
+        # İşlem akışı
+        "txn_title":    "➕ *Yeni İşlem*\n\nİşlem türünü seçin:",
+        "txn_select_cp":"👥 *Müşteri Seç*\n\nİşlem türü: {type}",
+        "txn_from_acc": "📤 *Kaynak Kasa*\n_(Müşterinin para VERDİĞİ kasa)_",
+        "txn_to_acc":   "📥 *Hedef Kasa*\n_(Müşterinin para ALDIĞI kasa)_",
+        "txn_simple_acc":"💼 *Kasa Seç*",
+        "txn_cust_rate":"📈 *Müşteri Kuru*\n\nYön: {from_cur} → {to_cur}\nFormat: 1 USD = ? {non_usd}\n\nMüşteriye uyguladığınız kuru girin:",
+        "txn_supp_rate":"📉 *Tedarikçi Kuru* (opsiyonel)\n\n1 USD = ? {non_usd}\n_(Kâr hesabı için)_\n\nDeğer girin veya *Atla*:",
+        "txn_amount":   "💰 *Miktar*\n\nUSD miktarını girin:\n_(Kur: 1 USD = {rate} {non_usd})_",
+        "txn_amount_s": "💰 *Miktar*\n\nMiktarı {cur} cinsinden girin:",
+        "txn_summary":  "📋 *İşlem Özeti*",
+        "txn_confirm_q":"Onaylıyor musunuz?",
+        "txn_created":  "✅ *İşlem oluşturuldu!*\n\n• No: `{num}`\n• Durum: ⏳ Onay Bekliyor\n\n_Uygulamadan onaylayabilirsiniz._",
+        "txn_inv_rate": "❌ Geçersiz kur. Sayısal bir değer girin:\n_Örnek: 38.50_",
+        "txn_inv_amt":  "❌ Geçersiz miktar. Sayısal bir değer girin:\n_Örnek: 1000_",
+        # Müşteri akışı
+        "cp_title":     "➕ *Yeni Müşteri*\n\nMüşterinin adını yazın (Latin harfler):\n\n_İptal: `iptal`_",
+        "cp_name_ar":   "👤 *{name}*\n\nArapça adı (opsiyonel):",
+        "cp_type":      "👤 *{name}*\n\nMüşteri türünü seçin:",
+        "cp_country":   "🌍 Ülke kodu (3 harf, opsiyonel):\n\n_Örnek: TUR, EGY, SAU_",
+        "cp_phone":     "📞 Telefon numarası (opsiyonel):\n\n_Örnek: +20 123 456 7890_",
+        "cp_summary":   "📋 *Müşteri Özeti*",
+        "cp_created":   "✅ *Müşteri oluşturuldu!*\n\n• Ad: *{name}*\n• Kod: `{code}`\n• PIN: `{pin}`",
+        # Buton etiketleri
+        "btn_confirm":  "✅ Onayla",
+        "btn_cancel":   "❌ İptal",
+        "btn_skip":     "⏭ Atla",
+        "btn_no_cp":    "⏭ Müşterisiz devam",
+        "btn_customer": "👤 Müşteri",
+        "btn_supplier": "🏭 Tedarikçi",
+        "btn_both":     "🔄 Her İkisi",
+        "btn_founder":  "👑 Kurucu",
+        "btn_create":   "✅ Oluştur",
+        "user_not_found": "❌ Kullanıcı bulunamadı. Lütfen tekrar bağlanın.",
+        # Yardım
+        "help": (
+            "🔧 *Komutlar*\n\n"
+            "• `💰 Bakiye` → Kasa bakiyeleri\n"
+            "• `📊 Rapor` → Günlük özet\n"
+            "• `💱 Kurlar` → Döviz kurları\n"
+            "• `📋 İşlemler` → Son 10 işlem\n"
+            "• `➕ Yeni İşlem` → İşlem oluştur\n"
+            "• `👤 Müşteri Ekle` → Yeni müşteri\n"
+            "• `🌐 Dil` → Dil değiştir\n"
+            "• `iptal` → Aktif işlemi iptal et"
+        ),
+    },
+    "ar": {
+        "btn_balance":  "💰 الرصيد",
+        "btn_report":   "📊 التقرير",
+        "btn_rates":    "💱 الأسعار",
+        "btn_txns":     "📋 المعاملات",
+        "btn_new_txn":  "➕ معاملة جديدة",
+        "btn_add_cp":   "👤 إضافة عميل",
+        "btn_lang":     "🌐 اللغة",
+        "btn_help":     "❓ المساعدة",
+        "welcome":      "👋 *{company} — لوحة الإدارة*\n\nأهلاً، *{name}*!\n\nاستخدم القائمة أدناه.",
+        "not_linked":   "🔐 *حسابك غير مرتبط.*\n\nاكتب `ربط رمزك`\n_مثال: `ربط SAF-7K2M`_",
+        "link_success": "✅ *تم الربط!*\n\nأهلاً، *{name}*! 👋\n\nاستخدم القائمة أدناه.",
+        "link_fail":    "❌ رمز غير صحيح. انسخ الرمز من التطبيق.",
+        "link_taken":   "⚠️ هذا الرمز مرتبط بحساب آخر.",
+        "cancelled":    "❌ تم الإلغاء.",
+        "server_err":   "❌ خطأ في الخادم. حاول مرة أخرى.",
+        "timeout":      "⚠️ انتهت الجلسة. ابدأ من جديد.",
+        "unknown_cmd":  "❓ أمر غير معروف.\n\nاستخدم أزرار القائمة أو اكتب `❓ المساعدة`.",
+        "lang_select":  "🌐 *Dil / Language / اللغة*\n\nاختر اللغة:",
+        "lang_set_tr":  "✅ Dil *Türkçe* olarak ayarlandı.",
+        "lang_set_ar":  "✅ تم تعيين اللغة *العربية*.",
+        "lang_set_en":  "✅ Language set to *English*.",
+        "txn_title":    "➕ *معاملة جديدة*\n\nاختر نوع المعاملة:",
+        "txn_select_cp":"👥 *اختر العميل*\n\nالنوع: {type}",
+        "txn_from_acc": "📤 *الحساب المصدر*\n_(الحساب الذي يُعطي العميل منه)_",
+        "txn_to_acc":   "📥 *الحساب الوجهة*\n_(الحساب الذي يستلم العميل فيه)_",
+        "txn_simple_acc":"💼 *اختر الحساب*",
+        "txn_cust_rate":"📈 *سعر العميل*\n\nالاتجاه: {from_cur} → {to_cur}\nالصيغة: 1 USD = ? {non_usd}\n\nأدخل السعر المطبق على العميل:",
+        "txn_supp_rate":"📉 *سعر المورد* (اختياري)\n\n1 USD = ? {non_usd}\n_(لحساب الربح)_\n\nأدخل القيمة أو *تخطى*:",
+        "txn_amount":   "💰 *المبلغ*\n\nأدخل المبلغ بالدولار:\n_(السعر: 1 USD = {rate} {non_usd})_",
+        "txn_amount_s": "💰 *المبلغ*\n\nأدخل المبلغ بـ {cur}:",
+        "txn_summary":  "📋 *ملخص المعاملة*",
+        "txn_confirm_q":"هل تؤكد؟",
+        "txn_created":  "✅ *تم إنشاء المعاملة!*\n\n• الرقم: `{num}`\n• الحالة: ⏳ قيد الانتظار\n\n_يمكنك الموافقة من التطبيق._",
+        "txn_inv_rate": "❌ سعر غير صحيح. أدخل قيمة رقمية:\n_مثال: 38.50_",
+        "txn_inv_amt":  "❌ مبلغ غير صحيح. أدخل قيمة رقمية:\n_مثال: 1000_",
+        "cp_title":     "➕ *عميل جديد*\n\nاكتب اسم العميل (بالأحرف اللاتينية):\n\n_إلغاء: `إلغاء`_",
+        "cp_name_ar":   "👤 *{name}*\n\nالاسم بالعربية (اختياري):",
+        "cp_type":      "👤 *{name}*\n\nاختر نوع العميل:",
+        "cp_country":   "🌍 رمز الدولة (3 أحرف، اختياري):\n\n_مثال: TUR, EGY, SAU_",
+        "cp_phone":     "📞 رقم الهاتف (اختياري):\n\n_مثال: +20 123 456 7890_",
+        "cp_summary":   "📋 *ملخص العميل*",
+        "cp_created":   "✅ *تم إنشاء العميل!*\n\n• الاسم: *{name}*\n• الرمز: `{code}`\n• PIN: `{pin}`",
+        "btn_confirm":  "✅ تأكيد",
+        "btn_cancel":   "❌ إلغاء",
+        "btn_skip":     "⏭ تخطى",
+        "btn_no_cp":    "⏭ بدون عميل",
+        "btn_customer": "👤 عميل",
+        "btn_supplier": "🏭 مورد",
+        "btn_both":     "🔄 كلاهما",
+        "btn_founder":  "👑 شريك",
+        "btn_create":   "✅ إنشاء",
+        "user_not_found": "❌ المستخدم غير موجود. يرجى إعادة الربط.",
+        "help": (
+            "🔧 *الأوامر*\n\n"
+            "• `💰 الرصيد` → أرصدة الصناديق\n"
+            "• `📊 التقرير` → الملخص اليومي\n"
+            "• `💱 الأسعار` → أسعار الصرف\n"
+            "• `📋 المعاملات` → آخر 10 معاملات\n"
+            "• `➕ معاملة جديدة` → إنشاء معاملة\n"
+            "• `👤 إضافة عميل` → عميل جديد\n"
+            "• `🌐 اللغة` → تغيير اللغة\n"
+            "• `إلغاء` → إلغاء العملية الحالية"
+        ),
+    },
+    "en": {
+        "btn_balance":  "💰 Balance",
+        "btn_report":   "📊 Report",
+        "btn_rates":    "💱 Rates",
+        "btn_txns":     "📋 Transactions",
+        "btn_new_txn":  "➕ New Transaction",
+        "btn_add_cp":   "👤 Add Customer",
+        "btn_lang":     "🌐 Language",
+        "btn_help":     "❓ Help",
+        "welcome":      "👋 *{company} — Admin Panel*\n\nWelcome, *{name}*!\n\nUse the menu below.",
+        "not_linked":   "🔐 *Account not linked.*\n\nType `link YOURPIN`\n_Example: `link SAF-7K2M`_",
+        "link_success": "✅ *Linked!*\n\nWelcome, *{name}*! 👋\n\nUse the menu below.",
+        "link_fail":    "❌ Invalid pin. Copy your pin from the app.",
+        "link_taken":   "⚠️ This pin is already linked to another account.",
+        "cancelled":    "❌ Cancelled.",
+        "server_err":   "❌ Server error. Please try again.",
+        "timeout":      "⚠️ Session expired. Please start again.",
+        "unknown_cmd":  "❓ Unknown command.\n\nUse the menu buttons or type `❓ Help`.",
+        "lang_select":  "🌐 *Dil / Language / اللغة*\n\nSelect language:",
+        "lang_set_tr":  "✅ Dil *Türkçe* olarak ayarlandı.",
+        "lang_set_ar":  "✅ تم تعيين اللغة *العربية*.",
+        "lang_set_en":  "✅ Language set to *English*.",
+        "txn_title":    "➕ *New Transaction*\n\nSelect transaction type:",
+        "txn_select_cp":"👥 *Select Customer*\n\nType: {type}",
+        "txn_from_acc": "📤 *Source Account*\n_(Account customer pays FROM)_",
+        "txn_to_acc":   "📥 *Destination Account*\n_(Account customer receives TO)_",
+        "txn_simple_acc":"💼 *Select Account*",
+        "txn_cust_rate":"📈 *Customer Rate*\n\nDirection: {from_cur} → {to_cur}\nFormat: 1 USD = ? {non_usd}\n\nEnter the rate applied to customer:",
+        "txn_supp_rate":"📉 *Supplier Rate* (optional)\n\n1 USD = ? {non_usd}\n_(For profit calculation)_\n\nEnter value or *Skip*:",
+        "txn_amount":   "💰 *Amount*\n\nEnter USD amount:\n_(Rate: 1 USD = {rate} {non_usd})_",
+        "txn_amount_s": "💰 *Amount*\n\nEnter amount in {cur}:",
+        "txn_summary":  "📋 *Transaction Summary*",
+        "txn_confirm_q":"Do you confirm?",
+        "txn_created":  "✅ *Transaction created!*\n\n• No: `{num}`\n• Status: ⏳ Pending\n\n_You can approve it from the app._",
+        "txn_inv_rate": "❌ Invalid rate. Enter a numeric value:\n_Example: 38.50_",
+        "txn_inv_amt":  "❌ Invalid amount. Enter a numeric value:\n_Example: 1000_",
+        "cp_title":     "➕ *New Customer*\n\nEnter customer name (Latin characters):\n\n_Cancel: `cancel`_",
+        "cp_name_ar":   "👤 *{name}*\n\nArabic name (optional):",
+        "cp_type":      "👤 *{name}*\n\nSelect customer type:",
+        "cp_country":   "🌍 Country code (3 letters, optional):\n\n_Example: TUR, EGY, SAU_",
+        "cp_phone":     "📞 Phone number (optional):\n\n_Example: +20 123 456 7890_",
+        "cp_summary":   "📋 *Customer Summary*",
+        "cp_created":   "✅ *Customer created!*\n\n• Name: *{name}*\n• Code: `{code}`\n• PIN: `{pin}`",
+        "btn_confirm":  "✅ Confirm",
+        "btn_cancel":   "❌ Cancel",
+        "btn_skip":     "⏭ Skip",
+        "btn_no_cp":    "⏭ No customer",
+        "btn_customer": "👤 Customer",
+        "btn_supplier": "🏭 Supplier",
+        "btn_both":     "🔄 Both",
+        "btn_founder":  "👑 Founder",
+        "btn_create":   "✅ Create",
+        "user_not_found": "❌ User not found. Please re-link your account.",
+        "help": (
+            "🔧 *Commands*\n\n"
+            "• `💰 Balance` → Safe balances\n"
+            "• `📊 Report` → Daily summary\n"
+            "• `💱 Rates` → Exchange rates\n"
+            "• `📋 Transactions` → Last 10 transactions\n"
+            "• `➕ New Transaction` → Create transaction\n"
+            "• `👤 Add Customer` → New customer\n"
+            "• `🌐 Language` → Change language\n"
+            "• `cancel` → Cancel current operation"
+        ),
+    },
+}
+
+# Kullanıcı dil tercihleri (telegram_id → 'tr'|'ar'|'en')
+_user_langs: Dict[str, str] = {}
+
+def _get_lang(uid: int) -> str:
+    return _user_langs.get(str(uid), "tr")
+
+def _set_lang(uid: int, lang: str):
+    _user_langs[str(uid)] = lang
+
+def _L(uid: int, key: str, **kwargs) -> str:
+    """Kullanıcının dilinde metin döndür."""
+    lang = _get_lang(uid)
+    text = BOT_L.get(lang, BOT_L["tr"]).get(key, BOT_L["tr"].get(key, key))
+    return text.format(**kwargs) if kwargs else text
+
+def _make_menu(uid: int) -> ReplyKeyboardMarkup:
+    """Kullanıcının diline göre kalıcı menü klavyesi."""
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    return ReplyKeyboardMarkup(
+        [
+            [L["btn_balance"],  L["btn_report"]],
+            [L["btn_rates"],    L["btn_txns"]],
+            [L["btn_new_txn"],  L["btn_add_cp"]],
+            [L["btn_lang"],     L["btn_help"]],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+def _menu_to_cmd(uid: int, text: str) -> Optional[str]:
+    """Menü buton metnini iç komuta dönüştür. Eşleşme yoksa None döner."""
+    lang = _get_lang(uid)
+    L    = BOT_L.get(lang, BOT_L["tr"])
+    mapping = {
+        L["btn_balance"]:  "bakiye",
+        L["btn_report"]:   "rapor",
+        L["btn_rates"]:    "kur",
+        L["btn_txns"]:     "işlemler",
+        L["btn_new_txn"]:  "yeni işlem",
+        L["btn_add_cp"]:   "müşteri ekle",
+        L["btn_lang"]:     "dil",
+        L["btn_help"]:     "?",
+    }
+    return mapping.get(text)
 
 ZERO = Decimal("0")
 
@@ -117,28 +370,24 @@ def make_handlers(company_id, company_name: str):
 
     async def on_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
-        _cclr(company_id, uid)  # Açık konuşmayı sıfırla
+        _cclr(company_id, uid)
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
             admin = _find_admin(uid, company_id, db)
             if admin:
                 await update.message.reply_text(
-                    f"👋 *{company_name} — Yönetici Paneli*\n\n"
-                    f"Hoş geldiniz, *{admin.name}*!\n\n"
-                    "📊 `bakiye` · `rapor` · `kur` · `işlemler`\n"
-                    "➕ `yeni işlem` · `müşteri ekle`\n"
-                    "ℹ️ `?` → Tüm komutlar",
+                    _L(uid, "welcome", company=company_name, name=admin.name),
                     parse_mode="Markdown",
+                    reply_markup=_make_menu(uid),
                 )
             else:
                 await update.message.reply_text(
-                    "🔐 *Safiron Hawale — Yönetici Botu*\n\n"
-                    "Hesabınız henüz bu bota bağlı değil.\n\n"
-                    "Bağlanmak için:\n"
+                    "🔐 *Safiron Hawale*\n\n"
+                    "Hesabınız bağlı değil. Bağlanmak için:\n"
                     "1. Uygulamada *Kullanıcılar* sayfasını açın\n"
-                    "2. Kendi satırınızdaki pini kopyalayın\n"
-                    "3. Aşağıdaki komutu gönderin:\n\n"
+                    "2. Pininizi kopyalayın\n"
+                    "3. Gönderin:\n\n"
                     "`bağla PİNİNİZ`\n\n"
                     "_Örnek: `bağla SAF-7K2M`_",
                     parse_mode="Markdown",
@@ -157,26 +406,32 @@ def make_handlers(company_id, company_name: str):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            # İptal komutu her zaman çalışır
-            if cmd in ("iptal", "/iptal", "cancel", "/cancel"):
+            # İptal komutu her zaman çalışır (tüm dillerde)
+            if cmd in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
                 _cclr(company_id, uid)
-                await update.message.reply_text("❌ İşlem iptal edildi.", parse_mode="Markdown")
+                await update.message.reply_text(
+                    _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
+                )
                 return
 
             admin = _find_admin(uid, company_id, db)
 
             if not admin:
-                # Bağlanmamış kullanıcı
-                if cmd.startswith("bağla ") or cmd.startswith("bagla "):
+                # Bağlanmamış kullanıcı — bağla/link/ربط komutunu kabul et
+                if cmd.startswith("bağla ") or cmd.startswith("bagla ") or cmd.startswith("link ") or cmd.startswith("ربط "):
                     parts = text.split()
-                    reply = _admin_pin_bagla(parts[1].upper(), uid, company_id, db) if len(parts) >= 2 else "❓ Kullanım: `bağla PİNİNİZ`"
+                    if len(parts) >= 2:
+                        pin = parts[1].upper()
+                        result = _admin_pin_bagla(pin, uid, company_id, db)
+                        # Bağlantı başarılıysa menüyü göster
+                        if result.startswith("✅"):
+                            await update.message.reply_text(result, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                        else:
+                            await update.message.reply_text(result, parse_mode="Markdown")
+                    else:
+                        await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
                 else:
-                    reply = (
-                        "🔐 *Hesabınız henüz bağlı değil.*\n\n"
-                        "`bağla PİNİNİZ` yazın.\n"
-                        "_Örnek: `bağla SAF-7K2M`_"
-                    )
-                await update.message.reply_text(reply, parse_mode="Markdown")
+                    await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
                 return
 
             # Aktif konuşma varsa → konuşma handler'ına yönlendir
@@ -185,20 +440,36 @@ def make_handlers(company_id, company_name: str):
                 result = await _conv_handle_text(conv, text, uid, company_id, db)
                 if result:
                     msg, kb = result
-                    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+                    # kb None ise menüye dön
+                    if kb is None:
+                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                    else:
+                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+                return
+
+            # Menü butonu mu? → iç komuta dönüştür
+            mapped = _menu_to_cmd(uid, text)
+            if mapped:
+                cmd = mapped
+
+            # Dil değiştirme
+            if cmd == "dil":
+                kb = _kb([
+                    [("🇹🇷 Türkçe", "lang:tr"), ("🇸🇦 العربية", "lang:ar"), ("🇬🇧 English", "lang:en")],
+                ])
+                await update.message.reply_text(_L(uid, "lang_select"), parse_mode="Markdown", reply_markup=kb)
                 return
 
             # Normal admin komutu
-            reply = _admin_cmd(cmd, text, company_id, db)
+            reply = _admin_cmd(cmd, text, company_id, db, uid=uid)
             if isinstance(reply, tuple):
                 msg, kb = reply
-                # Sentinel: konuşma başlat
                 if msg == "__start_txn__":
                     _cset(company_id, uid, S_TXN_TYPE, {})
-                    msg, kb = _start_txn_type()
+                    msg, kb = _start_txn_type(uid)
                 elif msg == "__start_cp__":
                     _cset(company_id, uid, S_CP_NAME, {})
-                    msg, kb = _start_cp_create()
+                    msg, kb = _start_cp_create(uid)
                 await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
             else:
                 for chunk in [reply[i:i+4096] for i in range(0, len(reply), 4096)]:
@@ -206,7 +477,7 @@ def make_handlers(company_id, company_name: str):
 
         except Exception as exc:
             logger.exception(f"[{company_name}] Hata: {exc}")
-            await update.message.reply_text("❌ Sunucu hatası. Lütfen tekrar deneyin.")
+            await update.message.reply_text(_L(uid, "server_err"), parse_mode="Markdown")
         finally:
             db.close()
 
@@ -224,14 +495,29 @@ def make_handlers(company_id, company_name: str):
                 await query.edit_message_text("🚫 Yetki yok.", parse_mode="Markdown")
                 return
 
+            # Dil değiştirme
+            if data.startswith("lang:"):
+                lang = data[5:]
+                _set_lang(uid, lang)
+                key = f"lang_set_{lang}"
+                msg = BOT_L.get(lang, BOT_L["tr"]).get(key, "✅")
+                await query.edit_message_text(msg, parse_mode="Markdown")
+                # Menüyü yeni dilde göster
+                await query.message.reply_text(
+                    _L(uid, "welcome", company=company_name, name=admin.name),
+                    parse_mode="Markdown",
+                    reply_markup=_make_menu(uid),
+                )
+                return
+
             if data == "cancel":
                 _cclr(company_id, uid)
-                await query.edit_message_text("❌ İptal edildi.", parse_mode="Markdown")
+                await query.edit_message_text(_L(uid, "cancelled"), parse_mode="Markdown")
                 return
 
             conv = _cget(company_id, uid)
             if not conv:
-                await query.edit_message_text("⚠️ Oturum zaman aşımına uğradı. Tekrar başlatın.", parse_mode="Markdown")
+                await query.edit_message_text(_L(uid, "timeout"), parse_mode="Markdown")
                 return
 
             result = await _conv_handle_cb(conv, data, uid, company_id, db)
@@ -244,7 +530,7 @@ def make_handlers(company_id, company_name: str):
 
         except Exception as exc:
             logger.exception(f"[{company_name}] CB Hata: {exc}")
-            await query.edit_message_text("❌ Sunucu hatası.")
+            await query.edit_message_text(_L(uid, "server_err"))
         finally:
             db.close()
 
@@ -255,70 +541,66 @@ def make_handlers(company_id, company_name: str):
 # Admin komutları
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _admin_cmd(cmd: str, raw: str, company_id, db):
-    if cmd in ("?", "yardım", "yardim"):
-        return (
-            "🔧 *Yönetici Komutları*\n\n"
-            "• `bakiye` → Tüm kasa bakiyeleri\n"
-            "• `rapor` → Günlük özet\n"
-            "• `kur` → Tüm döviz kurları\n"
-            "• `kur TRY` → Belirli kur\n"
-            "• `işlemler` → Son 10 işlem\n"
-            "• `müşteri KOD` → Müşteri bakiyesi\n"
-            "• `müşteriler` → Müşteri listesi\n"
-            "➕ `yeni işlem` → İşlem oluştur\n"
-            "➕ `müşteri ekle` → Yeni müşteri"
-        )
+def _admin_cmd(cmd: str, raw: str, company_id, db, uid: int = 0):
+    if cmd in ("?", "yardım", "yardim", "help", "مساعدة"):
+        return _L(uid, "help")
 
-    if cmd in ("b", "bakiye"):
+    if cmd in ("b", "bakiye", "balance", "الرصيد"):
         return _q_bakiye(company_id, db)
-    if cmd in ("r", "rapor"):
+    if cmd in ("r", "rapor", "report", "التقرير"):
         return _q_rapor(company_id, db)
-    if cmd in ("k", "kur"):
+    if cmd in ("k", "kur", "rates", "الأسعار"):
         return _q_kurlar(db)
-    if cmd.startswith("kur "):
+    if cmd.startswith("kur ") or cmd.startswith("rate "):
         return _q_tek_kur(db, cmd.split()[1].upper())
-    if cmd in ("i", "işlemler", "islemler"):
+    if cmd in ("i", "işlemler", "islemler", "transactions", "المعاملات"):
         return _q_son_islemler(company_id, db)
 
     if cmd in ("müşteriler", "musteriler"):
         return _q_musteri_listesi(company_id, db)
 
     if cmd.startswith("müşteri ") or cmd.startswith("musteri "):
-        # "müşteri ekle" → yeni müşteri akışı başlat
         rest = raw[raw.index(" ")+1:].strip().lower()
         if rest == "ekle":
-            return _start_cp_create()
+            return ("__start_cp__", None)
         kod = raw.split()[1].upper()
         return _q_musteri_bakiye(kod, company_id, db)
 
-    if cmd in ("yeni işlem", "yeni islem", "işlem ekle", "islem ekle", "yeni", "+"):
-        return ("__start_txn__", None)   # Sentinel — on_message uid'i biliyor
+    if cmd in ("yeni işlem", "yeni islem", "işlem ekle", "islem ekle",
+               "new transaction", "معاملة جديدة", "yeni", "+"):
+        return ("__start_txn__", None)
 
-    if cmd in ("müşteri ekle", "musteri ekle"):
-        return ("__start_cp__", None)    # Sentinel
+    if cmd in ("müşteri ekle", "musteri ekle", "add customer", "إضافة عميل"):
+        return ("__start_cp__", None)
 
-    return "❓ Komut tanınmadı. Yardım: `?`"
+    return _L(uid, "unknown_cmd")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Konuşma akışı başlatıcılar
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _start_txn_type():
+def _start_txn_type(uid: int = 0):
     """İşlem türü seç ekranı."""
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
     kb = _kb([
         [("💸 Havale",  "t:remittance"), ("💱 Döviz",   "t:fx")],
         [("🏦 SWIFT",   "t:swift"),      ("📥 Yatırma", "t:deposit")],
         [("📤 Çekme",   "t:withdrawal"), ("🔄 İç Transfer", "t:internal_transfer")],
-        [("❌ İptal",   "cancel")],
+        [(L["btn_cancel"], "cancel")],
     ])
-    return ("➕ *Yeni İşlem*\n\nİşlem türünü seçin:", kb)
+    return (L["txn_title"], kb)
 
 
-def _start_cp_create():
-    """Yeni müşteri oluşturma akışını başlat — sadece state döner, UID yok."""
-    return ("➕ *Yeni Müşteri*\n\nMüşterinin adını yazın (İngilizce/Latin):\n\n_İptal: `iptal`_", _cancel_kb())
+def _start_cp_create(uid: int = 0):
+    """Yeni müşteri oluşturma akışını başlat."""
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    return (L["cp_title"], _cancel_kb_l(uid))
+
+
+def _cancel_kb_l(uid: int = 0):
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    return _kb([[(L["btn_cancel"], "cancel")]])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -680,11 +962,21 @@ async def _do_create_txn(data: dict, uid: int, company_id, db):
     from datetime import date as dt_date
     from app.models.master import Account
     from app.models.transaction import Transaction, TransactionLeg, TxnType, TxnStatus, LegType
-    import uuid
+    from app.models.user import User
 
     txn_type = data.get("txn_type")
     today    = dt_date.today()
     is_simple = txn_type in ("deposit", "withdrawal")
+
+    # Admin kullanıcının DB id'sini bul (created_by için zorunlu)
+    admin_user = db.query(User).filter(
+        User.telegram_id == str(uid),
+        User.company_id  == company_id,
+        User.is_active   == True,
+    ).first()
+    if not admin_user:
+        return ("❌ Kullanıcı bulunamadı. Lütfen tekrar bağlanın.", None)
+    created_by_id = admin_user.id
 
     # Txn numarası
     from sqlalchemy import func
@@ -716,6 +1008,7 @@ async def _do_create_txn(data: dict, uid: int, company_id, db):
         counterparty_id=cp_id or None,
         counterparty_role="customer" if cp_id else None,
         company_id=company_id,
+        created_by=created_by_id,
     )
     db.add(txn)
     db.flush()
