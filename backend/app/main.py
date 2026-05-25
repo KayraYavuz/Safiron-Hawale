@@ -94,11 +94,12 @@ async def startup():
     from app.models.master import Location, Currency
 
     # ── Telegram — her şirketin botunu başlat ────────────────────────────
-    try:
-        from app.services.telegram_multi_bot import start_all_bots
-        start_all_bots()
-    except Exception as e:
-        print(f"⚠️  Telegram bot başlatma hatası: {e}")
+    if os.environ.get("START_TELEGRAM_BOT", "true").lower() == "true":
+        try:
+            from app.services.telegram_multi_bot import start_all_bots
+            start_all_bots()
+        except Exception as e:
+            print(f"⚠️  Telegram bot başlatma hatası: {e}")
 
     # ── Soft-deleted kullanıcıların emaillerini düzelt ───────────────────────
     # Daha önce silinen kullanıcıların emailleri DB'de hâlâ orijinal halde duruyor.
