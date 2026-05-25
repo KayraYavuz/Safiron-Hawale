@@ -1594,42 +1594,42 @@ def start_company_bot(company_id: str, company_name: str, token: str):
             conflict_backoff = 5  # 409 Conflict için başlangıç bekleme (saniye)
             MAX_BACKOFF = 60
 
-            while True:
-                try:
-                    params = {"timeout": 30, "allowed_updates": ["message", "callback_query"]}
-                    if offset is not None:
-                        params["offset"] = offset
-                    async with httpx.AsyncClient(timeout=35) as client:
+            async with httpx.AsyncClient(timeout=35) as client:
+                while True:
+                    try:
+                        params = {"timeout": 30, "allowed_updates": ["message", "callback_query"]}
+                        if offset is not None:
+                            params["offset"] = offset
                         resp = await client.get(
                             f"https://api.telegram.org/bot{token}/getUpdates",
                             params=params,
                         )
                         data = resp.json()
 
-                    if data.get("ok"):
-                        conflict_backoff = 5  # Başarılı → backoff sıfırla
-                        from telegram import Update as TGUpdate
-                        for upd_data in data.get("result", []):
-                            offset = upd_data["update_id"] + 1
-                            upd = TGUpdate.de_json(upd_data, app.bot)
-                            await app.process_update(upd)
-                    elif data.get("error_code") == 409:
-                        # Başka bir instance çalışıyor — exponential backoff
-                        logger.warning(
-                            f"[{company_name}] 409 Conflict — başka bir bot instance çalışıyor. "
-                            f"{conflict_backoff}s bekleniyor…"
-                        )
-                        await asyncio.sleep(conflict_backoff)
-                        conflict_backoff = min(conflict_backoff * 2, MAX_BACKOFF)
-                    else:
-                        logger.error(f"[{company_name}] getUpdates hata: {data}")
-                        await asyncio.sleep(5)
+                        if data.get("ok"):
+                            conflict_backoff = 5  # Başarılı → backoff sıfırla
+                            from telegram import Update as TGUpdate
+                            for upd_data in data.get("result", []):
+                                offset = upd_data["update_id"] + 1
+                                upd = TGUpdate.de_json(upd_data, app.bot)
+                                await app.process_update(upd)
+                        elif data.get("error_code") == 409:
+                            # Başka bir instance çalışıyor — exponential backoff
+                            logger.warning(
+                                f"[{company_name}] 409 Conflict — başka bir bot instance çalışıyor. "
+                                f"{conflict_backoff}s bekleniyor…"
+                            )
+                            await asyncio.sleep(conflict_backoff)
+                            conflict_backoff = min(conflict_backoff * 2, MAX_BACKOFF)
+                        else:
+                            logger.error(f"[{company_name}] getUpdates hata: {data}")
+                            await asyncio.sleep(5)
 
-                except asyncio.CancelledError:
-                    break
-                except Exception as exc:
-                    logger.error(f"[{company_name}] Polling hata: {exc}")
-                    await asyncio.sleep(5)
+                    except asyncio.CancelledError:
+                        break
+                    except Exception as exc:
+                        logger.error(f"[{company_name}] Polling hata: {exc}")
+                        await asyncio.sleep(5)
 
             await app.stop()
             await app.shutdown()
