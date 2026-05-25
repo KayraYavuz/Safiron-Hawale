@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 # API URL'ini doğrudan buraya yazıyoruz
-ENV VITE_API_URL=https://hawala-backend-174683789974.europe-west3.run.app
+ENV VITE_API_URL=https://api.safironpay.com
 RUN npm run build
 
 # Production stage
