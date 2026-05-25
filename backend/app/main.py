@@ -17,7 +17,15 @@ from app.api.whatsapp import router as whatsapp_router
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Hawala & FX Accounting", version="2.0.0")
+import os as _os
+_debug = _os.environ.get("DEBUG", "false").lower() == "true"
+app = FastAPI(
+    title="Hawala & FX Accounting",
+    version="2.0.0",
+    docs_url="/docs" if _debug else None,
+    redoc_url="/redoc" if _debug else None,
+    openapi_url="/openapi.json" if _debug else None,
+)
 
 # ── Güvenlik başlıkları ───────────────────────────────────────────────────────
 from starlette.middleware.base import BaseHTTPMiddleware
