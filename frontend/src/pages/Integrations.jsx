@@ -11,10 +11,10 @@ import toast from 'react-hot-toast'
 const AI_SERVICES = [
   {
     key:         'GROQ_API_KEY',
-    name:        'Safiron LLM (Groq)',
-    subtitle:    'LLaMA 3 · Stratejik Analiz & Chat',
-    description: 'AI finansal analiz ve asistan özelliği için gerekli. api.groq.com üzerinden ücretsiz alınabilir.',
-    docs:        'https://console.groq.com/keys',
+    name:        'Safiron LLM',
+    subtitle:    'Stratejik Analiz & Asistan',
+    description: 'AI finansal analiz ve chat asistanı için gerekli bağlantı anahtarı.',
+    docs:        null,
     icon:        '✦',
     color:       '#C9A84C',
     bg:          '#FBF7EE',
@@ -192,14 +192,16 @@ function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
           </div>
           <div style={{ fontSize: 12, color: C.text3, marginTop: 3 }}>{service.description}</div>
         </div>
-        <a
-          href={service.docs}
-          target="_blank"
-          rel="noreferrer"
-          style={{ fontSize: 11, color: C.text3, textDecoration: 'none', flexShrink: 0, marginTop: 2 }}
-        >
-          Docs ↗
-        </a>
+        {service.docs && (
+          <a
+            href={service.docs}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: 11, color: C.text3, textDecoration: 'none', flexShrink: 0, marginTop: 2 }}
+          >
+            Docs ↗
+          </a>
+        )}
       </div>
 
       {/* Key display / edit */}
