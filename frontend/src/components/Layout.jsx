@@ -18,7 +18,7 @@ const S = {
 
 // ── Navigation config (stable reference — outside component) ─────────────────
 const BASE_NAV = [
-  { path: '/',               key: 'dashboard',      icon: 'dashboard'     },
+  { path: '/dashboard',      key: 'dashboard',      icon: 'dashboard'     },
   { path: '/transactions',   key: 'transactions',   icon: 'transactions'  },
   { path: '/counterparties', key: 'counterparties', icon: 'counterparties'},
   { path: '/accounts',       key: 'accounts',       icon: 'accounts'      },
@@ -62,7 +62,7 @@ function Layout({ children }) {
   }
 
   const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
-  const handleLogout = () => { logout(); navigate('/login') }
+  const handleLogout = () => { logout(); navigate('/') }
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   const roleLabel  = ROLE_LABEL[user?.role] || user?.role
 
