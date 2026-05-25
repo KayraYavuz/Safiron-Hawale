@@ -103,6 +103,7 @@ export const companiesApi = {
   list:   ()     => api.get('/api/companies'),
   create: (data) => api.post('/api/companies', data),
   toggle: (id)   => api.patch(`/api/companies/${id}/toggle`),
+  updateTelegramBot: (id, token) => api.patch(`/api/companies/${id}/telegram-bot`, { token }),
 }
 
 export const supplierSettlementApi = {

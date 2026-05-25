@@ -8,6 +8,128 @@ import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
 import { getRoleInfo } from '../constants'
 
+function TelegramBotForm({ company, t }) {
+  const qc = useQueryClient()
+  const [tokenInput, setTokenInput] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const isSet = !!company.telegram_bot_token
+
+  const botMut = useMutation({
+    mutationFn: ({ token }) => companiesApi.updateTelegramBot(company.id, token),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['companies'] })
+      toast.success(data.data.status === 'bot_started' ? 'Bot başarıyla başlatıldı!' : 'Token kaldırıldı.')
+      setIsEditing(false)
+      setTokenInput('')
+    },
+    onError: e => toast.error(e.response?.data?.detail || 'Hata oluştu'),
+  })
+
+  const handleSave = () => {
+    botMut.mutate({ token: tokenInput })
+  }
+
+  const handleClear = () => {
+    if (window.confirm('Bu şirketin Telegram bot bağlantısını silmek istediğinize emin misiniz?')) {
+      botMut.mutate({ token: '' })
+    }
+  }
+
+  return (
+    <div style={{
+      margin: '8px 16px 14px 16px',
+      padding: '16px 20px',
+      borderRadius: 8,
+      border: `1.5px solid ${isSet ? '#BAE6FD' : C.border}`,
+      background: isSet ? '#F0F9FF' : 'white',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 18 }}>✈️</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 13.5, color: C.navy }}>Telegram Bot Entegrasyonu</span>
+            {isSet ? (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
+                background: '#BAE6FD', color: '#0369A1', letterSpacing: '0.04em',
+              }}>
+                AKTİF
+              </span>
+            ) : (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
+                background: '#F1F5F9', color: C.text3, letterSpacing: '0.04em',
+              }}>
+                BAĞLI DEĞİL
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>
+            Bu şirkete özel Telegram botunun token'ını tanımlayın. (Örn: `123456:ABC-DEF...`)
+          </div>
+        </div>
+      </div>
+
+      {!isEditing ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            flex: 1, padding: '8px 12px', borderRadius: 8, background: '#F8FAFC',
+            border: `1px solid ${C.border}`, fontFamily: 'var(--mono)', fontSize: 12, color: C.text2,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {isSet ? '••••••••••••••••••••••••••••••••' : '— API Token tanımlanmamış —'}
+          </div>
+          <Btn
+            variant="ghost"
+            style={{ fontSize: 12, padding: '7px 14px', flexShrink: 0 }}
+            onClick={() => { setIsEditing(true); setTokenInput('') }}
+          >
+            <Icon name="key" size={13} color={C.navy} />
+            {isSet ? 'Güncelle' : 'Token Ekle'}
+          </Btn>
+          {isSet && (
+            <Btn
+              variant="danger"
+              style={{ fontSize: 12, padding: '7px 12px', flexShrink: 0 }}
+              onClick={handleClear}
+              disabled={botMut.isPending}
+            >
+              <Icon name="trash" size={13} color="white" />
+            </Btn>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Input
+            value={tokenInput}
+            onChange={e => setTokenInput(e.target.value)}
+            placeholder="Bot Token girin..."
+            style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 12 }}
+            autoFocus
+          />
+          <Btn
+            style={{ fontSize: 12, padding: '7px 16px', flexShrink: 0 }}
+            onClick={handleSave}
+            disabled={botMut.isPending || !tokenInput.trim()}
+          >
+            {botMut.isPending ? '...' : 'Kaydet'}
+          </Btn>
+          <Btn
+            variant="ghost"
+            style={{ fontSize: 12, padding: '7px 12px', flexShrink: 0 }}
+            onClick={() => setIsEditing(false)}
+          >
+            İptal
+          </Btn>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const BLANK = {
   name: '', code: '',
   admin_name: '', admin_email: '', admin_password: '',
@@ -260,52 +382,63 @@ export default function Companies() {
                     </Td>
                   </tr>
 
-                  {/* Expanded user list */}
+                  {/* Expanded detail section */}
                   {isExpanded && (
                     <tr>
-                      <td colSpan={6} style={{ padding: '0 0 12px 0', background: '#F8FAFC' }}>
-                        <div style={{ margin: '4px 16px', borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-                          {coUsers.length === 0 ? (
-                            <div style={{ padding: '16px 20px', color: C.text3, fontSize: 13 }}>
-                              {t.noUsersInCompany || 'Bu şirkette kullanıcı yok'}
+                      <td colSpan={6} style={{ padding: '4px 0 16px 0', background: '#F8FAFC' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          
+                          {/* Telegram bot token settings */}
+                          <TelegramBotForm company={co} t={t} />
+
+                          {/* Company users list */}
+                          <div style={{ margin: '0 16px 8px 16px', borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden', background: 'white' }}>
+                            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 12, color: C.navy, background: '#F8FAFC' }}>
+                              {t.users || 'Kullanıcılar'} ({coUsers.length})
                             </div>
-                          ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                              <thead>
-                                <tr style={{ background: '#F1F5F9' }}>
-                                  <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.nameLabel || 'Ad'}</th>
-                                  <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.email || 'E-posta'}</th>
-                                  <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.role || 'Rol'}</th>
-                                  <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.status || 'Durum'}</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {coUsers.map(u => {
-                                  const ri = ROLE_INFO[u.role] ?? ROLE_INFO.viewer
-                                  return (
-                                  <tr key={u.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                                    <td style={{ padding: '9px 16px', fontSize: 13, fontWeight: ['admin', 'super_admin', 'manager'].includes(u.role) ? 600 : 400 }}>{u.name}</td>
-                                    <td style={{ padding: '9px 16px', fontSize: 12, color: C.text2, fontFamily: 'var(--mono)' }}>{u.email}</td>
-                                    <td style={{ padding: '9px 16px', fontSize: 12 }}>
-                                      <span style={{
-                                        padding: '2px 9px', borderRadius: 100, fontSize: 11,
-                                        background: ri.bg, color: ri.color,
-                                        fontWeight: 500,
-                                      }}>
-                                        {ri.label}
-                                      </span>
-                                    </td>
-                                    <td style={{ padding: '9px 16px', fontSize: 12 }}>
-                                      <span style={{ color: u.is_active ? '#059669' : '#DC2626' }}>
-                                        {u.is_active ? (t.active || '● Aktif') : (t.inactive || '○ Pasif')}
-                                      </span>
-                                    </td>
+                            {coUsers.length === 0 ? (
+                              <div style={{ padding: '16px 20px', color: C.text3, fontSize: 13 }}>
+                                {t.noUsersInCompany || 'Bu şirkette kullanıcı yok'}
+                              </div>
+                            ) : (
+                              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                  <tr style={{ background: '#F1F5F9' }}>
+                                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.nameLabel || 'Ad'}</th>
+                                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.email || 'E-posta'}</th>
+                                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.role || 'Rol'}</th>
+                                    <th style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 600, color: C.text3 }}>{t.status || 'Durum'}</th>
                                   </tr>
-                                  )
-                                })}
-                              </tbody>
-                            </table>
-                          )}
+                                </thead>
+                                <tbody>
+                                  {coUsers.map(u => {
+                                    const ri = ROLE_INFO[u.role] ?? ROLE_INFO.viewer
+                                    return (
+                                    <tr key={u.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                                      <td style={{ padding: '9px 16px', fontSize: 13, fontWeight: ['admin', 'super_admin', 'manager'].includes(u.role) ? 600 : 400 }}>{u.name}</td>
+                                      <td style={{ padding: '9px 16px', fontSize: 12, color: C.text2, fontFamily: 'var(--mono)' }}>{u.email}</td>
+                                      <td style={{ padding: '9px 16px', fontSize: 12 }}>
+                                        <span style={{
+                                          padding: '2px 9px', borderRadius: 100, fontSize: 11,
+                                          background: ri.bg, color: ri.color,
+                                          fontWeight: 500,
+                                        }}>
+                                          {ri.label}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '9px 16px', fontSize: 12 }}>
+                                        <span style={{ color: u.is_active ? '#059669' : '#DC2626' }}>
+                                          {u.is_active ? (t.active || '● Aktif') : (t.inactive || '○ Pasif')}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+
                         </div>
                       </td>
                     </tr>
