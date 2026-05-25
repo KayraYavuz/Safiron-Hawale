@@ -1310,33 +1310,40 @@ def _q_bakiye(company_id, db) -> str:
                   .filter(Account.is_active == True, Account.company_id == company_id)
                   .all())
     if not accounts:
-        return "📭 Aktif hesap bulunamadı."
+        return "📭 *Aktif hesap bulunamadı.*"
 
     balances  = get_all_balances(db)
     usd_rates = get_all_usd_rates(db)
 
-    lines = [f"💰 *Kasa Bakiyeleri*", f"📅 {date.today():%d.%m.%Y}", ""]
+    lines = ["💰 *Kasa Bakiyeleri*", f"📅 _{date.today():%d.%m.%Y}_", "━━━━━━━━━━━━━━━━━━━"]
     total_usd = ZERO
-    cur_loc   = None
+    
+    # Grupla ve sırala
+    grouped = {}
+    for acc in accounts:
+        loc = acc.location.name_tr if acc.location else "Diğer"
+        grouped.setdefault(loc, []).append(acc)
 
-    for acc in sorted(accounts, key=lambda a: (
-        a.location.name_tr if a.location else "",
-        a.currency.code    if a.currency  else ""
-    )):
-        loc     = acc.location.name_tr if acc.location else "—"
-        cur     = acc.currency.code    if acc.currency  else "USD"
-        balance = balances.get(str(acc.id), ZERO)
-        rate    = usd_rates.get(cur, Decimal("1"))
-        usd     = (balance / rate).quantize(Decimal("0.01")) if rate else ZERO
-        total_usd += usd
+    FLAGS = {"USD": "🇺🇸", "EUR": "🇪🇺", "TRY": "🇹🇷", "GBP": "🇬🇧", "AED": "🇦🇪", "EGP": "🇪🇬", "SAR": "🇸🇦", "QAR": "🇶🇦"}
 
-        if loc != cur_loc:
-            cur_loc = loc
-            lines.append(f"\n📍 *{loc}*")
-        sign = "+" if balance >= 0 else ""
-        lines.append(f"  {cur}: {sign}{balance:,.2f}  ≈ ${usd:,.2f}")
+    for loc, acc_list in sorted(grouped.items()):
+        lines.append(f"\n📍 *{loc}*")
+        acc_sorted = sorted(acc_list, key=lambda a: a.currency.code if a.currency else "USD")
+        for idx, acc in enumerate(acc_sorted):
+            cur = acc.currency.code if acc.currency else "USD"
+            balance = balances.get(str(acc.id), ZERO)
+            rate = usd_rates.get(cur, Decimal("1"))
+            usd = (balance / rate).quantize(Decimal("0.01")) if rate else ZERO
+            total_usd += usd
+            
+            flag = FLAGS.get(cur, "💵")
+            is_last = (idx == len(acc_sorted) - 1)
+            tree_char = "└" if is_last else "├"
+            
+            sign = "+" if balance > 0 else ""
+            lines.append(f" {tree_char}  {flag} `{cur}` ➔  `{sign}{balance:,.2f}`  _(${usd:,.2f})_")
 
-    lines += ["", f"💵 *Toplam: ${total_usd:,.2f}*"]
+    lines += ["\n━━━━━━━━━━━━━━━━━━━", f"💵 *Toplam Portföy:* `${total_usd:,.2f}`"]
     return "\n".join(lines)
 
 
@@ -1366,13 +1373,16 @@ def _q_rapor(company_id, db) -> str:
                  .scalar() or 0)
 
     lines = [
-        f"📊 *Günlük Rapor — {today:%d.%m.%Y}*", "",
-        f"📦 Tamamlanan: *{len(txns)}*",
-        f"💵 Hacim:      *${total_usd:,.2f}*",
-        f"📈 Kâr (PnL):  *${total_pnl:,.4f}*",
+        f"📊 *Günlük Özet Raporu*", 
+        f"📅 _{today:%d.%m.%Y}_", 
+        "━━━━━━━━━━━━━━━━━━━",
+        f"📦 Tamamlanan  ➔  `{len(txns)}` İşlem",
+        f"💵 Toplam Ciro ➔  `${total_usd:,.2f}`",
+        f"📈 Net Kâr     ➔  `${total_pnl:,.2f}`",
     ]
     if pending:
-        lines.append(f"⏳ Bekleyen:   *{pending}*")
+        lines.append(f"⏳ Bekleyen    ➔  `{pending}` İşlem")
+    lines.append("━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
 
@@ -1388,10 +1398,15 @@ def _q_kurlar(db) -> str:
         ORDER BY e1.currency_code
     """)).fetchall()
     if not rows:
-        return "📭 Kur kaydı bulunamadı."
-    lines = ["💱 *Döviz Kurları* (1 USD = ?)"]
+        return "📭 *Kur kaydı bulunamadı.*"
+        
+    FLAGS = {"USD": "🇺🇸", "EUR": "🇪🇺", "TRY": "🇹🇷", "GBP": "🇬🇧", "AED": "🇦🇪", "EGP": "🇪🇬", "SAR": "🇸🇦", "QAR": "🇶🇦"}
+    lines = ["💱 *Döviz Kurları (1 USD = ?)*", "━━━━━━━━━━━━━━━━━━━"]
     for r in rows:
-        lines.append(f"  {r.currency_code}: {Decimal(str(r.rate_per_usd)):,.4f}")
+        cur = r.currency_code
+        flag = FLAGS.get(cur, "💵")
+        lines.append(f"{flag} *{cur}*  ➔  `{Decimal(str(r.rate_per_usd)):,.4f}`")
+    lines.append("━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
 
@@ -1399,8 +1414,10 @@ def _q_tek_kur(db, currency: str) -> str:
     from app.services.balance import get_usd_rate
     rate = get_usd_rate(db, currency)
     if rate == Decimal("1") and currency != "USD":
-        return f"❓ {currency} kuru bulunamadı."
-    return f"💱 1 USD = *{rate:,.4f} {currency}*"
+        return f"❓ *{currency} kuru bulunamadı.*"
+    FLAGS = {"USD": "🇺🇸", "EUR": "🇪🇺", "TRY": "🇹🇷", "GBP": "🇬🇧", "AED": "🇦🇪", "EGP": "🇪🇬", "SAR": "🇸🇦", "QAR": "🇶🇦"}
+    flag = FLAGS.get(currency, "💵")
+    return f"💱 1 USD = {flag} *{rate:,.4f} {currency}*"
 
 
 def _q_son_islemler(company_id, db, limit: int = 10) -> str:
@@ -1412,7 +1429,7 @@ def _q_son_islemler(company_id, db, limit: int = 10) -> str:
               .order_by(Transaction.created_at.desc())
               .limit(limit).all())
     if not txns:
-        return "📭 İşlem bulunamadı."
+        return "📭 *İşlem bulunamadı.*"
 
     ids     = [t.id for t in txns]
     pnl_map = {p.transaction_id: p
@@ -1420,15 +1437,30 @@ def _q_son_islemler(company_id, db, limit: int = 10) -> str:
                           .filter(TransactionPnL.transaction_id.in_(ids)).all()}
 
     STATUS = {"completed": "✅", "pending": "⏳", "cancelled": "❌"}
-    lines  = [f"📋 *Son {limit} İşlem*", ""]
+    TYPE_LABELS = {
+        "remittance": "Havale",
+        "fx": "Döviz",
+        "swift": "SWIFT",
+        "deposit": "Yatırma",
+        "withdrawal": "Çekme",
+        "internal_transfer": "İç Transfer",
+    }
+    
+    lines  = [f"📋 *Son {limit} İşlem*", "━━━━━━━━━━━━━━━━━━━"]
     for t in txns:
         p   = pnl_map.get(t.id)
         usd = f"${Decimal(str(p.usd_amount)):,.2f}" if p and p.usd_amount else "—"
-        cp  = t.counterparty.name if t.counterparty else "—"
+        cp  = t.counterparty.name if t.counterparty else "Müşterisiz"
         dt  = t.created_at.strftime("%d.%m %H:%M") if t.created_at else "—"
-        lines.append(f"{STATUS.get(t.status.value,'•')} *{t.txn_number}* | {dt}")
-        lines.append(f"   {t.txn_type.value} · {usd} · {cp}")
+        status_icon = STATUS.get(t.status.value, "•")
+        txn_type_lbl = TYPE_LABELS.get(t.txn_type.value, t.txn_type.value)
+        
+        lines.append(f"{status_icon} *{t.txn_number}*  |  _{dt}_")
+        lines.append(f" ├  Tür: `{txn_type_lbl}`")
+        lines.append(f" ├  Miktar: `{usd}`")
+        lines.append(f" └  Müşteri: *{cp}*")
         lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines).rstrip()
 
 
