@@ -344,17 +344,15 @@ def _cancel_kb():
 # Kullanıcı tespiti
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _find_admin(telegram_id: int, company_id, db):
-    """Telegram ID ile şirket yöneticisini bul.
+def _find_admin(telegram_id: int, db):
+    """Telegram ID ile şirket yöneticisini bul (global).
     
-    company_id filtresi eklendi — kullanıcının bu şirkete ait olduğu doğrulanır.
-    Farklı şirketlerin botlarında aynı Telegram ID'nin çapraz erişim yapması engellenir.
+    Yöneticinin bağlı olduğu şirketi dinamik olarak tespit edebilmek için global arama yapılır.
     """
     from app.models.user import User, UserRole
     return (db.query(User)
               .filter(
                   User.telegram_id == str(telegram_id),
-                  User.company_id == company_id,
                   User.is_active == True,
               )
               .order_by(User.created_at.desc())
@@ -371,22 +369,29 @@ def _find_customer(telegram_id: int, company_id, db):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def make_handlers(company_id, company_name: str):
-    """Her şirkete özel handler fonksiyonları üretir."""
+    """Her şirkete özel handler fonksiyonları üretir (Paylaşımlı bot desteğiyle)."""
 
     async def on_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
-        _cclr(company_id, uid)
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            admin = _find_admin(uid, company_id, db)
+            admin = _find_admin(uid, db)
             if admin:
+                # Kullanıcının kendi şirket bilgilerini dinamik olarak çöz
+                user_company_id = admin.company_id
+                from app.models.master import Company
+                co = db.query(Company).filter(Company.id == user_company_id).first()
+                user_company_name = co.name if co else company_name
+
+                _cclr(user_company_id, uid)
                 await update.message.reply_text(
-                    _L(uid, "welcome", company=company_name, name=admin.name),
+                    _L(uid, "welcome", company=user_company_name, name=admin.name),
                     parse_mode="Markdown",
                     reply_markup=_make_menu(uid),
                 )
             else:
+                _cclr(company_id, uid)
                 await update.message.reply_text(
                     "🔐 *Safiron Hawale*\n\n"
                     "Hesabınız bağlı değil. Bağlanmak için:\n"
@@ -406,26 +411,15 @@ def make_handlers(company_id, company_name: str):
         text     = (update.message.text or "").strip()
         cmd      = text.lower()
 
-        logger.info(f"[{company_name}] @{username}: {text[:60]!r}")
-
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            # İptal komutu her zaman çalışır (tüm dillerde)
-            if cmd in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
-                _cclr(company_id, uid)
-                await update.message.reply_text(
-                    _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
-                )
-                return
-
-            # bağla/link komutu HER ZAMAN önce işlenir — zaten bağlı olsak bile
-            # (yanlış hesaba bağlıyken yeniden bağlanmaya izin ver)
+            # bağla/link komutu HER ZAMAN önce işlenir
             if cmd.startswith("bağla ") or cmd.startswith("bagla ") or cmd.startswith("link ") or cmd.startswith("ربط "):
                 parts = text.split()
                 if len(parts) >= 2:
                     pin = parts[1].upper()
-                    result = _admin_pin_bagla(pin, uid, company_id, db)
+                    result = _admin_pin_bagla(pin, uid, db)
                     if result.startswith("✅"):
                         await update.message.reply_text(result, parse_mode="Markdown", reply_markup=_make_menu(uid))
                     else:
@@ -434,16 +428,32 @@ def make_handlers(company_id, company_name: str):
                     await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
                 return
 
-            admin = _find_admin(uid, company_id, db)
+            admin = _find_admin(uid, db)
 
             if not admin:
                 await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
                 return
 
+            # Kullanıcının kendi şirket bilgilerini dinamik olarak çöz
+            user_company_id = admin.company_id
+            from app.models.master import Company
+            co = db.query(Company).filter(Company.id == user_company_id).first()
+            user_company_name = co.name if co else company_name
+
+            logger.info(f"[{user_company_name}] @{username}: {text[:60]!r}")
+
+            # İptal komutu her zaman çalışır (tüm dillerde)
+            if cmd in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
+                _cclr(user_company_id, uid)
+                await update.message.reply_text(
+                    _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
+                )
+                return
+
             # Aktif konuşma varsa → konuşma handler'ına yönlendir
-            conv = _cget(company_id, uid)
+            conv = _cget(user_company_id, uid)
             if conv:
-                result = await _conv_handle_text(conv, text, uid, company_id, db)
+                result = await _conv_handle_text(conv, text, uid, user_company_id, db)
                 if result:
                     msg, kb = result
                     # kb None ise menüye dön
@@ -467,14 +477,14 @@ def make_handlers(company_id, company_name: str):
                 return
 
             # Normal admin komutu
-            reply = _admin_cmd(cmd, text, company_id, db, uid=uid)
+            reply = _admin_cmd(cmd, text, user_company_id, db, uid=uid)
             if isinstance(reply, tuple):
                 msg, kb = reply
                 if msg == "__start_txn__":
-                    _cset(company_id, uid, S_TXN_TYPE, {})
+                    _cset(user_company_id, uid, S_TXN_TYPE, {})
                     msg, kb = _start_txn_type(uid)
                 elif msg == "__start_cp__":
-                    _cset(company_id, uid, S_CP_NAME, {})
+                    _cset(user_company_id, uid, S_CP_NAME, {})
                     msg, kb = _start_cp_create(uid)
                 await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
             else:
@@ -496,10 +506,16 @@ def make_handlers(company_id, company_name: str):
         from app.core.database import SessionLocal
         db = SessionLocal()
         try:
-            admin = _find_admin(uid, company_id, db)
+            admin = _find_admin(uid, db)
             if not admin:
                 await query.edit_message_text("🚫 Yetki yok.", parse_mode="Markdown")
                 return
+
+            # Kullanıcının kendi şirket bilgilerini dinamik olarak çöz
+            user_company_id = admin.company_id
+            from app.models.master import Company
+            co = db.query(Company).filter(Company.id == user_company_id).first()
+            user_company_name = co.name if co else company_name
 
             # Dil değiştirme
             if data.startswith("lang:"):
@@ -510,23 +526,23 @@ def make_handlers(company_id, company_name: str):
                 await query.edit_message_text(msg, parse_mode="Markdown")
                 # Menüyü yeni dilde göster
                 await query.message.reply_text(
-                    _L(uid, "welcome", company=company_name, name=admin.name),
+                    _L(uid, "welcome", company=user_company_name, name=admin.name),
                     parse_mode="Markdown",
                     reply_markup=_make_menu(uid),
                 )
                 return
 
             if data == "cancel":
-                _cclr(company_id, uid)
+                _cclr(user_company_id, uid)
                 await query.edit_message_text(_L(uid, "cancelled"), parse_mode="Markdown")
                 return
 
-            conv = _cget(company_id, uid)
+            conv = _cget(user_company_id, uid)
             if not conv:
                 await query.edit_message_text(_L(uid, "timeout"), parse_mode="Markdown")
                 return
 
-            result = await _conv_handle_cb(conv, data, uid, company_id, db)
+            result = await _conv_handle_cb(conv, data, uid, user_company_id, db)
             if result:
                 msg, kb = result
                 if kb is not None:
@@ -974,9 +990,9 @@ async def _do_create_txn(data: dict, uid: int, company_id, db):
     is_simple = txn_type in ("deposit", "withdrawal")
 
     # Admin kullanıcının DB id'sini bul (created_by için zorunlu)
-    # _find_admin zaten company_id filtresi uygular
-    admin_user = _find_admin(uid, company_id, db)
-    if not admin_user:
+    # _find_admin zaten global arama yapar, dönen kullanıcının şirketini doğrula
+    admin_user = _find_admin(uid, db)
+    if not admin_user or str(admin_user.company_id) != str(company_id):
         return (_L(uid, "user_not_found"), None)
     created_by_id = admin_user.id
 
@@ -1207,11 +1223,11 @@ def _musteri_baglan(pin: str, uid: int, company_id, db) -> str:
     )
 
 
-def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
+def _admin_pin_bagla(pin: str, uid: int, db) -> str:
     """Yönetici bot_pin ile kendi Telegram hesabını bağlar.
     
-    Güvenlik: PIN sahibinin bu botun şirketine ait olduğu doğrulanır.
-    Farklı şirketteki kullanıcının pini ile başka şirketin botuna bağlanma engellenir.
+    Güvenlik: PIN sahibinin yetkili bir rolde olduğu doğrulanır.
+    Bot ortak/paylaşımlı modda çalıştığı için şirket filtresi burada kaldırılmıştır.
     """
     from app.models.user import User, UserRole
     from sqlalchemy import or_
@@ -1234,19 +1250,11 @@ def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
             "_Örnek: `bağla SAF-7K2M`_"
         )
 
-    # PIN sahibi bu şirkete ait mi? (super_admin tüm şirketlere bağlanabilir)
-    if user.role != UserRole.super_admin and str(user.company_id) != str(company_id):
-        return (
-            "❌ Bu pin bu şirkete ait değil.\n\n"
-            "_Doğru şirketin Telegram botuna yazdığınızdan emin olun._\n"
-            "_Her şirketin kendi bot adresi vardır._"
-        )
-
     # Bu Telegram ID'si başka bir kullanıcıya yanlışlıkla bağlanmışsa,
     # SADECE aynı şirketteki eski bağlantıyı temizle (farklı şirketler etkilenmemeli)
     db.query(User).filter(
         User.telegram_id == str(uid),
-        User.company_id == company_id,
+        User.company_id == user.company_id,
         User.id != user.id,
     ).update({"telegram_id": None})
 
