@@ -24,11 +24,11 @@ export default function AuditLog() {
       entity:    entity   || undefined,
       limit:     500,
     }).then(r => r.data),
-    enabled:   user?.role === 'admin',
+    enabled:   ['admin', 'super_admin', 'auditor', 'manager'].includes(user?.role),
     staleTime: 30_000,
   })
 
-  if (user?.role !== 'admin') {
+  if (!['admin', 'super_admin', 'auditor', 'manager'].includes(user?.role)) {
     return <Info type="warning">{t.adminOnly}</Info>
   }
 

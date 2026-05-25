@@ -10,7 +10,7 @@ import { Icon } from '../components/Icons'
 import TransactionForm from '../components/TransactionForm'
 import SupplierSettlementModal from '../components/SupplierSettlementModal'
 import toast from 'react-hot-toast'
-import { getTxnTypeLabel, TXN_TYPE_COLOR, getStatusLabel, STALE_2MIN } from '../constants'
+import { getTxnTypeLabel, TXN_TYPE_COLOR, getStatusLabel, STALE_2MIN, CAN_CREATE_TXN, CAN_APPROVE_TXN, CAN_DELETE_TXN } from '../constants'
 import { useLang } from '../hooks/useLang'
 
 export default function Transactions() {
@@ -44,14 +44,23 @@ export default function Transactions() {
     onSuccess:  () => { _invalidateDashboard(); toast.success(t.approved) },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
+  const approveAllMutation = useMutation({
+    mutationFn: transactionsApi.approveAll,
+    onSuccess:  (res) => {
+      _invalidateDashboard()
+      toast.success(`${res.data.approved} ${t.approved}`)
+    },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
     onSuccess:  () => { _invalidateDashboard(); toast.success(t.deleted) },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
 
-  const isAdmin      = user?.role === 'admin'
-  const isAccounting = user?.role === 'admin' || user?.role === 'accounting'
+  const isAdmin      = CAN_DELETE_TXN.has(user?.role)
+  const isAccounting = CAN_CREATE_TXN.has(user?.role)
+  const canApprove   = CAN_APPROVE_TXN.has(user?.role)
 
   const filtered = useMemo(() =>
     txns.filter(t =>
@@ -63,9 +72,7 @@ export default function Transactions() {
 
   const pendingCount = useMemo(() => txns.filter(t => t.status === 'pending').length, [txns])
 
-  const approveAll = useCallback(() => {
-    txns.filter(t => t.status === 'pending').forEach(t => approveMutation.mutate(t.id))
-  }, [txns, approveMutation])
+  const approveAll = useCallback(() => approveAllMutation.mutate(), [approveAllMutation])
 
   const handleDelete = useCallback((id) => {
     if (window.confirm(t.deleteConfirm)) deleteMutation.mutate(id)
@@ -104,10 +111,10 @@ export default function Transactions() {
           </select>
         </div>
 
-        {isAccounting && pendingCount > 0 && (
-          <Btn variant="ghost" size="sm" style={{ color: C.green, borderColor: 'rgba(14,164,114,0.3)', background: C.greenBg }} onClick={approveAll}>
+        {canApprove && pendingCount > 0 && (
+          <Btn variant="ghost" size="sm" style={{ color: C.green, borderColor: 'rgba(14,164,114,0.3)', background: C.greenBg }} onClick={approveAll} disabled={approveAllMutation.isPending}>
             <Icon name="check" size={13} color={C.green} />
-            {t.approveAll} ({pendingCount})
+            {approveAllMutation.isPending ? '...' : `${t.approveAll} (${pendingCount})`}
           </Btn>
         )}
 
@@ -199,7 +206,7 @@ export default function Transactions() {
                             <Btn variant="ghost" size="sm" style={{ color: C.purple, borderColor: 'rgba(107,70,193,0.25)', background: C.purpleBg }} onClick={() => setSettleTxn(txn)}>
                               {t.assignSupplier}
                             </Btn>
-                            {txn.status === 'pending' && (
+                            {canApprove && txn.status === 'pending' && (
                               <Btn variant="ghost" size="sm" style={{ color: C.blue, borderColor: 'rgba(43,108,176,0.25)', background: C.blueBg }} onClick={() => approveMutation.mutate(txn.id)}>
                                 <Icon name="check" size={12} color={C.blue} /> {t.approve}
                               </Btn>

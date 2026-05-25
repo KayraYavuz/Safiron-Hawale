@@ -51,16 +51,17 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # ── CORS — production'da env'den al ──────────────────────────────────────────
 import os
 _origins_env = os.environ.get("ALLOWED_ORIGINS", "")
-_allowed_origins = (
-    [o.strip() for o in _origins_env.split(",") if o.strip()]
-    if _origins_env
-    else [
+if _origins_env:
+    # Hem virgüllü ("a,b") hem boşluklu ("a b") formatı destekle
+    import re as _re
+    _allowed_origins = [o.strip() for o in _re.split(r"[,\s]+", _origins_env) if o.strip()]
+else:
+    _allowed_origins = [
         "http://localhost:3000", "http://localhost:5173",
         "http://127.0.0.1:3000", "http://127.0.0.1:5173",
         "https://safironpay.com", "https://www.safironpay.com",
         "https://hawala-frontend-174683789974.europe-west3.run.app",
     ]
-)
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,6 +99,22 @@ async def startup():
         start_all_bots()
     except Exception as e:
         print(f"⚠️  Telegram bot başlatma hatası: {e}")
+
+    # ── Soft-deleted kullanıcıların emaillerini düzelt ───────────────────────
+    # Daha önce silinen kullanıcıların emailleri DB'de hâlâ orijinal halde duruyor.
+    # Bu durum şirket oluşturma sırasında ix_users_email unique constraint'ini patlatıyor.
+    try:
+        from sqlalchemy import text as _text
+        with engine.begin() as _conn:
+            _conn.execute(_text("""
+                UPDATE users
+                SET email = CONCAT('deleted_', id::text, '@deleted')
+                WHERE is_active = FALSE
+                AND email NOT LIKE 'deleted_%@deleted'
+            """))
+        print("✅ Soft-deleted user email fix tamamlandı.")
+    except Exception as e:
+        print(f"⚠️  Soft-deleted email fix hatası: {e}")
 
     # Multi-tenancy migrations — run first, idempotent
     try:

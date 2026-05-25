@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     WHATSAPP_ALLOWED_NUMBERS: Optional[str] = None  # Virgülle ayrılmış numaralar
     WHATSAPP_INTERNAL_SECRET: Optional[str] = None  # /notify endpoint için iç secret
 
+    # ── E-posta (2FA OTP) ─────────────────────────────────────────────────
+    SMTP_HOST:     Optional[str] = "smtp.gmail.com"
+    SMTP_PORT:     int           = 587
+    SMTP_USER:     Optional[str] = None   # SMTP kullanıcı adı (Resend için: "resend")
+    SMTP_PASSWORD: Optional[str] = None   # SMTP şifre / API key
+    SMTP_FROM:     Optional[str] = None   # Gönderen adresi (örn: info@safironpay.com)
+
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         # SQLAlchemy 1.4+ requires 'postgresql+psycopg2://' instead of 'postgres://'

@@ -54,14 +54,24 @@ export function getCpTypeLabel(t) {
 // ── Account type icons ────────────────────────────────────────────────────────
 export const ACC_ICONS = { cash: '💵', bank: '🏦', crypto: '₿' }
 
-// ── Role info (language-aware) ────────────────────────────────────────────────
+// ── Role info — backend UserRole enum ile tam eşleşme ─────────────────────────
 export function getRoleInfo(t) {
   return {
-    admin:      { label: t.roleAdmin,      bg: 'rgba(229,62,62,0.08)',   color: '#E53E3E' },
-    accounting: { label: t.roleAccounting, bg: 'rgba(37,99,235,0.08)',   color: '#2563EB' },
-    viewer:     { label: t.roleViewer,     bg: '#F8FAFC',                color: '#4A5568' },
+    super_admin:    { label: t.roleSuperAdmin,    bg: 'rgba(229,62,62,0.12)',   color: '#C53030' },
+    admin:          { label: t.roleAdmin,          bg: 'rgba(229,62,62,0.08)',   color: '#E53E3E' },
+    manager:        { label: t.roleManager,        bg: 'rgba(107,70,193,0.08)', color: '#6B46C1' },
+    auditor:        { label: t.roleAuditor,        bg: 'rgba(201,123,6,0.08)',  color: '#C97B06' },
+    branch_manager: { label: t.roleBranchManager,  bg: 'rgba(37,99,235,0.08)',  color: '#2563EB' },
+    accounting:     { label: t.roleAccounting,     bg: 'rgba(14,164,114,0.08)', color: '#0EA472' },
+    data_entry:     { label: t.roleDataEntry,      bg: 'rgba(79,70,229,0.08)',  color: '#4F46E5' },
+    viewer:         { label: t.roleViewer,         bg: '#F8FAFC',               color: '#4A5568' },
   }
 }
+
+// ── Frontend rol yetki kontrolleri (backend _require() ile eşleşmeli) ─────────
+export const CAN_CREATE_TXN  = new Set(['admin', 'super_admin', 'manager', 'branch_manager', 'accounting', 'data_entry'])
+export const CAN_APPROVE_TXN = new Set(['admin', 'super_admin', 'manager', 'branch_manager', 'accounting'])
+export const CAN_DELETE_TXN  = new Set(['admin', 'super_admin'])
 
 // ── Audit action colors ───────────────────────────────────────────────────────
 export const AUDIT_ACTION_COLOR = {

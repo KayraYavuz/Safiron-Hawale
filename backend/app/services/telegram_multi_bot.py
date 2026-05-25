@@ -347,12 +347,13 @@ def _cancel_kb():
 def _find_admin(telegram_id: int, company_id, db):
     """Telegram ID ile şirket yöneticisini bul."""
     from app.models.user import User, UserRole
+    # telegram_id globally unique — en son bağlananı al (created_at desc)
     return (db.query(User)
               .filter(
                   User.telegram_id == str(telegram_id),
-                  User.company_id == company_id,
                   User.is_active == True,
               )
+              .order_by(User.created_at.desc())
               .first())
 
 
@@ -414,24 +415,25 @@ def make_handlers(company_id, company_name: str):
                 )
                 return
 
+            # bağla/link komutu HER ZAMAN önce işlenir — zaten bağlı olsak bile
+            # (yanlış hesaba bağlıyken yeniden bağlanmaya izin ver)
+            if cmd.startswith("bağla ") or cmd.startswith("bagla ") or cmd.startswith("link ") or cmd.startswith("ربط "):
+                parts = text.split()
+                if len(parts) >= 2:
+                    pin = parts[1].upper()
+                    result = _admin_pin_bagla(pin, uid, company_id, db)
+                    if result.startswith("✅"):
+                        await update.message.reply_text(result, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                    else:
+                        await update.message.reply_text(result, parse_mode="Markdown")
+                else:
+                    await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
+                return
+
             admin = _find_admin(uid, company_id, db)
 
             if not admin:
-                # Bağlanmamış kullanıcı — bağla/link/ربط komutunu kabul et
-                if cmd.startswith("bağla ") or cmd.startswith("bagla ") or cmd.startswith("link ") or cmd.startswith("ربط "):
-                    parts = text.split()
-                    if len(parts) >= 2:
-                        pin = parts[1].upper()
-                        result = _admin_pin_bagla(pin, uid, company_id, db)
-                        # Bağlantı başarılıysa menüyü göster
-                        if result.startswith("✅"):
-                            await update.message.reply_text(result, parse_mode="Markdown", reply_markup=_make_menu(uid))
-                        else:
-                            await update.message.reply_text(result, parse_mode="Markdown")
-                    else:
-                        await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
-                else:
-                    await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
+                await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
                 return
 
             # Aktif konuşma varsa → konuşma handler'ına yönlendir
@@ -1207,13 +1209,18 @@ def _musteri_baglan(pin: str, uid: int, company_id, db) -> str:
 
 def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
     """Yönetici bot_pin ile kendi Telegram hesabını bağlar."""
-    from app.models.user import User
+    from app.models.user import User, UserRole
+    from sqlalchemy import or_
     pin_normalized = pin.upper().strip()
 
+    BOT_ROLES = (UserRole.super_admin, UserRole.admin, UserRole.manager,
+                 UserRole.auditor, UserRole.branch_manager)
+
+    # bot_pin globally unique — sadece pin ve rol ile ara
     user = db.query(User).filter(
         User.bot_pin == pin_normalized,
-        User.company_id == company_id,
         User.is_active == True,
+        User.role.in_(BOT_ROLES),
     ).first()
 
     if not user:
@@ -1223,7 +1230,13 @@ def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
             "_Örnek: `bağla SAF-7K2M`_"
         )
 
-    # Başka Telegram hesabı bağlıysa uyar
+    # Bu Telegram ID'si başka bir kullanıcıya yanlışlıkla bağlanmışsa temizle
+    db.query(User).filter(
+        User.telegram_id == str(uid),
+        User.id != user.id,
+    ).update({"telegram_id": None})
+
+    # Başka Telegram hesabı bağlıysa uyar (farklı kişi bu pini kullanıyorsa)
     if user.telegram_id and user.telegram_id != str(uid):
         return (
             "⚠️ Bu pin zaten başka bir Telegram hesabına bağlı.\n"

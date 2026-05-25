@@ -1,27 +1,33 @@
 """
-Auth API — login rate limiting + audit log.
+Auth API — 2FA (e-posta OTP) + rate limiting + audit log.
 
-Rate limiting: IP başına dakikada max 10 deneme.
-Basit in-memory (production'da Redis kullanılmalı).
+Akış (normal kullanıcılar):
+  1. POST /login      → kimlik doğrula, OTP e-postası gönder, session_token döner
+  2. POST /verify-otp → OTP doğrula, JWT token döner
+
+Akış (super_admin):
+  1. POST /login      → kimlik doğrula, direkt JWT token döner (2FA yok)
 """
 import time
 from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from typing import Optional
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import verify_password, create_token, get_current_user, hash_password
-from app.models.user import User
-from app.schemas.schemas import Token, UserCreate, UserOut
+from app.core.security import verify_password, create_token, get_current_user
+from app.models.user import User, UserRole
+from app.schemas.schemas import Token, UserOut
 from app.services.audit import log as audit_log
+from app.services.email_otp import create_otp_session, verify_otp, send_otp_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# In-memory rate limiter: {ip: [timestamp, ...]}
+# ── Rate limiter ──────────────────────────────────────────────────────────────
 _login_attempts: dict = defaultdict(list)
 MAX_ATTEMPTS = 10
 WINDOW_SEC   = 60
-
 
 def _check_rate_limit(ip: str):
     now = time.time()
@@ -35,7 +41,23 @@ def _check_rate_limit(ip: str):
     _login_attempts[ip].append(now)
 
 
-@router.post("/login", response_model=Token)
+# ── Şemalar ───────────────────────────────────────────────────────────────────
+class LoginResponse(BaseModel):
+    otp_required: bool
+    # OTP akışı için
+    session_token: Optional[str] = None
+    email_hint:    Optional[str] = None
+    # Direkt giriş (super_admin) için
+    access_token:  Optional[str] = None
+    token_type:    Optional[str] = None
+
+class VerifyOtpRequest(BaseModel):
+    session_token: str
+    otp: str
+
+
+# ── Endpoint'ler ──────────────────────────────────────────────────────────────
+@router.post("/login", response_model=LoginResponse)
 def login(
     request: Request,
     form: OAuth2PasswordRequestForm = Depends(),
@@ -49,14 +71,56 @@ def login(
         audit_log(db, "LOGIN_FAIL", entity="User", detail={"email": form.username}, ip_address=ip)
         db.commit()
         raise HTTPException(status_code=401, detail="Hatalı email veya şifre")
-    if not user.is_approved:
-        raise HTTPException(status_code=403, detail="Hesabınız henüz onaylanmadı. Şirket yöneticinizle iletişime geçin.")
 
-    # Başarılı giriş — attempt'leri temizle
-    _login_attempts[ip] = []
+    if not user.is_approved:
+        raise HTTPException(status_code=403, detail="Hesabınız henüz onaylanmadı.")
+
+    # ── Super admin: 2FA atla, direkt token ver ───────────────────────────────
+    if user.role == UserRole.super_admin:
+        _login_attempts[ip] = []
+        audit_log(db, "LOGIN", user_id=user.id, entity="User", entity_id=user.id,
+                  detail={"email": user.email, "method": "direct"}, ip_address=ip)
+        db.commit()
+        return LoginResponse(
+            otp_required=False,
+            access_token=create_token(str(user.id)),
+            token_type="bearer",
+        )
+
+    # ── Normal kullanıcı: OTP akışı ───────────────────────────────────────────
+    session_token, otp = create_otp_session(str(user.id))
+    send_otp_email(user.email, user.name, otp)
+
+    audit_log(db, "OTP_SENT", user_id=user.id, entity="User", entity_id=user.id,
+              detail={"email": user.email}, ip_address=ip)
+    db.commit()
+
+    parts = user.email.split("@")
+    hint = parts[0][:2] + "***@" + parts[1]
+
+    return LoginResponse(otp_required=True, session_token=session_token, email_hint=hint)
+
+
+@router.post("/verify-otp", response_model=Token)
+def verify_otp_endpoint(
+    request: Request,
+    body: VerifyOtpRequest,
+    db: Session = Depends(get_db),
+):
+    ip = request.client.host if request.client else "unknown"
+
+    user_id = verify_otp(body.session_token, body.otp.strip())
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Kod hatalı veya süresi dolmuş.")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+
+    _login_attempts[ip] = []  # başarılı giriş, denemeleri sıfırla
 
     audit_log(db, "LOGIN", user_id=user.id, entity="User", entity_id=user.id,
-              detail={"email": user.email}, ip_address=ip)
+              detail={"email": user.email, "method": "2fa_email"}, ip_address=ip)
     db.commit()
 
     return {"access_token": create_token(str(user.id)), "token_type": "bearer"}

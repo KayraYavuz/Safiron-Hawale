@@ -1,18 +1,23 @@
 import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { settingsApi } from '../utils/api'
 import { Card, Btn, Input, C } from '../components/UI'
 import { Icon } from '../components/Icons'
 import { useLang } from '../hooks/useLang'
+import { useAuthStore } from '../store'
+import toast from 'react-hot-toast'
 
 // ── Integration catalogue ─────────────────────────────────────────────────────
 const AI_SERVICES = [
   {
-    key:        'SAFIRON_LLM',
-    name:       'Safiron LLM',
-    description: 'AI analiz ve finansal chat asistanı.',
-    icon:       '✦',
-    color:      '#C9A84C',
-    bg:         '#FBF7EE',
-    builtin:    true,
+    key:         'GROQ_API_KEY',
+    name:        'Safiron LLM (Groq)',
+    subtitle:    'LLaMA 3 · Stratejik Analiz & Chat',
+    description: 'AI finansal analiz ve asistan özelliği için gerekli. api.groq.com üzerinden ücretsiz alınabilir.',
+    docs:        'https://console.groq.com/keys',
+    icon:        '✦',
+    color:       '#C9A84C',
+    bg:          '#FBF7EE',
   },
   {
     key:        'OPENAI_API_KEY',
@@ -285,6 +290,28 @@ function ComingSoonCard({ name, description, icon, isIconName = false }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Integrations() {
   const { t } = useLang()
+  const { user } = useAuthStore()
+  const qc = useQueryClient()
+  const isAdmin = ['admin', 'super_admin'].includes(user?.role)
+
+  const { data: settings = [] } = useQuery({
+    queryKey: ['settings'],
+    queryFn:  () => settingsApi.list().then(r => r.data),
+    enabled:  isAdmin,
+  })
+
+  const saveMut = useMutation({
+    mutationFn: ({ key, value }) => settingsApi.update(key, value),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success('API key kaydedildi') },
+    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+  })
+  const clearMut = useMutation({
+    mutationFn: (key) => settingsApi.clear(key),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success('API key silindi') },
+    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+  })
+
+  const getSettingFor = (key) => settings.find(s => s.key === key)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 860 }}>
@@ -312,15 +339,30 @@ export default function Integrations() {
         </div>
       </div>
 
+      {!isAdmin && (
+        <div style={{ padding: '14px 18px', borderRadius: 10, background: '#FFF3CD', border: '1px solid #F0C040', color: '#856404', fontSize: 13 }}>
+          API key yönetimi yalnızca admin kullanıcılar içindir.
+        </div>
+      )}
+
       {/* ── AI Services ── */}
       <div>
         <SectionHeader icon="sparkles" label={t.aiServices || 'Yapay Zeka Servisleri'} count={AI_SERVICES.length} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {AI_SERVICES.map(svc =>
-            svc.builtin ? (
-              <BuiltinCard key={svc.key} service={svc} />
-            ) : (
+            svc.comingSoon ? (
               <ComingSoonCard key={svc.key} name={svc.name} description={svc.description} icon={svc.icon} />
+            ) : isAdmin ? (
+              <ApiKeyCard
+                key={svc.key}
+                service={svc}
+                setting={getSettingFor(svc.key)}
+                onSave={(key, value) => saveMut.mutate({ key, value })}
+                onClear={(key) => clearMut.mutate(key)}
+                saving={saveMut.isPending || clearMut.isPending}
+              />
+            ) : (
+              <BuiltinCard key={svc.key} service={svc} />
             )
           )}
         </div>

@@ -17,26 +17,27 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-
-    // esbuild minification — fast, produces small output
     minify: 'esbuild',
-
-    // Warn if any chunk exceeds 300 kB
-    chunkSizeWarningLimit: 300,
+    chunkSizeWarningLimit: 500,
+    target: ['es2020', 'chrome90', 'firefox90', 'safari14'],
+    cssCodeSplit: true,
 
     rollupOptions: {
       output: {
-        // Content-hash filenames — enables aggressive (immutable) browser caching
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        entryFileNames:  'assets/[name]-[hash].js',
+        chunkFileNames:  'assets/[name]-[hash].js',
+        assetFileNames:  'assets/[name]-[hash].[ext]',
+
+        // ── Manuel chunk splitting ─────────────────────────────────────────
+        // framer-motion ve recharts büyük kütüphaneler — ayrı chunk'a al
+        // Böylece uygulama chunk'u küçük kalır, değişmeyen kütüphaneler cache'lenir
+        manualChunks(id) {
+          if (id.includes('framer-motion')) return 'framer-motion'
+          if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
+          if (id.includes('@tanstack')) return 'tanstack-query'
+          if (id.includes('node_modules')) return 'vendor'
+        },
       }
     },
-
-    // Per-page CSS code splitting
-    cssCodeSplit: true,
-
-    // Modern target — no legacy polyfills, smaller bundle
-    target: ['es2020', 'chrome90', 'firefox90', 'safari14'],
   },
 })

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLang } from '../hooks/useLang'
 import { useAuthStore } from '../store'
 import { Icon } from './Icons'
+import { getRoleInfo } from '../constants'
 
 // ── Design tokens (match CSS variables) ──────────────────────────────────────
 const S = {
@@ -35,6 +36,11 @@ const ADMIN_NAV = [
   { path: '/integrations',  key: 'integrations',  icon: 'plug'    },
 ]
 
+// Auditor + manager: can see audit log but not user management
+const AUDIT_ONLY_NAV = [
+  { path: '/audit', key: 'audit', icon: 'shield' },
+]
+
 // Super admin only sees company management
 const SUPER_ADMIN_NAV = [
   { path: '/companies',    key: 'companies',    icon: 'building' },
@@ -50,21 +56,21 @@ function Layout({ children }) {
 
   const isRtl = dir === 'rtl'
   const isSuperAdmin = user?.role === 'super_admin'
+  const role = user?.role
   const nav = isSuperAdmin
     ? SUPER_ADMIN_NAV
-    : user?.role === 'admin' ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV
+    : role === 'admin'
+      ? [...BASE_NAV, ...ADMIN_NAV]
+      : ['auditor', 'manager'].includes(role)
+        ? [...BASE_NAV, ...AUDIT_ONLY_NAV]
+        : BASE_NAV
 
-  const ROLE_LABEL = {
-    super_admin: t.roleSuperAdmin || 'Sistem Yöneticisi',
-    admin: t.roleAdmin,
-    accounting: t.roleAccounting,
-    viewer: t.roleViewer,
-  }
+  const ROLE_INFO = getRoleInfo(t)
 
   const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
   const handleLogout = () => { logout(); navigate('/') }
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-  const roleLabel  = ROLE_LABEL[user?.role] || user?.role
+  const roleLabel  = ROLE_INFO[role]?.label || role
 
   return (
     <div style={{ display: 'flex', height: '100%', background: S.bg, fontFamily: 'var(--font)', direction: dir }}>

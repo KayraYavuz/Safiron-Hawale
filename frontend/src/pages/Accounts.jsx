@@ -21,7 +21,7 @@ export default function Accounts() {
   const { t } = useLang()
   const qc = useQueryClient()
   const { user } = useAuthStore()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = ['admin', 'super_admin'].includes(user?.role)
 
   const [selLoc,      setSelLoc]      = useState(null)
   const [showAccForm, setShowAccForm] = useState(false)

@@ -41,7 +41,8 @@ def list_users(db: Session = Depends(get_db), cu: User = Depends(_admin_or_manag
     company_id = get_company_id(cu)
     if company_id is not None:
         q = q.filter(User.company_id == company_id)
-    return q.all()
+    # Sadece aktif kullanıcıları döndür (silinen kullanıcılar is_active=False)
+    return [u for u in q.all() if u.is_active]
 
 @router.post("", response_model=UserOut)
 def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):
@@ -49,7 +50,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depe
     if data.role in (UserRole.admin, UserRole.super_admin) and cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Sadece admin yeni bir admin oluşturabilir")
 
-    if db.query(User).filter(User.email == data.email).first():
+    if db.query(User).filter(User.email == data.email, User.is_active == True).first():
         raise HTTPException(400, "Bu email zaten kayıtlı")
 
     # Determine company_id: use provided value (super_admin only), else caller's company
@@ -61,6 +62,11 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depe
     from app.services.audit import log as audit_log
     # super_admin başka şirkete kullanıcı ekliyorsa onay beklenir
     needs_approval = cu.role == UserRole.super_admin and company_id != cu.company_id
+    # Sadece admin/manager/auditor/branch_manager bot erişimine sahip olur
+    BOT_ROLES = (UserRole.super_admin, UserRole.admin, UserRole.manager,
+                 UserRole.auditor, UserRole.branch_manager)
+    pin = _generate_user_bot_pin(db) if data.role in BOT_ROLES else None
+
     user = User(
         name=data.name,
         email=data.email,
@@ -68,7 +74,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depe
         role=data.role,
         company_id=company_id,
         is_approved=not needs_approval,
-        bot_pin=_generate_user_bot_pin(db),  # Telegram bağlama kodu
+        bot_pin=pin,
     )
     db.add(user)
     audit_log(db, "CREATE_USER", user_id=cu.id, entity="User", detail={"email": data.email, "role": data.role, "needs_approval": needs_approval})
@@ -111,7 +117,7 @@ def create_company(data: CompanyCreate, db: Session = Depends(get_db), cu: User 
         raise HTTPException(400, "Şirket kodu boş olamaz")
     if db.query(Company).filter(Company.code == code).first():
         raise HTTPException(400, f"'{code}' kodu zaten kullanılıyor")
-    if db.query(User).filter(User.email == data.admin_email).first():
+    if db.query(User).filter(User.email == data.admin_email, User.is_active == True).first():
         raise HTTPException(400, f"'{data.admin_email}' e-posta adresi zaten kayıtlı")
     if len(data.admin_password) < 6:
         raise HTTPException(400, "Admin şifresi en az 6 karakter olmalı")
@@ -242,7 +248,10 @@ def delete_user(user_id: UUID, db: Session = Depends(get_db), cu: User = Depends
         raise HTTPException(404, "Kullanıcı bulunamadı")
     
     from app.services.audit import log as audit_log
+    original_email = user.email
+    # Email'i boz — DB unique constraint'i, silinen adresin tekrar kullanılmasına izin vermesi için
+    user.email     = f"deleted_{user_id}@deleted"
     user.is_active = False
-    audit_log(db, "DELETE_USER", user_id=cu.id, entity="User", entity_id=user_id, detail={"email": user.email})
+    audit_log(db, "DELETE_USER", user_id=cu.id, entity="User", entity_id=user_id, detail={"email": original_email})
     db.commit()
     return {"ok": True}

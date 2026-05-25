@@ -14,9 +14,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
+    // Login endpoint'inden gelen 401 normaldir (yanlış şifre) — yönlendirme yapma
+    const isLoginEndpoint = err.config?.url?.includes('/auth/login') || err.config?.url?.includes('/auth/verify-otp')
+    if (err.response?.status === 401 && !isLoginEndpoint) {
       useAuthStore.getState().logout()
-      window.location.href = '/login'
+      // Login artık Landing sayfasındaki panel üzerinden yapılıyor
+      window.location.href = '/'
     }
     return Promise.reject(err)
   }
@@ -31,6 +34,8 @@ export const authApi = {
     form.append('password', password)
     return api.post('/api/auth/login', form)
   },
+  verifyOtp: (session_token, otp) =>
+    api.post('/api/auth/verify-otp', { session_token, otp }),
   me: () => api.get('/api/auth/me'),
 }
 
@@ -63,10 +68,11 @@ export const ratesApi = {
 }
 
 export const transactionsApi = {
-  list: (params) => api.get('/api/transactions', { params }),
-  create: (data) => api.post('/api/transactions', data),
-  approve: (id) => api.patch(`/api/transactions/${id}/approve`),
-  delete: (id) => api.delete(`/api/transactions/${id}`),
+  list:       (params) => api.get('/api/transactions', { params }),
+  create:     (data)   => api.post('/api/transactions', data),
+  approve:    (id)     => api.patch(`/api/transactions/${id}/approve`),
+  approveAll: ()       => api.post('/api/transactions/approve-all'),
+  delete:     (id)     => api.delete(`/api/transactions/${id}`),
 }
 
 export const reportsApi = {
@@ -111,4 +117,10 @@ export const auditApi = {
 
 export const reconciliationApi = {
   daily: (params) => api.get('/api/reconciliation/daily', { params }),
+}
+
+export const settingsApi = {
+  list:   ()            => api.get('/api/settings'),
+  update: (key, value)  => api.patch(`/api/settings/${key}`, { value }),
+  clear:  (key)         => api.delete(`/api/settings/${key}`),
 }

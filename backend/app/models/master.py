@@ -1,7 +1,7 @@
 import uuid
 import enum
 from decimal import Decimal
-from sqlalchemy import Column, String, Boolean, Enum, ForeignKey, DateTime, Numeric, Integer
+from sqlalchemy import Column, String, Boolean, Enum, ForeignKey, DateTime, Numeric, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -21,7 +21,7 @@ class Company(Base):
 class Location(Base):
     __tablename__ = "locations"
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    code = Column(String(10), unique=True, nullable=False, index=True)
+    code = Column(String(10), nullable=False, index=True)  # unique=True kaldırıldı, (code,company_id) unique
     name_tr = Column(String, nullable=False)
     name_ar = Column(String, nullable=False)
     name_en = Column(String, nullable=False)
@@ -30,6 +30,7 @@ class Location(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
     accounts = relationship("Account", back_populates="location")
+    __table_args__ = (UniqueConstraint("code", "company_id", name="uq_location_code_company"),)
 
 
 class Currency(Base):
@@ -82,7 +83,7 @@ class CounterpartyType(str, enum.Enum):
 class Counterparty(Base):
     __tablename__ = "counterparties"
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
-    code = Column(String(20), unique=True, nullable=False, index=True)
+    code = Column(String(20), nullable=False, index=True)  # unique=True kaldırıldı, (code,company_id) unique
     name = Column(String, nullable=False)
     name_ar = Column(String)
     type = Column(Enum(CounterpartyType), nullable=False, default=CounterpartyType.customer)
@@ -95,3 +96,4 @@ class Counterparty(Base):
     telegram_id = Column(String(20), nullable=True, index=True)  # Telegram user ID bağlantısı
     bot_pin     = Column(String(12), nullable=True, unique=True, index=True)  # Bot erişim kodu (ör: SAF-7K2M)
     transactions = relationship("Transaction", back_populates="counterparty")
+    __table_args__ = (UniqueConstraint("code", "company_id", name="uq_counterparty_code_company"),)

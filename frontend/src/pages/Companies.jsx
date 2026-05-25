@@ -6,6 +6,7 @@ import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
+import { getRoleInfo } from '../constants'
 
 const BLANK = {
   name: '', code: '',
@@ -14,6 +15,7 @@ const BLANK = {
 
 export default function Companies() {
   const { t } = useLang()
+  const ROLE_INFO = getRoleInfo(t)
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(BLANK)
@@ -278,18 +280,19 @@ export default function Companies() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {coUsers.map(u => (
+                                {coUsers.map(u => {
+                                  const ri = ROLE_INFO[u.role] ?? ROLE_INFO.viewer
+                                  return (
                                   <tr key={u.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                                    <td style={{ padding: '9px 16px', fontSize: 13, fontWeight: u.role === 'admin' ? 600 : 400 }}>{u.name}</td>
+                                    <td style={{ padding: '9px 16px', fontSize: 13, fontWeight: ['admin', 'super_admin', 'manager'].includes(u.role) ? 600 : 400 }}>{u.name}</td>
                                     <td style={{ padding: '9px 16px', fontSize: 12, color: C.text2, fontFamily: 'var(--mono)' }}>{u.email}</td>
                                     <td style={{ padding: '9px 16px', fontSize: 12 }}>
                                       <span style={{
                                         padding: '2px 9px', borderRadius: 100, fontSize: 11,
-                                        background: u.role === 'admin' ? '#EDE9FE' : u.role === 'accounting' ? '#DCFCE7' : '#F1F5F9',
-                                        color: u.role === 'admin' ? '#5B21B6' : u.role === 'accounting' ? '#166534' : C.text2,
+                                        background: ri.bg, color: ri.color,
                                         fontWeight: 500,
                                       }}>
-                                        {u.role === 'admin' ? (t.roleAdmin || 'Admin') : u.role === 'accounting' ? (t.roleAccounting || 'Muhasebe') : (t.roleViewer || 'Görüntüleyici')}
+                                        {ri.label}
                                       </span>
                                     </td>
                                     <td style={{ padding: '9px 16px', fontSize: 12 }}>
@@ -298,7 +301,8 @@ export default function Companies() {
                                       </span>
                                     </td>
                                   </tr>
-                                ))}
+                                  )
+                                })}
                               </tbody>
                             </table>
                           )}

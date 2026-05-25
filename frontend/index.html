@@ -3,17 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Safiron Global Solutions</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0D1B2E">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <!-- PDF ve Excel indirme kütüphaneleri -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Primary Meta -->
+  <title>Safiron Global Solutions — Para Hizmetleri Platformu</title>
+  <meta name="description" content="Havale, döviz alım-satım ve SWIFT işlemlerinizi tek ekranda yönetin. Çok şubeli mimari, gerçek zamanlı pozisyon takibi ve AI destekli finansal analiz." />
+  <meta name="keywords" content="havale, hawala, döviz, SWIFT, para transferi, fintech, kur takibi, telegram bot" />
+  <meta name="author" content="Safiron Global Solutions" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://safironpay.com/" />
+  <meta property="og:title"       content="Safiron Global Solutions — Para Hizmetleri Platformu" />
+  <meta property="og:description" content="Havale, döviz ve SWIFT işlemlerini tek platformda yönetin. Çok şubeli, çok dilli, AI destekli." />
+  <meta property="og:image"       content="https://safironpay.com/logo.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Safiron Global Solutions" />
+  <meta name="twitter:description" content="Havale, döviz ve SWIFT işlemlerini tek platformda yönetin." />
+  <meta name="twitter:image"       content="https://safironpay.com/logo.png" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://safironpay.com/" />
+
+  <!-- Fonts — preconnect önce, stylesheet sonra -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- PWA -->
+  <link rel="icon"             type="image/png" href="/emblem.png" />
+  <link rel="apple-touch-icon" href="/emblem.png" />
+  <link rel="manifest"         href="/manifest.json" />
+  <meta name="theme-color"                    content="#0D1B2E" />
+  <meta name="apple-mobile-web-app-capable"   content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Google Analytics — Consent Mode (KVKK/GDPR uyumlu — varsayılan kapalı) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      wait_for_update: 2000,
+    });
+    gtag('js', new Date());
+    gtag('config', 'G-P24EM92RFQ');
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P24EM92RFQ"></script>
+
+  <!-- PDF ve Excel kütüphaneleri (defer — sayfa yüklenmesini bloklamaz) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <div id="root"></div>

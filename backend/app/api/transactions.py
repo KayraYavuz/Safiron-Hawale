@@ -282,6 +282,24 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
     return txn
 
 
+@router.post("/approve-all")
+def approve_all(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    """Bekleyen tüm işlemleri tek seferde onayla."""
+    _require(cu, UserRole.admin, UserRole.super_admin, UserRole.manager, UserRole.branch_manager, UserRole.accounting)
+    q = db.query(Transaction).filter(Transaction.status == TxnStatus.pending)
+    q = apply_company_filter(q, Transaction, cu)
+    pending = q.all()
+    if not pending:
+        return {"approved": 0}
+    for txn in pending:
+        txn.status = TxnStatus.completed
+        txn.approved_by = cu.id
+        audit_log(db, "APPROVE", user_id=cu.id, entity="Transaction", entity_id=txn.id,
+                  detail={"txn_number": txn.txn_number})
+    db.commit()
+    return {"approved": len(pending)}
+
+
 @router.delete("/{txn_id}")
 def delete_transaction(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     _require(cu, UserRole.admin, UserRole.super_admin)

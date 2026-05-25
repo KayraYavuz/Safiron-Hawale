@@ -115,9 +115,11 @@ export default function Users() {
               <Input label={t.passwordLabel} type="password" value={form.password} onChange={e => setForm(x => ({ ...x, password: e.target.value }))} placeholder={t.minChars} />
               <Select label={t.role} value={form.role} onChange={e => setForm(x => ({ ...x, role: e.target.value }))}>
                 <option value="admin">{t.adminDesc}</option>
+                <option value="manager">{t.managerDesc}</option>
+                <option value="branch_manager">{t.branchManagerDesc}</option>
                 <option value="accounting">{t.accountingDesc}</option>
-                <option value="manager">Operasyon Müdürü</option>
-                <option value="data_entry">Veri Girişi</option>
+                <option value="data_entry">{t.dataEntryDesc}</option>
+                <option value="auditor">{t.auditorDesc}</option>
                 <option value="viewer">{t.viewerDesc}</option>
               </Select>
               {isSuperAdmin && (

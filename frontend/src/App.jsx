@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { PageSpinner } from './components/Skeleton'
 import { useLang } from './hooks/useLang'
 import toast from 'react-hot-toast'
+import CookieConsent from './components/CookieConsent'
 
 // ── Lazy-loaded pages — each route is its own JS chunk ────────────────────────
 const Landing        = lazy(() => import('./pages/Landing'))
@@ -21,8 +22,10 @@ const AuditLog       = lazy(() => import('./pages/AuditLog'))
 const AiAnalysis     = lazy(() => import('./pages/AiAnalysis'))
 const CashFlow       = lazy(() => import('./pages/CashFlow'))
 const Users          = lazy(() => import('./pages/Users'))
-const Companies      = lazy(() => import('./pages/Companies'))
-const Integrations   = lazy(() => import('./pages/Integrations'))
+const Companies           = lazy(() => import('./pages/Companies'))
+const Integrations        = lazy(() => import('./pages/Integrations'))
+const GizlilikPolitikasi  = lazy(() => import('./pages/GizlilikPolitikasi'))
+const KullanimSartlari    = lazy(() => import('./pages/KullanimSartlari'))
 
 // Giriş yapmamış kullanıcılar için — giriş yapılmışsa dashboard'a yönlendir
 function PublicOnly({ children }) {
@@ -74,6 +77,7 @@ function Protected({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
+      <CookieConsent />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Genel (halka açık) sayfalar */}
@@ -94,6 +98,10 @@ export default function App() {
           <Route path="/users"          element={<Protected><Users /></Protected>} />
           <Route path="/companies"      element={<Protected><Companies /></Protected>} />
           <Route path="/integrations"   element={<Protected><Integrations /></Protected>} />
+          {/* Yasal sayfalar — herkese açık */}
+          <Route path="/gizlilik-politikasi" element={<GizlilikPolitikasi />} />
+          <Route path="/kullanim-sartlari"   element={<KullanimSartlari />} />
+
           <Route path="*"               element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
