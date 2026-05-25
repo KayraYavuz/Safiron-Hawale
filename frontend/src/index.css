@@ -30,6 +30,7 @@
   --sh-sm: 0 1px 3px rgba(13,27,46,0.05), 0 1px 2px rgba(13,27,46,0.03);
   --sh-md: 0 4px 12px rgba(13,27,46,0.07), 0 1px 3px rgba(13,27,46,0.04);
   --sh-lg: 0 8px 24px rgba(13,27,46,0.10), 0 2px 6px rgba(13,27,46,0.05);
+  --sh-xl: 0 20px 48px rgba(13,27,46,0.15), 0 6px 14px rgba(13,27,46,0.07);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,53 +43,215 @@ body {
   -webkit-font-smoothing: antialiased;
   font-size: 13.5px;
   line-height: 1.55;
-  /* Prevent layout shift from scrollbar appearing/disappearing */
   overflow-y: scroll;
 }
 
-/* Minimal scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+/* ── Scrollbar ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 99px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--navy-3); }
+::-webkit-scrollbar-corner { background: transparent; }
 
-/* ── Animations ─────────────────────────────────────────────────────────────── */
-/* GPU-composited: only transform + opacity (no layout/paint) */
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-/* Skeleton shimmer — GPU-composited background-position shift */
+
 @keyframes shimmer {
   0%   { background-position: 200% center; }
   100% { background-position: -200% center; }
 }
 
-.fade-up  { animation: fadeUp 0.2s ease both; }
-.spinning { animation: spin 0.7s linear infinite; }
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0);      }
+}
 
-/* ── CSS hover classes (avoid inline JS onMouseEnter/onMouseLeave) ───────────
-   Using CSS transitions on transform/opacity is GPU-accelerated and avoids
-   React re-renders triggered by style mutations.                             */
+/* Pending dot pulse */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
 
-/* Nav links */
+/* Avatar glow throb */
+@keyframes glowThrob {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(201,168,76,0);    }
+  50%       { box-shadow: 0 0 0 4px rgba(201,168,76,0.22); }
+}
+
+/* Logo shimmer sweep */
+@keyframes logoSweep {
+  0%   { opacity: 0.7; }
+  50%  { opacity: 1;   }
+  100% { opacity: 0.7; }
+}
+
+/* Stat card entrance */
+@keyframes statEnter {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Count-up number slide */
+@keyframes numSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ── Utility classes ─────────────────────────────────────────────────────────── */
+.fade-up    { animation: fadeUp  0.25s ease both; }
+.fade-in    { animation: fadeIn  0.25s ease both; }
+.spinning   { animation: spin    0.7s  linear infinite; }
+.logo-sweep { animation: logoSweep 3s  ease-in-out infinite; }
+
+/* Stat card stagger grid */
+.stat-grid > *:nth-child(1) { animation: statEnter 0.45s cubic-bezier(0.22,1,0.36,1) 0ms   both; }
+.stat-grid > *:nth-child(2) { animation: statEnter 0.45s cubic-bezier(0.22,1,0.36,1) 70ms  both; }
+.stat-grid > *:nth-child(3) { animation: statEnter 0.45s cubic-bezier(0.22,1,0.36,1) 140ms both; }
+.stat-grid > *:nth-child(4) { animation: statEnter 0.45s cubic-bezier(0.22,1,0.36,1) 210ms both; }
+
+/* Section stagger */
+.section-enter > *:nth-child(1) { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) 80ms  both; }
+.section-enter > *:nth-child(2) { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) 160ms both; }
+.section-enter > *:nth-child(3) { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) 240ms both; }
+
+/* Nav stagger */
+.nav-stagger > *:nth-child(1)  { animation: slideRight 0.32s ease 30ms  both; }
+.nav-stagger > *:nth-child(2)  { animation: slideRight 0.32s ease 60ms  both; }
+.nav-stagger > *:nth-child(3)  { animation: slideRight 0.32s ease 90ms  both; }
+.nav-stagger > *:nth-child(4)  { animation: slideRight 0.32s ease 120ms both; }
+.nav-stagger > *:nth-child(5)  { animation: slideRight 0.32s ease 150ms both; }
+.nav-stagger > *:nth-child(6)  { animation: slideRight 0.32s ease 180ms both; }
+.nav-stagger > *:nth-child(7)  { animation: slideRight 0.32s ease 210ms both; }
+.nav-stagger > *:nth-child(8)  { animation: slideRight 0.32s ease 240ms both; }
+.nav-stagger > *:nth-child(9)  { animation: slideRight 0.32s ease 270ms both; }
+.nav-stagger > *:nth-child(10) { animation: slideRight 0.32s ease 300ms both; }
+.nav-stagger > *:nth-child(11) { animation: slideRight 0.32s ease 330ms both; }
+.nav-stagger > *:nth-child(12) { animation: slideRight 0.32s ease 360ms both; }
+
+/* Table body rows stagger */
+.tbody-stagger > tr:nth-child(1)  { animation: fadeIn 0.2s ease 0ms   both; }
+.tbody-stagger > tr:nth-child(2)  { animation: fadeIn 0.2s ease 30ms  both; }
+.tbody-stagger > tr:nth-child(3)  { animation: fadeIn 0.2s ease 60ms  both; }
+.tbody-stagger > tr:nth-child(4)  { animation: fadeIn 0.2s ease 90ms  both; }
+.tbody-stagger > tr:nth-child(5)  { animation: fadeIn 0.2s ease 120ms both; }
+.tbody-stagger > tr:nth-child(6)  { animation: fadeIn 0.2s ease 150ms both; }
+.tbody-stagger > tr:nth-child(7)  { animation: fadeIn 0.2s ease 180ms both; }
+.tbody-stagger > tr:nth-child(8)  { animation: fadeIn 0.2s ease 210ms both; }
+.tbody-stagger > tr:nth-child(9)  { animation: fadeIn 0.2s ease 240ms both; }
+.tbody-stagger > tr:nth-child(10) { animation: fadeIn 0.2s ease 270ms both; }
+
+/* Stat value count-up animation */
+.stat-value { animation: numSlide 0.4s cubic-bezier(0.22,1,0.36,1) 0.2s both; }
+
+/* ── Card hover lift ─────────────────────────────────────────────────────────── */
+.card-lift {
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-md) !important;
+}
+
+/* ── Stat card hover ─────────────────────────────────────────────────────────── */
+.stat-card-hover {
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.22s cubic-bezier(0.22,1,0.36,1),
+              border-color 0.22s;
+  cursor: default;
+}
+.stat-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(13,27,46,0.11), 0 2px 6px rgba(13,27,46,0.05) !important;
+  border-color: var(--border-2) !important;
+}
+
+/* ── Btn press + hover ───────────────────────────────────────────────────────── */
+.btn-press {
+  will-change: transform;
+  transition: transform 0.12s cubic-bezier(0.22,1,0.36,1),
+              filter 0.15s,
+              opacity 0.15s,
+              box-shadow 0.2s !important;
+}
+.btn-press:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.btn-press:active:not(:disabled) {
+  transform: scale(0.96) !important;
+}
+
+/* Primary btn shadow on hover */
+.btn-primary-hover:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(13,27,46,0.24) !important;
+}
+
+/* New transaction button — glowing ring */
+.btn-new {
+  position: relative;
+  overflow: visible;
+}
+.btn-new::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 11px;
+  background: radial-gradient(ellipse, rgba(13,27,46,0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s;
+  z-index: -1;
+  filter: blur(8px);
+}
+.btn-new:hover:not(:disabled)::before { opacity: 1; }
+
+/* ── Pending badge dot pulse ─────────────────────────────────────────────────── */
+.dot-pulse { animation: pulseDot 1.8s ease-in-out infinite; }
+
+/* ── Avatar glow ─────────────────────────────────────────────────────────────── */
+.avatar-glow { animation: glowThrob 3.5s ease-in-out infinite; }
+
+/* ── Glassmorphism toolbar ───────────────────────────────────────────────────── */
+.glass {
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  background: rgba(255,255,255,0.80) !important;
+  border-color: rgba(229,234,240,0.6) !important;
+  box-shadow: 0 2px 12px rgba(13,27,46,0.06), 0 1px 3px rgba(13,27,46,0.04) !important;
+}
+
+/* ── Nav links ───────────────────────────────────────────────────────────────── */
 .nav-link {
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 .nav-link:hover:not(.nav-link-active) {
-  background: rgba(255,255,255,0.04) !important;
-  color: rgba(255,255,255,0.68) !important;
+  background: rgba(255,255,255,0.055) !important;
+  color: rgba(255,255,255,0.75) !important;
+  transform: translateX(2px);
 }
 
 /* Sidebar logout button */
 .sidebar-btn {
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.15s, color 0.15s;
 }
 .sidebar-btn:hover {
-  background: rgba(255,255,255,0.04) !important;
-  color: rgba(255,255,255,0.58) !important;
+  background: rgba(255,255,255,0.055) !important;
+  color: rgba(255,255,255,0.62) !important;
 }
 
 /* Language toggle buttons */
@@ -104,11 +267,14 @@ body {
 
 /* View all link on dashboard */
 .view-link {
-  transition: color 0.12s;
+  transition: color 0.15s, transform 0.15s;
 }
-.view-link:hover { color: var(--accent) !important; }
+.view-link:hover {
+  color: var(--accent) !important;
+  transform: translateX(2px);
+}
 
-/* Icon button (edit/delete in location rows) */
+/* Icon button */
 .icon-btn {
   transition: background 0.12s, color 0.12s;
 }
@@ -116,32 +282,55 @@ body {
   background: var(--surface-3) !important;
   color: var(--navy) !important;
 }
-.icon-btn-danger {
-  transition: background 0.12s;
-}
-.icon-btn-danger:hover {
-  background: rgba(239,68,68,0.07) !important;
-}
+.icon-btn-danger { transition: background 0.12s; }
+.icon-btn-danger:hover { background: rgba(239,68,68,0.07) !important; }
 
-/* ── Input focus ring — GPU-accelerated outline instead of box-shadow ─────────
-   box-shadow causes repaint; outline doesn't move other elements (no layout).
-   Using outline + offset for the focus ring.                                  */
+/* Filter selects */
+.filter-select {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.filter-select:hover { border-color: var(--border-2) !important; }
+
+/* ── Input / Select focus ────────────────────────────────────────────────────── */
 input:focus,
 select:focus {
-  outline: 2.5px solid rgba(26,46,72,0.18);
-  outline-offset: -2px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13,27,46,0.10);
+  border-color: var(--navy-3) !important;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
-/* Accessible focus visible only for keyboard nav */
+/* Accessible keyboard focus */
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
-
-/* Remove focus ring on mouse clicks (focus-visible handles this) */
 button:focus:not(:focus-visible),
 a:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────────── */
+@media print {
+  aside, header, .no-print { display: none !important; }
+  main  { padding: 0 !important; overflow: visible !important; }
+  body  { background: white !important; }
+  .card-lift, .stat-card-hover { transform: none !important; box-shadow: none !important; }
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  aside { width: 190px !important; }
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 650px) {
+  aside { width: 52px !important; }
+  aside span.nav-label,
+  aside .logo-text,
+  aside .user-info,
+  aside .logout-label { display: none !important; }
+  main  { padding: 12px !important; }
+  .stat-grid { grid-template-columns: 1fr !important; }
 }

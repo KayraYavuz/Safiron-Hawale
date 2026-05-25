@@ -345,12 +345,16 @@ def _cancel_kb():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _find_admin(telegram_id: int, company_id, db):
-    """Telegram ID ile şirket yöneticisini bul."""
+    """Telegram ID ile şirket yöneticisini bul.
+    
+    company_id filtresi eklendi — kullanıcının bu şirkete ait olduğu doğrulanır.
+    Farklı şirketlerin botlarında aynı Telegram ID'nin çapraz erişim yapması engellenir.
+    """
     from app.models.user import User, UserRole
-    # telegram_id globally unique — en son bağlananı al (created_at desc)
     return (db.query(User)
               .filter(
                   User.telegram_id == str(telegram_id),
+                  User.company_id == company_id,
                   User.is_active == True,
               )
               .order_by(User.created_at.desc())
@@ -964,20 +968,16 @@ async def _do_create_txn(data: dict, uid: int, company_id, db):
     from datetime import date as dt_date
     from app.models.master import Account
     from app.models.transaction import Transaction, TransactionLeg, TxnType, TxnStatus, LegType
-    from app.models.user import User
 
     txn_type = data.get("txn_type")
     today    = dt_date.today()
     is_simple = txn_type in ("deposit", "withdrawal")
 
     # Admin kullanıcının DB id'sini bul (created_by için zorunlu)
-    admin_user = db.query(User).filter(
-        User.telegram_id == str(uid),
-        User.company_id  == company_id,
-        User.is_active   == True,
-    ).first()
+    # _find_admin zaten company_id filtresi uygular
+    admin_user = _find_admin(uid, company_id, db)
     if not admin_user:
-        return ("❌ Kullanıcı bulunamadı. Lütfen tekrar bağlanın.", None)
+        return (_L(uid, "user_not_found"), None)
     created_by_id = admin_user.id
 
     # Txn numarası
@@ -1208,7 +1208,11 @@ def _musteri_baglan(pin: str, uid: int, company_id, db) -> str:
 
 
 def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
-    """Yönetici bot_pin ile kendi Telegram hesabını bağlar."""
+    """Yönetici bot_pin ile kendi Telegram hesabını bağlar.
+    
+    Güvenlik: PIN sahibinin bu botun şirketine ait olduğu doğrulanır.
+    Farklı şirketteki kullanıcının pini ile başka şirketin botuna bağlanma engellenir.
+    """
     from app.models.user import User, UserRole
     from sqlalchemy import or_
     pin_normalized = pin.upper().strip()
@@ -1216,7 +1220,7 @@ def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
     BOT_ROLES = (UserRole.super_admin, UserRole.admin, UserRole.manager,
                  UserRole.auditor, UserRole.branch_manager)
 
-    # bot_pin globally unique — sadece pin ve rol ile ara
+    # bot_pin globally unique — önce pin ile bul
     user = db.query(User).filter(
         User.bot_pin == pin_normalized,
         User.is_active == True,
@@ -1230,9 +1234,19 @@ def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
             "_Örnek: `bağla SAF-7K2M`_"
         )
 
-    # Bu Telegram ID'si başka bir kullanıcıya yanlışlıkla bağlanmışsa temizle
+    # PIN sahibi bu şirkete ait mi? (super_admin tüm şirketlere bağlanabilir)
+    if user.role != UserRole.super_admin and str(user.company_id) != str(company_id):
+        return (
+            "❌ Bu pin bu şirkete ait değil.\n\n"
+            "_Doğru şirketin Telegram botuna yazdığınızdan emin olun._\n"
+            "_Her şirketin kendi bot adresi vardır._"
+        )
+
+    # Bu Telegram ID'si başka bir kullanıcıya yanlışlıkla bağlanmışsa,
+    # SADECE aynı şirketteki eski bağlantıyı temizle (farklı şirketler etkilenmemeli)
     db.query(User).filter(
         User.telegram_id == str(uid),
+        User.company_id == company_id,
         User.id != user.id,
     ).update({"telegram_id": None})
 
@@ -1568,10 +1582,28 @@ def start_company_bot(company_id: str, company_name: str, token: str):
             await app.initialize()
             await app.start()
 
+            # Webhook varsa sil — polling ile çakışmasın
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.post(
+                        f"https://api.telegram.org/bot{token}/deleteWebhook",
+                        json={"drop_pending_updates": False},
+                    )
+                    wh_result = resp.json()
+                    if wh_result.get("ok"):
+                        logger.info(f"[{company_name}] Webhook temizlendi")
+                    else:
+                        logger.warning(f"[{company_name}] Webhook silme yanıtı: {wh_result}")
+            except Exception as e:
+                logger.warning(f"[{company_name}] Webhook silme hatası: {e}")
+
             logger.info(f"✅ Bot başladı: {company_name}")
             print(f"✅ Telegram bot: {company_name}")
 
             offset = None
+            conflict_backoff = 5  # 409 Conflict için başlangıç bekleme (saniye)
+            MAX_BACKOFF = 60
+
             while True:
                 try:
                     params = {"timeout": 30, "allowed_updates": ["message", "callback_query"]}
@@ -1583,12 +1615,26 @@ def start_company_bot(company_id: str, company_name: str, token: str):
                             params=params,
                         )
                         data = resp.json()
+
                     if data.get("ok"):
+                        conflict_backoff = 5  # Başarılı → backoff sıfırla
                         from telegram import Update as TGUpdate
                         for upd_data in data.get("result", []):
                             offset = upd_data["update_id"] + 1
                             upd = TGUpdate.de_json(upd_data, app.bot)
                             await app.process_update(upd)
+                    elif data.get("error_code") == 409:
+                        # Başka bir instance çalışıyor — exponential backoff
+                        logger.warning(
+                            f"[{company_name}] 409 Conflict — başka bir bot instance çalışıyor. "
+                            f"{conflict_backoff}s bekleniyor…"
+                        )
+                        await asyncio.sleep(conflict_backoff)
+                        conflict_backoff = min(conflict_backoff * 2, MAX_BACKOFF)
+                    else:
+                        logger.error(f"[{company_name}] getUpdates hata: {data}")
+                        await asyncio.sleep(5)
+
                 except asyncio.CancelledError:
                     break
                 except Exception as exc:
