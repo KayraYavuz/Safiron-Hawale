@@ -82,47 +82,48 @@ def daily_reconciliation(
     acc_ids = [acc.id for acc in accs]
     acc_map = {acc.id: acc for acc in accs}
 
-    sums_q = (db.query(
-                  TransactionLeg.account_id,
-                  func.sum(
-                      sa_case(
-                          (TransactionLeg.leg_type == LegType.incoming, TransactionLeg.amount),
-                          else_=ZERO
-                      )
-                  ).label("in_sum"),
-                  func.sum(
-                      sa_case(
-                          (TransactionLeg.leg_type == LegType.outgoing, TransactionLeg.amount),
-                          else_=ZERO
-                      )
-                  ).label("out_sum"),
-              )
-              .join(Transaction)
-              .filter(
-                  TransactionLeg.account_id.in_(acc_ids),
-                  Transaction.txn_date == report_date,
-              )
-              .group_by(TransactionLeg.account_id)
-              .all())
-
     cash_summary = []
-    for row in sums_q:
-        acc = acc_map.get(row.account_id)
-        if not acc:
-            continue
-        in_sum  = row.in_sum  if row.in_sum  is not None else ZERO
-        out_sum = row.out_sum if row.out_sum is not None else ZERO
-        if in_sum == ZERO and out_sum == ZERO:
-            continue  # Hareketsiz kasaları atla
-        net = in_sum - out_sum
-        cash_summary.append({
-            "account":  acc.name,
-            "location": acc.location.name_tr if acc.location else "",
-            "currency": acc.currency.code if acc.currency else "",
-            "in":       str(in_sum.quantize(Decimal("0.01"))),
-            "out":      str(out_sum.quantize(Decimal("0.01"))),
-            "net":      str(net.quantize(Decimal("0.01"))),
-        })
+    if acc_ids:
+        sums_q = (db.query(
+                      TransactionLeg.account_id,
+                      func.sum(
+                          sa_case(
+                              (TransactionLeg.leg_type == LegType.incoming, TransactionLeg.amount),
+                              else_=ZERO
+                          )
+                      ).label("in_sum"),
+                      func.sum(
+                          sa_case(
+                              (TransactionLeg.leg_type == LegType.outgoing, TransactionLeg.amount),
+                              else_=ZERO
+                          )
+                      ).label("out_sum"),
+                  )
+                  .join(Transaction)
+                  .filter(
+                      TransactionLeg.account_id.in_(acc_ids),
+                      Transaction.txn_date == report_date,
+                  )
+                  .group_by(TransactionLeg.account_id)
+                  .all())
+
+        for row in sums_q:
+            acc = acc_map.get(row.account_id)
+            if not acc:
+                continue
+            in_sum  = row.in_sum  if row.in_sum  is not None else ZERO
+            out_sum = row.out_sum if row.out_sum is not None else ZERO
+            if in_sum == ZERO and out_sum == ZERO:
+                continue  # Hareketsiz kasaları atla
+            net = in_sum - out_sum
+            cash_summary.append({
+                "account":  acc.name,
+                "location": acc.location.name_tr if acc.location else "",
+                "currency": acc.currency.code if acc.currency else "",
+                "in":       str(in_sum.quantize(Decimal("0.01"))),
+                "out":      str(out_sum.quantize(Decimal("0.01"))),
+                "net":      str(net.quantize(Decimal("0.01"))),
+            })
 
     # Kâr özeti
     pnl_rows = [txn.pnl for txn in txns if txn.pnl and txn.txn_type in FX_TYPES and txn.status == TxnStatus.completed]
