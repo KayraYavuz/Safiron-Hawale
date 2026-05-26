@@ -6,7 +6,7 @@ Bir günün tüm işlemlerini, kasa hareketlerini ve kâr özetini verir.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, case as sa_case
 from datetime import date
 from decimal import Decimal
 from typing import Optional
@@ -49,12 +49,6 @@ def daily_reconciliation(
     txn_q = apply_company_filter(txn_q, Transaction, cu)
     txns = txn_q.order_by(Transaction.created_at).all()
 
-    TYPE_LABEL = {
-        "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
-        "deposit": "Para Yatırma", "withdrawal": "Para Çekme",
-        "internal_transfer": "İç Transfer",
-    }
-
     # İşlem listesi
     txn_rows = []
     for txn in txns:
@@ -68,7 +62,7 @@ def daily_reconciliation(
 
         txn_rows.append({
             "txn_number":  txn.txn_number,
-            "txn_type":    TYPE_LABEL.get(txn.txn_type.value, txn.txn_type.value),
+            "txn_type":    txn.txn_type.value,
             "counterparty": txn.counterparty.name if txn.counterparty else "—",
             "from":         f"{out_l.amount} {out_l.currency.code if out_l and out_l.currency else ''}" if out_l else "—",
             "to":           f"{in_l.amount} {in_l.currency.code if in_l and in_l.currency else ''}"    if in_l  else "—",
@@ -84,30 +78,50 @@ def daily_reconciliation(
     acc_q = apply_company_filter(acc_q, Account, cu)
     accs = acc_q.all()
 
+    # Batch query: sum incoming and outgoing per account in a single GROUP BY query
+    acc_ids = [acc.id for acc in accs]
+    acc_map = {acc.id: acc for acc in accs}
+
+    sums_q = (db.query(
+                  TransactionLeg.account_id,
+                  func.sum(
+                      sa_case(
+                          (TransactionLeg.leg_type == LegType.incoming, TransactionLeg.amount),
+                          else_=ZERO
+                      )
+                  ).label("in_sum"),
+                  func.sum(
+                      sa_case(
+                          (TransactionLeg.leg_type == LegType.outgoing, TransactionLeg.amount),
+                          else_=ZERO
+                      )
+                  ).label("out_sum"),
+              )
+              .join(Transaction)
+              .filter(
+                  TransactionLeg.account_id.in_(acc_ids),
+                  Transaction.txn_date == report_date,
+              )
+              .group_by(TransactionLeg.account_id)
+              .all())
+
     cash_summary = []
-    for acc in accs:
-        in_sum = (db.query(func.sum(TransactionLeg.amount))
-                  .join(Transaction)
-                  .filter(TransactionLeg.account_id == acc.id,
-                          TransactionLeg.leg_type == LegType.incoming,
-                          Transaction.txn_date == report_date)
-                  .scalar() or ZERO)
-        out_sum = (db.query(func.sum(TransactionLeg.amount))
-                   .join(Transaction)
-                   .filter(TransactionLeg.account_id == acc.id,
-                           TransactionLeg.leg_type == LegType.outgoing,
-                           Transaction.txn_date == report_date)
-                   .scalar() or ZERO)
-        net = in_sum - out_sum
+    for row in sums_q:
+        acc = acc_map.get(row.account_id)
+        if not acc:
+            continue
+        in_sum  = row.in_sum  if row.in_sum  is not None else ZERO
+        out_sum = row.out_sum if row.out_sum is not None else ZERO
         if in_sum == ZERO and out_sum == ZERO:
             continue  # Hareketsiz kasaları atla
+        net = in_sum - out_sum
         cash_summary.append({
-            "account":       acc.name,
-            "location":      acc.location.name_tr if acc.location else "",
-            "currency":      acc.currency.code if acc.currency else "",
-            "in":            str(in_sum.quantize(Decimal("0.01"))),
-            "out":           str(out_sum.quantize(Decimal("0.01"))),
-            "net":           str(net.quantize(Decimal("0.01"))),
+            "account":  acc.name,
+            "location": acc.location.name_tr if acc.location else "",
+            "currency": acc.currency.code if acc.currency else "",
+            "in":       str(in_sum.quantize(Decimal("0.01"))),
+            "out":      str(out_sum.quantize(Decimal("0.01"))),
+            "net":      str(net.quantize(Decimal("0.01"))),
         })
 
     # Kâr özeti
