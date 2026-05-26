@@ -52,10 +52,7 @@ def _safe(v) -> Decimal:
 def _require_role(*roles: UserRole):
     def role_checker(cu: User = Depends(get_current_user)):
         if cu.role not in roles and cu.role not in [UserRole.admin, UserRole.super_admin, UserRole.auditor]:
-            from app.services.audit import log as audit_log
-            # Yetkisiz erişim denemesini logla
-            # audit_log(None, "UNAUTHORIZED_ACCESS", user_id=cu.id, entity="Report") 
-            raise HTTPException(403, f"Yetkisiz: Bu rapor için {', '.join(roles)} yetkisi gerekli")
+            raise HTTPException(403, f"Unauthorized: required roles: {', '.join(r.value for r in roles)}")
         return cu
     return role_checker
 
@@ -65,7 +62,7 @@ def position(db: Session = Depends(get_db), cu: User = Depends(get_current_user)
     """Tüm kasaların anlık bakiyesi. Batch sorgularla N+1 önlendi."""
     # Veri girişi (data_entry) kasaları göremez, sadece işlem girer
     if cu.role == UserRole.data_entry:
-        raise HTTPException(403, "Veri giriş personeli kasa bakiyelerini göremez")
+        raise HTTPException(403, "Data entry role cannot view account balances")
 
     from app.services.balance import get_all_balances, get_all_usd_rates
 
@@ -119,12 +116,6 @@ def cash_movements(
     """
     from app.services.balance import get_account_balance, balance_to_usd
 
-    TYPE_LABEL = {
-        "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
-        "deposit": "Para Yatırma", "withdrawal": "Para Çekme",
-        "internal_transfer": "İç Transfer",
-    }
-
     # Hesapları çek
     acc_q = db.query(Account).options(
         joinedload(Account.location), joinedload(Account.currency)
@@ -171,9 +162,9 @@ def cash_movements(
             movements.append({
                 "txn_number":  txn.txn_number,
                 "txn_date":    str(txn.txn_date),
-                "type":        TYPE_LABEL.get(txn.txn_type.value, txn.txn_type.value),
+                "type":        txn.txn_type.value,
                 "counterparty": txn.counterparty.name if txn.counterparty else "—",
-                "direction":   "Giriş" if leg.leg_type == LegType.incoming else "Çıkış",
+                "direction":   "incoming" if leg.leg_type == LegType.incoming else "outgoing",
                 "amount":      f"{sign}{_fmt2(leg.amount)}",
                 "currency":    acc.currency.code if acc.currency else "",
                 "balance":     _fmt2(running),
@@ -331,7 +322,7 @@ def counterparty_statement(
     cp_q = apply_company_filter(cp_q, Counterparty, cu)
     cp = cp_q.first()
     if not cp:
-        raise HTTPException(404, "Karşı taraf bulunamadı")
+        raise HTTPException(404, "Counterparty not found")
 
     q = (db.query(Transaction)
          .options(
@@ -347,11 +338,6 @@ def counterparty_statement(
 
     transactions = q.order_by(Transaction.txn_date, Transaction.created_at).all()
 
-    TYPE_LABEL = {
-        "remittance": "Havale", "fx": "Döviz", "swift": "SWIFT",
-        "deposit": "Para Yatırma", "withdrawal": "Para Çekme",
-        "internal_transfer": "İç Transfer",
-    }
     FX_TYPES = {"remittance", "fx", "swift"}
 
     rows = []
@@ -394,7 +380,7 @@ def counterparty_statement(
                 "txn_number":  txn.txn_number,
                 "txn_date":    str(txn.txn_date),
                 "value_date":  str(txn.value_date),
-                "type":        TYPE_LABEL[txn_type_val],
+                "type":        txn_type_val,
                 "description": f"{out_cur} → {in_cur}" if out_cur and in_cur else "",
                 "debit":       debit_col,
                 "credit":      credit_col,
@@ -415,8 +401,8 @@ def counterparty_statement(
                 "txn_number":  txn.txn_number,
                 "txn_date":    str(txn.txn_date),
                 "value_date":  str(txn.value_date),
-                "type":        TYPE_LABEL[txn_type_val],
-                "description": "Tahsilat",
+                "type":        txn_type_val,
+                "description": "collection",
                 "debit":       "—",
                 "credit":      f"{_fmt2(leg.amount)} {cur}",
                 "amount_usd":  _fmt2(usd_amount),
@@ -436,8 +422,8 @@ def counterparty_statement(
                 "txn_number":  txn.txn_number,
                 "txn_date":    str(txn.txn_date),
                 "value_date":  str(txn.value_date),
-                "type":        TYPE_LABEL[txn_type_val],
-                "description": "Teslim",
+                "type":        txn_type_val,
+                "description": "delivery",
                 "debit":       f"{_fmt2(leg.amount)} {cur}",
                 "credit":      "—",
                 "amount_usd":  _fmt2(usd_amount),
@@ -674,7 +660,7 @@ def create_saved_report(report: SavedReportCreate, db: Session = Depends(get_db)
 def toggle_favorite_report(report_id: UUID, db: Session = Depends(get_db), user=Depends(get_current_user)):
     db_report = db.query(SavedReport).filter(SavedReport.id == report_id, SavedReport.user_id == user.id).first()
     if not db_report:
-        raise HTTPException(404, "Rapor bulunamadı")
+        raise HTTPException(404, "Report not found")
     db_report.is_favorite = not db_report.is_favorite
     db.commit()
     db.refresh(db_report)
@@ -684,7 +670,7 @@ def toggle_favorite_report(report_id: UUID, db: Session = Depends(get_db), user=
 def delete_saved_report(report_id: UUID, db: Session = Depends(get_db), user=Depends(get_current_user)):
     db_report = db.query(SavedReport).filter(SavedReport.id == report_id, SavedReport.user_id == user.id).first()
     if not db_report:
-        raise HTTPException(404, "Rapor bulunamadı")
+        raise HTTPException(404, "Report not found")
     db.delete(db_report)
     db.commit()
     return {"status": "ok"}

@@ -31,7 +31,7 @@ router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 
 def _require(user: User, *roles: UserRole):
     if user.role not in roles:
-        raise HTTPException(403, "Yetkisiz işlem")
+        raise HTTPException(403, "Forbidden")
 
 
 def _next_txn_number(db: Session) -> str:
@@ -113,9 +113,9 @@ def create_transaction(
     for leg in data.legs:
         acc = db.query(Account).filter(Account.id == leg.account_id).first()
         if not acc:
-            raise HTTPException(404, f"Hesap bulunamadı: {leg.account_id}")
+            raise HTTPException(404, f"Account not found: {leg.account_id}")
         if str(acc.currency_id) != str(leg.currency_id):
-            raise HTTPException(400, f"'{acc.name}' hesabı sadece {acc.currency.code} cinsinden işlem yapabilir")
+            raise HTTPException(400, f"Account '{acc.name}' only supports {acc.currency.code} transactions")
 
     # İşlem oluştur
     txn = Transaction(
@@ -272,7 +272,7 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
     q = apply_company_filter(q, Transaction, cu)
     txn = q.first()
     if not txn:
-        raise HTTPException(404, "İşlem bulunamadı")
+        raise HTTPException(404, "Transaction not found")
     txn.status = TxnStatus.completed
     txn.approved_by = cu.id
     audit_log(db, "APPROVE", user_id=cu.id, entity="Transaction", entity_id=txn_id,
@@ -307,7 +307,7 @@ def delete_transaction(txn_id: UUID, db: Session = Depends(get_db), cu: User = D
     q = apply_company_filter(q, Transaction, cu)
     txn = q.first()
     if not txn:
-        raise HTTPException(404, "İşlem bulunamadı")
+        raise HTTPException(404, "Transaction not found")
     audit_log(db, "DELETE", user_id=cu.id, entity="Transaction",
               entity_id=txn_id, detail={"txn_number": txn.txn_number})
     db.delete(txn)
