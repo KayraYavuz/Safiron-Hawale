@@ -8,7 +8,7 @@ from app.core.tenant import get_company_id
 from app.models.user import User, UserRole
 from app.models.master import Company
 from app.schemas.schemas import UserCreate, UserOut, CompanyCreate, CompanyOut
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -36,13 +36,11 @@ def _admin_or_manager(cu: User = Depends(get_current_user)):
 
 @router.get("", response_model=List[UserOut])
 def list_users(db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):
-    q = db.query(User).order_by(User.created_at)
-    # Non-super_admin only sees users in their own company
+    q = db.query(User).filter(User.is_active == True).order_by(User.created_at)
     company_id = get_company_id(cu)
     if company_id is not None:
         q = q.filter(User.company_id == company_id)
-    # Sadece aktif kullanıcıları döndür (silinen kullanıcılar is_active=False)
-    return [u for u in q.all() if u.is_active]
+    return q.all()
 
 @router.post("", response_model=UserOut)
 def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):
@@ -193,7 +191,7 @@ def toggle_company(company_id: UUID, db: Session = Depends(get_db), _=Depends(_s
     return {"ok": True, "is_active": company.is_active}
 
 class PasswordReset(BaseModel):
-    password: str
+    password: str = Field(min_length=6, description="New password (minimum 6 characters)")
 
 @router.patch("/{user_id}/password")
 def reset_password(user_id: UUID, data: PasswordReset, db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):

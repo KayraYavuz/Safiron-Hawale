@@ -107,7 +107,7 @@ def create_transaction(
     _require(cu, UserRole.admin, UserRole.super_admin, UserRole.accounting, UserRole.manager, UserRole.branch_manager, UserRole.data_entry)
 
     if not data.legs:
-        raise HTTPException(400, "En az bir bacak gerekli")
+        raise HTTPException(400, "At least one leg required")
 
     # Bacak validasyonu
     for leg in data.legs:
