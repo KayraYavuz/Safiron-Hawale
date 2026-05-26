@@ -35,17 +35,17 @@ def list_locations(db: Session = Depends(get_db), cu: User = Depends(get_current
 @router.post("/locations", response_model=LocationOut)
 def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin yeni lokasyon ekleyebilir")
+        raise HTTPException(403, "Only admin can add locations")
     code = data.code.upper().strip()
     if not code:
-        raise HTTPException(400, "Lokasyon kodu boş olamaz")
+        raise HTTPException(400, "Location code cannot be empty")
     if len(code) > 10:
-        raise HTTPException(400, "Lokasyon kodu en fazla 10 karakter olabilir")
+        raise HTTPException(400, "Location code cannot exceed 10 characters")
     if not data.name_tr.strip():
-        raise HTTPException(400, "Türkçe isim zorunludur")
+        raise HTTPException(400, "Turkish name is required")
     existing = db.query(Location).filter(Location.code == code).first()
     if existing:
-        raise HTTPException(400, f"'{code}' kodu zaten kullanılıyor")
+        raise HTTPException(400, f"Code '{code}' is already in use")
     loc = Location(
         code=code,
         name_tr=data.name_tr.strip(),
@@ -62,15 +62,15 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: Use
 @router.put("/locations/{loc_id}", response_model=LocationOut)
 def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin lokasyon düzenleyebilir")
+        raise HTTPException(403, "Only admin can edit locations")
     q = db.query(Location).filter(Location.id == loc_id, Location.is_active == True)
     q = apply_company_filter(q, Location, cu)
     loc = q.first()
     if not loc:
-        raise HTTPException(404, "Lokasyon bulunamadı")
+        raise HTTPException(404, "Location not found")
     if data.name_tr is not None:
         if not data.name_tr.strip():
-            raise HTTPException(400, "Türkçe isim boş olamaz")
+            raise HTTPException(400, "Turkish name cannot be empty")
         loc.name_tr = data.name_tr.strip()
     if data.name_ar is not None:
         loc.name_ar = data.name_ar.strip()
@@ -85,16 +85,16 @@ def update_location(loc_id: UUID, data: LocationUpdate, db: Session = Depends(ge
 @router.delete("/locations/{loc_id}")
 def delete_location(loc_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin lokasyon silebilir")
+        raise HTTPException(403, "Only admin can delete locations")
     q = db.query(Location).filter(Location.id == loc_id, Location.is_active == True)
     q = apply_company_filter(q, Location, cu)
     loc = q.first()
     if not loc:
-        raise HTTPException(404, "Lokasyon bulunamadı")
+        raise HTTPException(404, "Location not found")
     # Bağlı aktif hesap varsa silinemez
     active_accounts = db.query(Account).filter(Account.location_id == loc_id, Account.is_active == True).count()
     if active_accounts > 0:
-        raise HTTPException(400, f"Bu lokasyona ait {active_accounts} aktif hesap var — önce hesapları silin")
+        raise HTTPException(400, f"Location has {active_accounts} active account(s) — delete them first")
     loc.is_active = False
     db.commit()
     return {"ok": True, "message": f"'{loc.name_tr}' lokasyonu pasife alındı"}
@@ -125,7 +125,7 @@ def list_accounts(
 @router.post("/accounts", response_model=AccountOut)
 def create_account(data: AccountCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin yapabilir")
+        raise HTTPException(403, "Only admin can perform this action")
     acc = Account(**data.model_dump(), company_id=cu.company_id)
     db.add(acc)
     db.commit()
@@ -137,7 +137,7 @@ def account_balance(account_id: UUID, db: Session = Depends(get_db), _=Depends(g
     balance = get_account_balance(db, account_id)
     acc = db.query(Account).filter(Account.id == account_id).first()
     if not acc:
-        raise HTTPException(404, "Hesap bulunamadı")
+        raise HTTPException(404, "Account not found")
     balance_usd = balance_to_usd(balance, acc.currency.code, db)
     return {
         "account_id": str(account_id),
@@ -202,12 +202,12 @@ def regenerate_bot_pin(
     Güvenlik ihlali şüphesinde kullanılır.
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin PIN yenileyebilir")
+        raise HTTPException(403, "Only admin can regenerate PIN")
     q  = db.query(Counterparty).filter(Counterparty.id == cp_id)
     q  = apply_company_filter(q, Counterparty, cu)
     cp = q.first()
     if not cp:
-        raise HTTPException(404, "Müşteri bulunamadı")
+        raise HTTPException(404, "Counterparty not found")
     old_pin = cp.bot_pin
     cp.bot_pin     = _generate_bot_pin(db)
     cp.telegram_id = None   # Eski bağlantıyı da sıfırla
@@ -218,12 +218,12 @@ def regenerate_bot_pin(
 @router.put("/counterparties/{cp_id}", response_model=CounterpartyOut)
 def update_counterparty(cp_id: UUID, data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin, UserRole.accounting):
-        raise HTTPException(403, "Yetkisiz")
+        raise HTTPException(403, "Forbidden")
     q = db.query(Counterparty).filter(Counterparty.id == cp_id)
     q = apply_company_filter(q, Counterparty, cu)
     cp = q.first()
     if not cp:
-        raise HTTPException(404, "Bulunamadı")
+        raise HTTPException(404, "Not found")
     for k, v in data.model_dump().items():
         setattr(cp, k, v)
     db.commit()
@@ -237,12 +237,12 @@ def delete_counterparty(cp_id: UUID, db: Session = Depends(get_db), cu: User = D
     Bağlı işlemi olsa dahi pasife alınabilir (geçmişi korumak için).
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin silebilir")
+        raise HTTPException(403, "Only admin can delete")
     q = db.query(Counterparty).filter(Counterparty.id == cp_id)
     q = apply_company_filter(q, Counterparty, cu)
     cp = q.first()
     if not cp:
-        raise HTTPException(404, "Karşı taraf bulunamadı")
+        raise HTTPException(404, "Counterparty not found")
 
     # Soft delete — işlemi olsa dahi artık listelerde görünmeyecek
     cp.is_active = False
@@ -257,18 +257,18 @@ def delete_account(account_id: UUID, db: Session = Depends(get_db), cu: User = D
     İşlem geçmişi olsa dahi pasife alınabilir.
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin silebilir")
+        raise HTTPException(403, "Only admin can delete")
     q = db.query(Account).filter(Account.id == account_id)
     q = apply_company_filter(q, Account, cu)
     acc = q.first()
     if not acc:
-        raise HTTPException(404, "Hesap bulunamadı")
+        raise HTTPException(404, "Account not found")
 
     # Bakiye kontrolü — bakiye varken pasife almak kafa karıştırır
     balance = get_account_balance(db, account_id)
     from decimal import Decimal
     if abs(balance) > Decimal("0.01"):
-        raise HTTPException(400, f"Hesap bakiyesi {balance} — sıfırlanmadan silinemez")
+        raise HTTPException(400, f"Account balance is {balance} — cannot delete until zero")
 
     # Soft delete
     acc.is_active = False
@@ -320,6 +320,6 @@ async def auto_update_rates(db: Session = Depends(get_db), _=Depends(get_current
     from app.services.balance import invalidate_rates_cache
     result = await fetch_and_save_rates()
     if "error" in result:
-        raise HTTPException(503, f"Kur güncellenemedi: {result['error']}")
+        raise HTTPException(503, f"Rate update failed: {result['error']}")
     invalidate_rates_cache()
     return result

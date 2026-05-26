@@ -29,7 +29,7 @@ def _mask(value: str | None) -> str | None:
 
 def _require_admin(cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin erişebilir")
+        raise HTTPException(403, "Only admin can access settings")
     return cu
 
 
@@ -58,7 +58,7 @@ class SettingUpdate(BaseModel):
 @router.patch("/{key}")
 def update_setting(key: str, data: SettingUpdate, db: Session = Depends(get_db), cu: User = Depends(_require_admin)):
     if key not in KNOWN_KEYS:
-        raise HTTPException(400, f"Bilinmeyen ayar anahtarı: {key}")
+        raise HTTPException(400, f"Unknown setting key: {key}")
 
     meta = KNOWN_KEYS[key]
     row = db.query(SystemSetting).filter(SystemSetting.key == key).first()
@@ -81,7 +81,7 @@ def update_setting(key: str, data: SettingUpdate, db: Session = Depends(get_db),
 @router.delete("/{key}")
 def clear_setting(key: str, db: Session = Depends(get_db), cu: User = Depends(_require_admin)):
     if key not in KNOWN_KEYS:
-        raise HTTPException(400, f"Bilinmeyen ayar anahtarı: {key}")
+        raise HTTPException(400, f"Unknown setting key: {key}")
     row = db.query(SystemSetting).filter(SystemSetting.key == key).first()
     if row:
         row.value = None
