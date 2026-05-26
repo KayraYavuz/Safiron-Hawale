@@ -79,7 +79,7 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if not user.is_approved:
-        raise HTTPException(status_code=403, detail="Account not yet approved.")
+        raise HTTPException(status_code=403, detail="Account not yet approved")
 
     # ── Super admin: 2FA atla, direkt token ver ───────────────────────────────
     if user.role == UserRole.super_admin:
@@ -130,11 +130,11 @@ def verify_otp_endpoint(
 
     user_id = verify_otp(body.session_token, body.otp.strip())
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid or expired code.")
+        raise HTTPException(status_code=401, detail="Invalid or expired code")
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
+        raise HTTPException(status_code=404, detail="User not found")
 
     _login_attempts[ip] = []  # başarılı giriş → denemeleri sıfırla
 
