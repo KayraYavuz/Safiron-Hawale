@@ -31,7 +31,7 @@ def _generate_user_bot_pin(db) -> str:
 
 def _admin_or_manager(cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin, UserRole.manager):
-        raise HTTPException(403, "Yetkisiz")
+        raise HTTPException(403, "Forbidden")
     return cu
 
 @router.get("", response_model=List[UserOut])
@@ -48,10 +48,10 @@ def list_users(db: Session = Depends(get_db), cu: User = Depends(_admin_or_manag
 def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):
     # Sadece admin başkasına admin rolü verebilir
     if data.role in (UserRole.admin, UserRole.super_admin) and cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin yeni bir admin oluşturabilir")
+        raise HTTPException(403, "Only admin can create another admin")
 
     if db.query(User).filter(User.email == data.email, User.is_active == True).first():
-        raise HTTPException(400, "Bu email zaten kayıtlı")
+        raise HTTPException(400, "Email already registered")
 
     # Determine company_id: use provided value (super_admin only), else caller's company
     if data.company_id and cu.role == UserRole.super_admin:
@@ -85,13 +85,13 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), cu: User = Depe
 @router.patch("/{user_id}/approve")
 def approve_user(user_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin onaylayabilir")
+        raise HTTPException(403, "Only admin can approve users")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404, "Kullanıcı bulunamadı")
+        raise HTTPException(404, "User not found")
     # Admin sadece kendi şirketindeki kullanıcıyı onaylayabilir
     if cu.role == UserRole.admin and str(user.company_id) != str(cu.company_id):
-        raise HTTPException(403, "Başka şirketin kullanıcısını onaylayamazsınız")
+        raise HTTPException(403, "Cannot approve users from another company")
     from app.services.audit import log as audit_log
     user.is_approved = True
     audit_log(db, "APPROVE_USER", user_id=cu.id, entity="User", entity_id=user_id, detail={"email": user.email})
@@ -103,7 +103,7 @@ companies_router = APIRouter(prefix="/api/companies", tags=["companies"])
 
 def _super_admin_only(cu: User = Depends(get_current_user)):
     if cu.role != UserRole.super_admin:
-        raise HTTPException(403, "Sadece super_admin şirketleri yönetebilir")
+        raise HTTPException(403, "Only super_admin can manage companies")
     return cu
 
 @companies_router.get("", response_model=List[CompanyOut])
@@ -114,13 +114,13 @@ def list_companies(db: Session = Depends(get_db), _=Depends(_super_admin_only)):
 def create_company(data: CompanyCreate, db: Session = Depends(get_db), cu: User = Depends(_super_admin_only)):
     code = data.code.upper().strip()
     if not code:
-        raise HTTPException(400, "Şirket kodu boş olamaz")
+        raise HTTPException(400, "Company code cannot be empty")
     if db.query(Company).filter(Company.code == code).first():
-        raise HTTPException(400, f"'{code}' kodu zaten kullanılıyor")
+        raise HTTPException(400, f"Code '{code}' is already in use")
     if db.query(User).filter(User.email == data.admin_email, User.is_active == True).first():
-        raise HTTPException(400, f"'{data.admin_email}' e-posta adresi zaten kayıtlı")
+        raise HTTPException(400, f"Email '{data.admin_email}' is already registered")
     if len(data.admin_password) < 6:
-        raise HTTPException(400, "Admin şifresi en az 6 karakter olmalı")
+        raise HTTPException(400, "Admin password must be at least 6 characters")
 
     company = Company(name=data.name.strip(), code=code)
     db.add(company)
@@ -165,10 +165,10 @@ def set_telegram_bot(
     elif cu.role == UserRole.admin and str(cu.company_id) == str(company_id):
         company = db.query(Company).filter(Company.id == company_id).first()
     else:
-        raise HTTPException(403, "Yetki yok")
+        raise HTTPException(403, "Forbidden")
 
     if not company:
-        raise HTTPException(404, "Şirket bulunamadı")
+        raise HTTPException(404, "Company not found")
 
     token = (data.token or "").strip() or None
     company.telegram_bot_token = token
@@ -187,7 +187,7 @@ def set_telegram_bot(
 def toggle_company(company_id: UUID, db: Session = Depends(get_db), _=Depends(_super_admin_only)):
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
-        raise HTTPException(404, "Şirket bulunamadı")
+        raise HTTPException(404, "Company not found")
     company.is_active = not company.is_active
     db.commit()
     return {"ok": True, "is_active": company.is_active}
@@ -199,15 +199,25 @@ class PasswordReset(BaseModel):
 def reset_password(user_id: UUID, data: PasswordReset, db: Session = Depends(get_db), cu: User = Depends(_admin_or_manager)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404, "Kullanıcı bulunamadı")
-        
-    # Manager kendisinden üstün veya eşit rollerin şifresini değiştiremez (admin hariç)
+        raise HTTPException(404, "User not found")
+
+    # Şirket izolasyonu — admin sadece kendi şirketindeki kullanıcının şifresini değiştirebilir
+    if cu.role == UserRole.admin and str(user.company_id) != str(cu.company_id):
+        raise HTTPException(403, "Cannot reset password of a user from another company")
+
+    # Manager kendisinden üstün veya eşit rollerin şifresini değiştiremez
     if cu.role == UserRole.manager and user.role in (UserRole.admin, UserRole.super_admin):
-         raise HTTPException(403, "Manager bir adminin şifresini değiştiremez")
+        raise HTTPException(403, "Manager cannot reset an admin's password")
+    if cu.role == UserRole.manager and str(user.company_id) != str(cu.company_id):
+        raise HTTPException(403, "Cannot reset password of a user from another company")
 
     from app.services.audit import log as audit_log
+    from app.services.trusted_device import revoke_all_devices
     user.hashed_password = hash_password(data.password)
-    audit_log(db, "RESET_PWD", user_id=cu.id, entity="User", entity_id=user_id, detail={"email": user.email})
+    # Şifre değişince tüm güvenilir cihaz tokenlerini iptal et
+    revoke_all_devices(str(user.id), db)
+    audit_log(db, "RESET_PWD", user_id=cu.id, entity="User", entity_id=user_id,
+              detail={"email": user.email, "trusted_devices_revoked": True})
     db.commit()
     return {"ok": True}
 
@@ -218,12 +228,12 @@ def regenerate_user_pin(user_id: UUID, db: Session = Depends(get_db), cu: User =
     Admin kendi şirketindeki, super_admin herkesi yenileyebilir.
     """
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin PIN yenileyebilir")
+        raise HTTPException(403, "Only admin can regenerate PIN")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404, "Kullanıcı bulunamadı")
+        raise HTTPException(404, "User not found")
     if cu.role == UserRole.admin and str(user.company_id) != str(cu.company_id):
-        raise HTTPException(403, "Başka şirketin kullanıcısını düzenleyemezsiniz")
+        raise HTTPException(403, "Cannot edit users from another company")
 
     old_pin = user.bot_pin
     user.bot_pin     = _generate_user_bot_pin(db)
@@ -239,19 +249,22 @@ def regenerate_user_pin(user_id: UUID, db: Session = Depends(get_db), cu: User =
 @router.delete("/{user_id}")
 def delete_user(user_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
-        raise HTTPException(403, "Sadece admin kullanıcı silebilir")
+        raise HTTPException(403, "Only admin can delete users")
         
     if str(cu.id) == str(user_id):
-        raise HTTPException(400, "Kendinizi silemezsiniz")
+        raise HTTPException(400, "Cannot delete yourself")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(404, "Kullanıcı bulunamadı")
+        raise HTTPException(404, "User not found")
     
     from app.services.audit import log as audit_log
+    from app.services.trusted_device import revoke_all_devices
     original_email = user.email
     # Email'i boz — DB unique constraint'i, silinen adresin tekrar kullanılmasına izin vermesi için
     user.email     = f"deleted_{user_id}@deleted"
     user.is_active = False
+    # Güvenilir cihaz tokenlerini iptal et
+    revoke_all_devices(str(user_id), db)
     audit_log(db, "DELETE_USER", user_id=cu.id, entity="User", entity_id=user_id, detail={"email": original_email})
     db.commit()
     return {"ok": True}
