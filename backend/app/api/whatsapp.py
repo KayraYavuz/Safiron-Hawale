@@ -49,7 +49,7 @@ def verify_webhook(
     verify_token = getattr(cfg, "WHATSAPP_VERIFY_TOKEN", None)
 
     if not verify_token:
-        raise HTTPException(500, "WHATSAPP_VERIFY_TOKEN tanımlı değil")
+        raise HTTPException(500, "WHATSAPP_VERIFY_TOKEN not configured")
 
     if hub_mode == "subscribe" and hub_verify_token == verify_token:
         logger.info("WhatsApp webhook doğrulandı ✓")
@@ -57,7 +57,7 @@ def verify_webhook(
         return PlainTextResponse(hub_challenge)  # Meta challenge'ı aynen döndür
 
     logger.warning(f"WhatsApp webhook doğrulama başarısız: mode={hub_mode}")
-    raise HTTPException(403, "Doğrulama başarısız")
+    raise HTTPException(403, "Verification failed")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -82,14 +82,14 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         ).hexdigest()
         if not hmac.compare_digest(sig_header, expected):
             logger.warning("WhatsApp HMAC doğrulama başarısız")
-            raise HTTPException(403, "İmza geçersiz")
+            raise HTTPException(403, "Invalid signature")
 
     # ── JSON parse ────────────────────────────────────────────────────────
     try:
         import json
         data: Dict[str, Any] = json.loads(raw_body)
     except Exception:
-        raise HTTPException(400, "Geçersiz JSON")
+        raise HTTPException(400, "Invalid JSON")
 
     # ── Mesaj çıkar ───────────────────────────────────────────────────────
     try:
@@ -156,7 +156,7 @@ async def send_notification(request: Request):
         import json
         data = json.loads(await request.body())
     except Exception:
-        raise HTTPException(400, "Geçersiz JSON")
+        raise HTTPException(400, "Invalid JSON")
 
     # Internal secret doğrulama
     if internal_secret and data.get("secret") != internal_secret:
@@ -166,7 +166,7 @@ async def send_notification(request: Request):
     message = data.get("message", "")
 
     if not to or not message:
-        raise HTTPException(400, "'to' ve 'message' alanları gerekli")
+        raise HTTPException(400, "'to' and 'message' fields are required")
 
     success = send_message(to, message)
     return {"success": success}

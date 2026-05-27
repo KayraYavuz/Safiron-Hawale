@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/transactions", tags=["supplier-settlement"])
 
 def _require(user: User, *roles: UserRole):
     if user.role not in roles:
-        raise HTTPException(403, "Yetkisiz işlem")
+        raise HTTPException(403, "Forbidden")
 
 
 def _calculate_settlement(
@@ -105,7 +105,7 @@ def get_supplier_settlement(
     txn_q = db.query(Transaction).filter(Transaction.id == txn_id)
     txn_q = apply_company_filter(txn_q, Transaction, cu)
     if not txn_q.first():
-        raise HTTPException(404, "İşlem bulunamadı")
+        raise HTTPException(404, "Transaction not found")
     ss = (db.query(SupplierSettlement)
           .options(
               joinedload(SupplierSettlement.counterparty),
@@ -115,7 +115,7 @@ def get_supplier_settlement(
           .filter(SupplierSettlement.transaction_id == txn_id)
           .first())
     if not ss:
-        raise HTTPException(404, "Tedarikçi uzlaşması bulunamadı")
+        raise HTTPException(404, "Supplier settlement not found")
     return ss
 
 
@@ -140,7 +140,7 @@ def create_supplier_settlement(
     txn_q = apply_company_filter(txn_q, Transaction, cu)
     txn = txn_q.first()
     if not txn:
-        raise HTTPException(404, "İşlem bulunamadı")
+        raise HTTPException(404, "Transaction not found")
 
     # Zaten uzlaşma varsa güncelle (upsert mantığı)
     existing = db.query(SupplierSettlement).filter(SupplierSettlement.transaction_id == txn_id).first()
@@ -163,14 +163,14 @@ def create_supplier_settlement(
     # Validasyon
     if data.settlement_type == SupplierSettlementType.registered:
         if not data.counterparty_id:
-            raise HTTPException(400, "Kayıtlı tedarikçi için counterparty_id zorunlu")
+            raise HTTPException(400, "counterparty_id is required for registered supplier")
         cp = db.query(Counterparty).filter(Counterparty.id == data.counterparty_id).first()
         if not cp:
-            raise HTTPException(404, "Tedarikçi bulunamadı")
+            raise HTTPException(404, "Supplier not found")
 
     if data.settlement_type == SupplierSettlementType.external:
         if not data.external_name:
-            raise HTTPException(400, "Harici tedarikçi için isim zorunlu")
+            raise HTTPException(400, "Name is required for external supplier")
 
     # Tedarikçi ile uzlaşmada hesap yap
     amounts = {"receivable_amount": None, "receivable_currency": None,
@@ -229,10 +229,10 @@ def delete_supplier_settlement(
     txn_q = db.query(Transaction).filter(Transaction.id == txn_id)
     txn_q = apply_company_filter(txn_q, Transaction, cu)
     if not txn_q.first():
-        raise HTTPException(404, "İşlem bulunamadı")
+        raise HTTPException(404, "Transaction not found")
     ss = db.query(SupplierSettlement).filter(SupplierSettlement.transaction_id == txn_id).first()
     if not ss:
-        raise HTTPException(404, "Tedarikçi uzlaşması bulunamadı")
+        raise HTTPException(404, "Supplier settlement not found")
     db.delete(ss)
     db.commit()
     return {"ok": True}

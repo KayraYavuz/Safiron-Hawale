@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/audit", tags=["audit"])
 def _require_admin_or_manager(user: User):
     if user.role not in (UserRole.admin, UserRole.super_admin, UserRole.auditor, UserRole.manager):
         from fastapi import HTTPException
-        raise HTTPException(403, "Sadece admin, super_admin, auditor veya manager görebilir")
+        raise HTTPException(403, "Only admin, super_admin, auditor or manager can view")
 
 @router.get("")
 def list_audit(
