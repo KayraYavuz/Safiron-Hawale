@@ -44,7 +44,7 @@ BOT_L = {
         "btn_lang":     "🌐 Dil",
         "btn_help":     "❓ Yardım",
         "btn_update_rate": "💱 Kur Güncelle",
-        "btn_statement":   "👤 Ekstre",
+        "btn_statement":   "📄 Ekstre",
         # Genel
         "welcome":      "👋 *{company} — Yönetici Paneli*\n\nHoş geldiniz, *{name}*!\n\nAşağıdaki menüyü kullanabilirsiniz.",
         "not_linked":   "🔐 *Hesabınız bağlı değil.*\n\n`bağla PİNİNİZ` yazın.\n_Örnek: `bağla SAF-7K2M`_",
@@ -138,7 +138,7 @@ BOT_L = {
         "btn_lang":     "🌐 اللغة",
         "btn_help":     "❓ المساعدة",
         "btn_update_rate": "💱 تحديث السعر",
-        "btn_statement":   "👤 كشف الحساب",
+        "btn_statement":   "📄 كشف الحساب",
         "welcome":      "👋 *{company} — لوحة الإدارة*\n\nأهلاً، *{name}*!\n\nاستخدم القائمة أدناه.",
         "not_linked":   "🔐 *حسابك غير مرتبط.*\n\nاكتب `ربط رمزك`\n_مثال: `ربط SAF-7K2M`_",
         "link_success": "✅ *تم الربط!*\n\nأهلاً، *{name}*! 👋\n\nاستخدم القائمة أدناه.",
@@ -225,7 +225,7 @@ BOT_L = {
         "btn_lang":     "🌐 Language",
         "btn_help":     "❓ Help",
         "btn_update_rate": "💱 Update Rate",
-        "btn_statement":   "👤 Statement",
+        "btn_statement":   "📄 Statement",
         "welcome":      "👋 *{company} — Admin Panel*\n\nWelcome, *{name}*!\n\nUse the menu below.",
         "not_linked":   "🔐 *Account not linked.*\n\nType `link YOURPIN`\n_Example: `link SAF-7K2M`_",
         "link_success": "✅ *Linked!*\n\nWelcome, *{name}*! 👋\n\nUse the menu below.",
@@ -354,12 +354,14 @@ def _make_inline_menu(uid: int, is_admin: bool = True) -> InlineKeyboardMarkup:
             InlineKeyboardButton(L.get("btn_update_rate", "💱 Kur Güncelle"), callback_data="menu:update_rate"),
         ])
         rows.append([
-            InlineKeyboardButton(L.get("btn_statement", "👤 Ekstre"), callback_data="menu:statement"),
+            InlineKeyboardButton(L.get("btn_statement", "📄 Ekstre"), callback_data="menu:statement"),
             InlineKeyboardButton(L.get("btn_lang",      "🌐 Dil"),    callback_data="menu:lang"),
+            InlineKeyboardButton(L.get("btn_help",      "❓ Yardım"), callback_data="menu:help"),
         ])
     else:
         rows.append([
-            InlineKeyboardButton(L.get("btn_lang", "🌐 Dil"), callback_data="menu:lang"),
+            InlineKeyboardButton(L.get("btn_lang",  "🌐 Dil"),    callback_data="menu:lang"),
+            InlineKeyboardButton(L.get("btn_help",  "❓ Yardım"), callback_data="menu:help"),
         ])
     return InlineKeyboardMarkup(rows)
 
@@ -755,6 +757,8 @@ def make_handlers(company_id, company_name: str):
                         return ("menu_reply", "🚧 *Yakında / Coming soon*")   # Task 6 implements this
                     elif action == "lang":
                         return ("lang_menu", None)
+                    elif action == "help":
+                        return ("menu_reply", _L(uid, "help"))
                     return ("menu_reply", _L(uid, "unknown_cmd"))
 
                 conv = _cget(company_id, uid)
@@ -784,6 +788,10 @@ def make_handlers(company_id, company_name: str):
                         await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=kb)
                     else:
                         await query.edit_message_text(msg, parse_mode="Markdown")
+                        await query.message.reply_text(
+                            "📋",
+                            reply_markup=_make_inline_menu(uid),
+                        )
             elif result_type == "menu_reply":
                 for chunk in [result_data[i:i+4096] for i in range(0, len(result_data), 4096)]:
                     await query.message.reply_text(
