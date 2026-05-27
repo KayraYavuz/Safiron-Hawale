@@ -137,8 +137,9 @@ BOT_L = {
         # Müşteri ekstre
         "stmt_search_prompt": "👤 Müşteri adı veya kodunu yazın:",
         "stmt_no_results":    "📭 *Eşleşen müşteri bulunamadı.*",
-        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Net Bakiye: ${balance:,.2f}\n─────────────────────\nSon 5 İşlem:",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Toplam Hacim: ${balance:,.2f}\n─────────────────────\nSon 5 İşlem:",
         "stmt_footer":        "─────────────────────",
+        "stmt_select_prompt": "👥 Müşteriyi seçin:",
     },
     "ar": {
         "btn_balance":  "💰 الرصيد",
@@ -236,8 +237,9 @@ BOT_L = {
         # Müşteri ekstre
         "stmt_search_prompt": "👤 أدخل اسم العميل أو الرمز:",
         "stmt_no_results":    "📭 *لم يتم العثور على عملاء مطابقين.*",
-        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 الرصيد الصافي: ${balance:,.2f}\n─────────────────────\nآخر 5 معاملات:",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 إجمالي الحجم: ${balance:,.2f}\n─────────────────────\nآخر 5 معاملات:",
         "stmt_footer":        "─────────────────────",
+        "stmt_select_prompt": "👥 اختر العميل:",
     },
     "en": {
         "btn_balance":  "💰 Balance",
@@ -335,8 +337,9 @@ BOT_L = {
         # Customer statement
         "stmt_search_prompt": "👤 Enter customer name or code:",
         "stmt_no_results":    "📭 *No matching customers found.*",
-        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Net Balance: ${balance:,.2f}\n─────────────────────\nLast 5 Transactions:",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Total Volume: ${balance:,.2f}\n─────────────────────\nLast 5 Transactions:",
         "stmt_footer":        "─────────────────────",
+        "stmt_select_prompt": "👥 Select customer:",
     },
 }
 
@@ -1154,7 +1157,9 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
 
     # ── Müşteri ekstre akışı ─────────────────────────────────────────────────
     if state == S_STMT_SEARCH:
-        query   = text.strip()
+        query = text.strip()
+        if not query:
+            return (_L(uid, "stmt_search_prompt"), _cancel_kb_l(uid))
         results = _search_counterparties(query, company_id, db)
         if not results:
             _cclr(company_id, uid)
@@ -1166,7 +1171,7 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
         ]
         rows.append([(L.get("btn_cancel", "❌ İptal"), "cancel")])
         _cset(company_id, uid, S_STMT_SELECT, {"search": query})
-        return (_L(uid, "stmt_search_prompt"), _kb(rows))
+        return (_L(uid, "stmt_select_prompt"), _kb(rows))
 
     return None
 
@@ -1298,6 +1303,8 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
     # ── Kur seçimi ───────────────────────────────────────────────────────────
     if data_cb.startswith("rate_sel:") and state == S_RATE_SELECT:
         currency = data_cb[9:]
+        if currency not in _RATE_CURRENCIES:
+            return (_L(uid, "unknown_cmd"), None)
         from app.models.transaction import ExchangeRate
         rate_row = (
             db.query(ExchangeRate)
