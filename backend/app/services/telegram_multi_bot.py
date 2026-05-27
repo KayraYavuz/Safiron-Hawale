@@ -21,7 +21,7 @@ from decimal import Decimal
 from datetime import date, datetime, timedelta
 from typing import Dict, Optional
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, CallbackQueryHandler, filters
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,8 @@ BOT_L = {
         "btn_add_cp":   "👤 Müşteri Ekle",
         "btn_lang":     "🌐 Dil",
         "btn_help":     "❓ Yardım",
+        "btn_update_rate": "💱 Kur Güncelle",
+        "btn_statement":   "👤 Ekstre",
         # Genel
         "welcome":      "👋 *{company} — Yönetici Paneli*\n\nHoş geldiniz, *{name}*!\n\nAşağıdaki menüyü kullanabilirsiniz.",
         "not_linked":   "🔐 *Hesabınız bağlı değil.*\n\n`bağla PİNİNİZ` yazın.\n_Örnek: `bağla SAF-7K2M`_",
@@ -135,6 +137,8 @@ BOT_L = {
         "btn_add_cp":   "👤 إضافة عميل",
         "btn_lang":     "🌐 اللغة",
         "btn_help":     "❓ المساعدة",
+        "btn_update_rate": "💱 تحديث السعر",
+        "btn_statement":   "👤 كشف الحساب",
         "welcome":      "👋 *{company} — لوحة الإدارة*\n\nأهلاً، *{name}*!\n\nاستخدم القائمة أدناه.",
         "not_linked":   "🔐 *حسابك غير مرتبط.*\n\nاكتب `ربط رمزك`\n_مثال: `ربط SAF-7K2M`_",
         "link_success": "✅ *تم الربط!*\n\nأهلاً، *{name}*! 👋\n\nاستخدم القائمة أدناه.",
@@ -220,6 +224,8 @@ BOT_L = {
         "btn_add_cp":   "👤 Add Customer",
         "btn_lang":     "🌐 Language",
         "btn_help":     "❓ Help",
+        "btn_update_rate": "💱 Update Rate",
+        "btn_statement":   "👤 Statement",
         "welcome":      "👋 *{company} — Admin Panel*\n\nWelcome, *{name}*!\n\nUse the menu below.",
         "not_linked":   "🔐 *Account not linked.*\n\nType `link YOURPIN`\n_Example: `link SAF-7K2M`_",
         "link_success": "✅ *Linked!*\n\nWelcome, *{name}*! 👋\n\nUse the menu below.",
@@ -327,6 +333,35 @@ def _make_menu(uid: int) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         is_persistent=True,
     )
+
+def _make_inline_menu(uid: int, is_admin: bool = True) -> InlineKeyboardMarkup:
+    """Şeffaf inline menü klavyesi döndür."""
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    rows = [
+        [
+            InlineKeyboardButton(L.get("btn_balance", "💰 Bakiye"), callback_data="menu:balance"),
+            InlineKeyboardButton(L.get("btn_report",  "📊 Rapor"),  callback_data="menu:report"),
+            InlineKeyboardButton(L.get("btn_rates",   "💱 Kurlar"), callback_data="menu:rates"),
+        ],
+        [
+            InlineKeyboardButton(L.get("btn_txns",    "📋 İşlemler"),   callback_data="menu:txns"),
+            InlineKeyboardButton(L.get("btn_new_txn", "➕ Yeni İşlem"), callback_data="menu:new_txn"),
+        ],
+    ]
+    if is_admin:
+        rows.append([
+            InlineKeyboardButton(L.get("btn_add_cp",      "👤 Müşteri Ekle"), callback_data="menu:add_cp"),
+            InlineKeyboardButton(L.get("btn_update_rate", "💱 Kur Güncelle"), callback_data="menu:update_rate"),
+        ])
+        rows.append([
+            InlineKeyboardButton(L.get("btn_statement", "👤 Ekstre"), callback_data="menu:statement"),
+            InlineKeyboardButton(L.get("btn_lang",      "🌐 Dil"),    callback_data="menu:lang"),
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(L.get("btn_lang", "🌐 Dil"), callback_data="menu:lang"),
+        ])
+    return InlineKeyboardMarkup(rows)
 
 def _menu_to_cmd(uid: int, text: str) -> Optional[str]:
     """Menü buton metnini iç komuta dönüştür. Eşleşme yoksa None döner."""
@@ -525,10 +560,11 @@ def make_handlers(company_id, company_name: str):
 
         admin_name = await asyncio.to_thread(_db_check)
         if admin_name:
+            await update.message.reply_text("👋", reply_markup=ReplyKeyboardRemove())
             await update.message.reply_text(
                 _L(uid, "welcome", company=company_name, name=admin_name),
                 parse_mode="Markdown",
-                reply_markup=_make_menu(uid),
+                reply_markup=_make_inline_menu(uid),
             )
         else:
             await update.message.reply_text(
@@ -554,7 +590,7 @@ def make_handlers(company_id, company_name: str):
         if cmd_lower in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
             await asyncio.to_thread(_cclr, company_id, uid)
             await update.message.reply_text(
-                _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
+                _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_inline_menu(uid)
             )
             return
 
@@ -617,7 +653,7 @@ def make_handlers(company_id, company_name: str):
             if result_type == "link":
                 msg = result_data
                 if msg.startswith("✅"):
-                    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_inline_menu(uid))
                 else:
                     await update.message.reply_text(msg, parse_mode="Markdown")
             elif result_type == "dil":
@@ -631,7 +667,7 @@ def make_handlers(company_id, company_name: str):
                 if result_data:
                     msg, kb = result_data
                     if kb is None:
-                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_inline_menu(uid))
                     else:
                         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
             elif result_type == "reply_kb":
@@ -681,7 +717,7 @@ def make_handlers(company_id, company_name: str):
             await query.message.reply_text(
                 _L(uid, "welcome", company=company_name, name=admin_name),
                 parse_mode="Markdown",
-                reply_markup=_make_menu(uid),
+                reply_markup=_make_inline_menu(uid),
             )
             return
 
@@ -693,6 +729,33 @@ def make_handlers(company_id, company_name: str):
                 admin = _find_admin(uid, company_id, db)
                 if not admin:
                     return ("no_auth", None)
+
+                # Menu callback — entry points, no conv state required
+                if data.startswith("menu:"):
+                    action = data[5:]
+                    if action == "balance":
+                        return ("menu_reply", _q_bakiye(company_id, db, uid=uid))
+                    elif action == "report":
+                        return ("menu_reply", _q_rapor(company_id, db, uid=uid))
+                    elif action == "rates":
+                        return ("menu_reply", _q_kurlar(db, uid=uid))
+                    elif action == "txns":
+                        return ("menu_reply", _q_son_islemler(company_id, db, uid=uid))
+                    elif action == "new_txn":
+                        _cset(company_id, uid, S_TXN_TYPE, {})
+                        msg, kb = _start_txn_type(uid)
+                        return ("reply_kb", (msg, kb))
+                    elif action == "add_cp":
+                        _cset(company_id, uid, S_CP_NAME, {})
+                        msg, kb = _start_cp_create(uid)
+                        return ("reply_kb", (msg, kb))
+                    elif action == "update_rate":
+                        return ("menu_reply", "🚧 *Yakında / Coming soon*")   # Task 5 implements this
+                    elif action == "statement":
+                        return ("menu_reply", "🚧 *Yakında / Coming soon*")   # Task 6 implements this
+                    elif action == "lang":
+                        return ("lang_menu", None)
+                    return ("menu_reply", _L(uid, "unknown_cmd"))
 
                 conv = _cget(company_id, uid)
                 if not conv:
@@ -721,6 +784,21 @@ def make_handlers(company_id, company_name: str):
                         await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=kb)
                     else:
                         await query.edit_message_text(msg, parse_mode="Markdown")
+            elif result_type == "menu_reply":
+                for chunk in [result_data[i:i+4096] for i in range(0, len(result_data), 4096)]:
+                    await query.message.reply_text(
+                        chunk,
+                        parse_mode="Markdown",
+                        reply_markup=_make_inline_menu(uid),
+                    )
+            elif result_type == "reply_kb":
+                msg, kb = result_data
+                await query.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+            elif result_type == "lang_menu":
+                kb = _kb([
+                    [("🇹🇷 Türkçe", "lang:tr"), ("🇸🇦 العربية", "lang:ar"), ("🇬🇧 English", "lang:en")],
+                ])
+                await query.message.reply_text(_L(uid, "lang_select"), parse_mode="Markdown", reply_markup=kb)
             elif result_type == "error":
                 try:
                     await query.edit_message_text(_L(uid, "server_err"))
