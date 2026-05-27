@@ -22,6 +22,7 @@ export default {
   otpTitle: 'رمز التحقق', otpSentPre: 'أرسلنا رمزاً مكوناً من 6 أرقام إلى', otpSentPost: '',
   otpLabel: 'رمز التحقق', otpVerifying: 'جار التحقق...', otpBack: 'رجوع →',
   otpNoCode: 'لم تصل الرسالة؟ تحقق من مجلد البريد غير الهام أو انتظر 5 دقائق.',
+  trustDevice: 'الوثوق بهذا الجهاز لمدة 10 أيام',
   otpInvalid: 'الرمز غير صحيح أو منتهي الصلاحية.',
   loginSupport: 'للحصول على حساب أو دعم فني',
   panelTxn: 'أنواع المعاملات', panelCcy: 'عملات', panelBot: 'وصول البوت',
@@ -114,6 +115,7 @@ export default {
   netBalanceUsd: 'صافي الرصيد (USD)',
   customerOwes: '← العميل مدين', weOwe: '← نحن مدينون', zero: '← صفر',
   description: 'الوصف', debit: 'مدين', credit: 'دائن',
+  collection: 'تحصيل', delivery: 'تسليم',
   noTransactionFound: 'لم يتم العثور على معاملات',
   aiTitle: 'التحليل المالي بالذكاء الاصطناعي',
   startAiAnalysis: 'بدء التحليل المالي الذكي',
@@ -149,6 +151,7 @@ export default {
   companyName: 'اسم الشركة', companyCode: 'رمز الشركة',
   companyInfo: 'معلومات الشركة', firstAdminInfo: 'بيانات المدير الأول',
   companyCreated: 'تم إنشاء الشركة والمدير',
+  botStarted: 'تم تشغيل البوت بنجاح!', tokenCleared: 'تم إزالة الرمز المميز.',
   totalCompanies: 'إجمالي الشركات', activeCompanies: 'الشركات النشطة', totalCompanyUsers: 'إجمالي المستخدمين',
   noCompaniesYet: 'لا توجد شركات بعد. انقر على شركة جديدة للبدء.',
   noUsersInCompany: 'لا يوجد مستخدمون في هذه الشركة',
@@ -170,9 +173,10 @@ export default {
   dataEntryDesc:     'إدخال بيانات — تسجيل المعاملات فقط',
   viewerDesc:        'مشاهد — قراءة فقط',
   userCreated: 'تم إنشاء المستخدم', passwordUpdated: 'تم تحديث كلمة المرور',
+  userApproved: 'تمت الموافقة على المستخدم',
   active: '● نشط', inactive: '○ غير نشط',
   passwordBtn: 'كلمة المرور', newPassword: 'كلمة مرور جديدة',
-  deleteUserConfirm: 'هل تريد الحذف؟',
+  deleteUserConfirm: '— حذف؟',
   // Error boundary
   errorOccurred: 'حدث خطأ',
   errorMessage: 'حدث خطأ غير متوقع أثناء تحميل هذه الصفحة.',
@@ -258,4 +262,11 @@ export default {
   noFlowData: 'لا توجد بيانات تدفق نقدي في هذه الفترة',
   // Lang chooser
   langLabel: 'اختيار اللغة',
+  // Integrations
+  apiKeySaved: 'تم حفظ مفتاح API', apiKeyDeleted: 'تم حذف مفتاح API',
+  deleteAnalysis: 'هل تريد حذف هذا التحليل؟',
+  confirmDeleteApiKey: 'حذف مفتاح API هذا؟',
+  confirmDeleteBot: 'هل أنت متأكد من إزالة اتصال بوت تيليغرام لهذه الشركة؟',
+  confirmPasswordReset: '— تغيير كلمة المرور؟',
+  confirmRegenPin: '— إنشاء رمز PIN جديد؟\nسيتم حذف الرمز القديم وارتباط تيليغرام.',
 }

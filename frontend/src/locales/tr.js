@@ -22,6 +22,7 @@ export default {
   otpTitle: 'Doğrulama Kodu', otpSentPre: '', otpSentPost: 'adresine 6 haneli bir kod gönderdik.',
   otpLabel: 'Doğrulama Kodu', otpVerifying: 'Doğrulanıyor...', otpBack: '← Geri',
   otpNoCode: 'Kod gelmedi mi? Spam klasörünü kontrol edin veya 5 dakika bekleyin.',
+  trustDevice: 'Bu cihaza 10 gün güven',
   otpInvalid: 'Kod hatalı veya süresi dolmuş.',
   loginSupport: 'Hesap veya teknik destek için',
   panelTxn: 'İşlem Türü', panelCcy: 'Para Birimi', panelBot: 'Bot Erişimi',
@@ -114,6 +115,7 @@ export default {
   netBalanceUsd: 'Net Bakiye (USD)',
   customerOwes: '→ Müşteri borçlu', weOwe: '→ Biz borçluyuz', zero: '→ Sıfır',
   description: 'Açıklama', debit: 'Borç', credit: 'Alacak',
+  collection: 'Tahsilat', delivery: 'Teslim',
   noTransactionFound: 'İşlem bulunamadı',
   aiTitle: 'Akıllı Finansal Analiz',
   startAiAnalysis: 'Akıllı Finansal Analizi Başlat',
@@ -149,6 +151,7 @@ export default {
   companyName: 'Şirket Adı', companyCode: 'Şirket Kodu',
   companyInfo: 'Şirket Bilgileri', firstAdminInfo: 'İlk Admin Bilgileri',
   companyCreated: 'Şirket ve admin oluşturuldu',
+  botStarted: 'Bot başarıyla başlatıldı!', tokenCleared: 'Token kaldırıldı.',
   totalCompanies: 'Toplam Şirket', activeCompanies: 'Aktif Şirket', totalCompanyUsers: 'Toplam Kullanıcı',
   noCompaniesYet: 'Henüz şirket yok. Yeni Şirket butonuna tıklayın.',
   noUsersInCompany: 'Bu şirkette kullanıcı yok',
@@ -170,6 +173,7 @@ export default {
   dataEntryDesc:     'Veri Girişi — yalnızca işlem kaydeder',
   viewerDesc:        'Görüntüleyici — sadece okur',
   userCreated: 'Kullanıcı oluşturuldu', passwordUpdated: 'Şifre güncellendi',
+  userApproved: 'Kullanıcı onaylandı',
   active: '● Aktif', inactive: '○ Pasif',
   passwordBtn: 'Şifre', newPassword: 'Yeni şifre',
   deleteUserConfirm: 'silinsin mi?',
@@ -258,4 +262,11 @@ export default {
   noFlowData: 'Bu dönemde nakit akışı verisi yok',
   // Lang chooser
   langLabel: 'Dil seçimi',
+  // Integrations
+  apiKeySaved: 'API key kaydedildi', apiKeyDeleted: 'API key silindi',
+  deleteAnalysis: 'Bu analiz silinsin mi?',
+  confirmDeleteApiKey: 'API key silinsin mi?',
+  confirmDeleteBot: 'Bu şirketin Telegram bot bağlantısını silmek istediğinize emin misiniz?',
+  confirmPasswordReset: 'için şifre değiştirilsin mi?',
+  confirmRegenPin: 'için yeni PIN oluşturulsun mu?\nEski PIN ve Telegram bağlantısı silinir.',
 }

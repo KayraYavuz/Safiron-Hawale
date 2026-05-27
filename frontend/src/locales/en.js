@@ -22,6 +22,7 @@ export default {
   otpTitle: 'Verification Code', otpSentPre: 'We sent a 6-digit code to', otpSentPost: '',
   otpLabel: 'Verification Code', otpVerifying: 'Verifying...', otpBack: '← Back',
   otpNoCode: "No code? Check your spam folder or wait 5 minutes.",
+  trustDevice: 'Trust this device for 10 days',
   otpInvalid: 'Invalid or expired code.',
   loginSupport: 'For account access or technical support',
   panelTxn: 'Txn Types', panelCcy: 'Currencies', panelBot: 'Bot Access',
@@ -114,6 +115,7 @@ export default {
   netBalanceUsd: 'Net Balance (USD)',
   customerOwes: '→ Customer owes', weOwe: '→ We owe', zero: '→ Zero',
   description: 'Description', debit: 'Debit', credit: 'Credit',
+  collection: 'Collection', delivery: 'Delivery',
   noTransactionFound: 'No transactions found',
   aiTitle: 'AI Financial Analysis',
   startAiAnalysis: 'Start Smart Financial Analysis',
@@ -149,6 +151,7 @@ export default {
   companyName: 'Company Name', companyCode: 'Company Code',
   companyInfo: 'Company Information', firstAdminInfo: 'First Admin Details',
   companyCreated: 'Company and admin created',
+  botStarted: 'Bot started successfully!', tokenCleared: 'Token removed.',
   totalCompanies: 'Total Companies', activeCompanies: 'Active Companies', totalCompanyUsers: 'Total Users',
   noCompaniesYet: 'No companies yet. Click New Company to get started.',
   noUsersInCompany: 'No users in this company',
@@ -170,9 +173,10 @@ export default {
   dataEntryDesc:     'Data Entry — record transactions only',
   viewerDesc:        'Viewer — read only',
   userCreated: 'User created', passwordUpdated: 'Password updated',
+  userApproved: 'User approved',
   active: '● Active', inactive: '○ Inactive',
   passwordBtn: 'Password', newPassword: 'New password',
-  deleteUserConfirm: 'Delete this user?',
+  deleteUserConfirm: '— delete?',
   // Error boundary
   errorOccurred: 'An error occurred',
   errorMessage: 'An unexpected error occurred while loading this page.',
@@ -258,4 +262,11 @@ export default {
   noFlowData: 'No cash flow data in this period',
   // Lang chooser
   langLabel: 'Language selection',
+  // Integrations
+  apiKeySaved: 'API key saved', apiKeyDeleted: 'API key deleted',
+  deleteAnalysis: 'Delete this analysis?',
+  confirmDeleteApiKey: 'Delete this API key?',
+  confirmDeleteBot: 'Are you sure you want to remove this company\'s Telegram bot connection?',
+  confirmPasswordReset: '— change password?',
+  confirmRegenPin: '— generate new PIN?\nOld PIN and Telegram link will be removed.',
 }
