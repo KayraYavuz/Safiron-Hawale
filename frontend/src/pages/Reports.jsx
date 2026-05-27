@@ -5,7 +5,7 @@ import { reportsApi, counterpartiesApi, locationsApi, accountsApi } from '../uti
 import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, Select, Input, Info, TrHover, C, Btn } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
-import { STALE_2MIN, STALE_5MIN, STATUS_LABEL } from '../constants'
+import { STALE_2MIN, STALE_5MIN, STATUS_LABEL, getTxnTypeLabel } from '../constants'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
@@ -57,6 +57,7 @@ function DownloadButtons({ onPDF, onExcel }) {
 
 export default function Reports() {
   const { t } = useLang()
+  const TXN_TYPE_LABEL = getTxnTypeLabel(t)
   const [searchParams]         = useSearchParams()
   const [tab,      setTab]     = useState(searchParams.get('tab') || 'position')
   const [cpId,     setCpId]    = useState(searchParams.get('cp')  || '')
@@ -101,7 +102,7 @@ export default function Reports() {
       const h = [t.safe, t.location, t.date, t.txnNo, t.type, t.counterparty, t.direction, t.amount, t.balance]
       const r = []
       ;(cashMov ?? []).forEach(acc => acc.movements.forEach(m =>
-        r.push([acc.account_name, acc.location_name_tr, m.txn_date, m.txn_number, m.type, m.counterparty, m.direction, `${m.amount} ${acc.currency_code}`, `${m.balance} ${acc.currency_code}`])
+        r.push([acc.account_name, acc.location_name_tr, m.txn_date, m.txn_number, TXN_TYPE_LABEL[m.type] ?? m.type, m.counterparty, m.direction === 'incoming' ? t.incoming : t.outgoing, `${m.amount} ${acc.currency_code}`, `${m.balance} ${acc.currency_code}`])
       ))
       type === 'pdf' ? downloadPDF(t.cashMovements, h, r, 'kasa-hareketleri.pdf', t) : downloadExcel(t.cashMovements, h, r, 'kasa-hareketleri.xlsx', t)
     },
@@ -123,7 +124,8 @@ export default function Reports() {
     statement: (type) => {
       if (!stmt) return
       const h = [t.txnNo, t.date, t.type, t.description, t.debit, t.credit, 'USD', t.balance, t.status]
-      const r = (stmt?.rows ?? []).map(s => [s.txn_number, s.txn_date, s.type, s.description, s.debit, s.credit, `$${fmt(s.amount_usd)}`, `$${fmt(s.balance_usd)}`, s.status])
+      const descLabel = { collection: t.collection, delivery: t.delivery }
+      const r = (stmt?.rows ?? []).map(s => [s.txn_number, s.txn_date, TXN_TYPE_LABEL[s.type] ?? s.type, descLabel[s.description] ?? s.description, s.debit, s.credit, `$${fmt(s.amount_usd)}`, `$${fmt(s.balance_usd)}`, s.status])
       type === 'pdf' ? downloadPDF(`${t.statement} — ${stmt.counterparty?.name ?? ''}`, h, r, 'ekstre.pdf', t) : downloadExcel(t.statement, h, r, 'ekstre.xlsx', t)
     },
   }), [pos, cashMov, locPnl, income, stmt, t])
@@ -227,14 +229,15 @@ export default function Reports() {
                     <thead><tr><Th>{t.date}</Th><Th>{t.txnNo}</Th><Th>{t.type}</Th><Th>{t.counterparty}</Th><Th>{t.direction}</Th><Th right>{t.amount}</Th><Th right>{t.balance}</Th><Th>{t.status}</Th></tr></thead>
                     <tbody>
                       {acc.movements.map((m, i) => {
-                        const isIn = m.direction === 'Giriş' || m.direction === 'Inflow'
+                        const isIn = m.direction === 'incoming'
+                        const dirLabel = isIn ? t.incoming : t.outgoing
                         return (
                           <TrHover key={i}>
                             <Td style={{ color: C.text2, fontSize: 12.5 }}>{m.txn_date}</Td>
                             <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{m.txn_number}</span></Td>
-                            <Td style={{ fontSize: 12.5 }}>{m.type}</Td>
+                            <Td style={{ fontSize: 12.5 }}>{TXN_TYPE_LABEL[m.type] ?? m.type}</Td>
                             <Td style={{ fontSize: 12.5, color: C.text2 }}>{m.counterparty}</Td>
-                            <Td><span style={{ fontSize: 11.5, fontWeight: 500, padding: '2px 8px', borderRadius: 99, background: isIn ? C.greenBg : C.redBg, color: isIn ? C.green : C.red }}>{m.direction}</span></Td>
+                            <Td><span style={{ fontSize: 11.5, fontWeight: 500, padding: '2px 8px', borderRadius: 99, background: isIn ? C.greenBg : C.redBg, color: isIn ? C.green : C.red }}>{dirLabel}</span></Td>
                             <Td right mono style={{ fontWeight: 600, color: isIn ? C.green : C.red }}>{m.amount} {acc.currency_code}</Td>
                             <Td right mono style={{ fontWeight: 500 }}>{fmt(m.balance)} {acc.currency_code}</Td>
                             <Td><Badge type={m.status} dot>{STATUS_LABEL[m.status] ?? m.status}</Badge></Td>
@@ -342,8 +345,8 @@ export default function Reports() {
                       <TrHover key={i}>
                         <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{r.txn_number}</span></Td>
                         <Td style={{ color: C.text2, fontSize: 12.5 }}>{r.txn_date}</Td>
-                        <Td style={{ fontSize: 12.5 }}>{r.type}</Td>
-                        <Td style={{ fontSize: 12, color: C.text3 }}>{r.description}</Td>
+                        <Td style={{ fontSize: 12.5 }}>{TXN_TYPE_LABEL[r.type] ?? r.type}</Td>
+                        <Td style={{ fontSize: 12, color: C.text3 }}>{({ collection: t.collection, delivery: t.delivery })[r.description] ?? r.description}</Td>
                         <Td mono style={{ color: C.red,  fontSize: 12.5 }}>{r.debit  !== '—' ? r.debit  : <span style={{ color: C.text4 }}>—</span>}</Td>
                         <Td mono style={{ color: C.green, fontSize: 12.5 }}>{r.credit !== '—' ? r.credit : <span style={{ color: C.text4 }}>—</span>}</Td>
                         <Td right mono style={{ fontSize: 12.5 }}>${fmt(r.amount_usd)}</Td>

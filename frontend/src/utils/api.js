@@ -27,15 +27,27 @@ api.interceptors.response.use(
 
 export default api
 
+// ── Güvenilir cihaz token yönetimi ────────────────────────────────────────────
+const DEVICE_TOKEN_KEY = 'safiron_device_token'
+
+export const deviceToken = {
+  get:    ()      => localStorage.getItem(DEVICE_TOKEN_KEY) || '',
+  save:   (token) => localStorage.setItem(DEVICE_TOKEN_KEY, token),
+  remove: ()      => localStorage.removeItem(DEVICE_TOKEN_KEY),
+}
+
 export const authApi = {
   login: (email, password) => {
     const form = new FormData()
     form.append('username', email)
     form.append('password', password)
-    return api.post('/api/auth/login', form)
+    const headers = {}
+    const dt = deviceToken.get()
+    if (dt) headers['X-Device-Token'] = dt
+    return api.post('/api/auth/login', form, { headers })
   },
-  verifyOtp: (session_token, otp) =>
-    api.post('/api/auth/verify-otp', { session_token, otp }),
+  verifyOtp: (session_token, otp, trust_device = false) =>
+    api.post('/api/auth/verify-otp', { session_token, otp, trust_device }),
   me: () => api.get('/api/auth/me'),
 }
 

@@ -16,13 +16,13 @@ import { useLang } from '../hooks/useLang'
 export default function Transactions() {
   const { t } = useLang()
   const TXN_TYPE_LABEL = getTxnTypeLabel(t)
-  const STATUS_LABEL = getStatusLabel(t)
+  const STATUS_LABEL   = getStatusLabel(t)
   const { user } = useAuthStore()
   const qc = useQueryClient()
-  const [showForm, setShowForm]     = useState(false)
-  const [filterStatus, setStatus]   = useState('')
-  const [filterType,   setType]     = useState('')
-  const [settleTxn,    setSettleTxn]= useState(null)
+  const [showForm,    setShowForm]    = useState(false)
+  const [filterStatus, setStatus]    = useState('')
+  const [filterType,   setType]      = useState('')
+  const [settleTxn,    setSettleTxn] = useState(null)
 
   const { data: txns = [], isLoading } = useQuery({
     queryKey: ['transactions'],
@@ -72,8 +72,7 @@ export default function Transactions() {
 
   const pendingCount = useMemo(() => txns.filter(t => t.status === 'pending').length, [txns])
 
-  const approveAll = useCallback(() => approveAllMutation.mutate(), [approveAllMutation])
-
+  const approveAll  = useCallback(() => approveAllMutation.mutate(), [approveAllMutation])
   const handleDelete = useCallback((id) => {
     if (window.confirm(t.deleteConfirm)) deleteMutation.mutate(id)
   }, [deleteMutation, t])
@@ -81,38 +80,79 @@ export default function Transactions() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center',
-        background: 'white', border: `1px solid ${C.border}`,
-        borderRadius: 10, padding: '10px 14px', boxShadow: C.shSm,
-      }}>
-        <div style={{ fontSize: 12, color: C.text3, fontWeight: 500, paddingInlineEnd: 10, borderInlineEnd: `1px solid ${C.border}`, marginInlineEnd: 2 }}>
-          {filtered.length} {t.records}
+      {/* ── Toolbar — glassmorphism ── */}
+      <div
+        className="glass"
+        style={{
+          display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center',
+          border: `1px solid ${C.border}`,
+          borderRadius: 10, padding: '10px 14px',
+          position: 'sticky', top: 62, zIndex: 8,
+          animation: 'fadeUp 0.3s ease both',
+        }}
+      >
+        {/* Record count badge */}
+        <div style={{
+          fontSize: 12, color: C.text3, fontWeight: 500,
+          paddingInlineEnd: 10,
+          borderInlineEnd: `1px solid ${C.border}`,
+          marginInlineEnd: 2,
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 20, height: 20, borderRadius: 5,
+            background: C.surface3, fontSize: 11, fontWeight: 600, color: C.text2,
+          }}>
+            {filtered.length}
+          </span>
+          {t.records}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <select
             value={filterStatus} onChange={e => setStatus(e.target.value)}
             className="filter-select"
-            style={{ padding: '6px 11px', borderRadius: 7, border: `1.5px solid ${filterStatus ? C.navy3 : C.border}`, fontSize: 12.5, background: filterStatus ? 'rgba(28,49,82,0.04)' : 'white', fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer', color: filterStatus ? C.navy : C.text2 }}
+            style={{
+              padding: '6px 11px', borderRadius: 7,
+              border: `1.5px solid ${filterStatus ? C.navy3 : C.border}`,
+              fontSize: 12.5,
+              background: filterStatus ? 'rgba(28,49,82,0.05)' : 'rgba(255,255,255,0.8)',
+              fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer',
+              color: filterStatus ? C.navy : C.text2,
+            }}
           >
             <option value="">{t.allStatuses}</option>
             <option value="pending">{t.pending}</option>
             <option value="completed">{t.completed}</option>
           </select>
+
           <select
             value={filterType} onChange={e => setType(e.target.value)}
             className="filter-select"
-            style={{ padding: '6px 11px', borderRadius: 7, border: `1.5px solid ${filterType ? C.navy3 : C.border}`, fontSize: 12.5, background: filterType ? 'rgba(28,49,82,0.04)' : 'white', fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer', color: filterType ? C.navy : C.text2 }}
+            style={{
+              padding: '6px 11px', borderRadius: 7,
+              border: `1.5px solid ${filterType ? C.navy3 : C.border}`,
+              fontSize: 12.5,
+              background: filterType ? 'rgba(28,49,82,0.05)' : 'rgba(255,255,255,0.8)',
+              fontFamily: 'var(--font)', outline: 'none', cursor: 'pointer',
+              color: filterType ? C.navy : C.text2,
+            }}
           >
             <option value="">{t.allTypes}</option>
             {Object.entries(TXN_TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
 
+        {/* Approve-all */}
         {canApprove && pendingCount > 0 && (
-          <Btn variant="ghost" size="sm" style={{ color: C.green, borderColor: 'rgba(14,164,114,0.3)', background: C.greenBg }} onClick={approveAll} disabled={approveAllMutation.isPending}>
+          <Btn
+            variant="ghost"
+            size="sm"
+            style={{ color: C.green, borderColor: 'rgba(14,164,114,0.3)', background: C.greenBg }}
+            onClick={approveAll}
+            disabled={approveAllMutation.isPending}
+          >
             <Icon name="check" size={13} color={C.green} />
             {approveAllMutation.isPending ? '...' : `${t.approveAll} (${pendingCount})`}
           </Btn>
@@ -120,31 +160,41 @@ export default function Transactions() {
 
         <div style={{ flex: 1 }} />
 
+        {/* New transaction — glow button */}
         {isAccounting && (
-          <Btn onClick={() => setShowForm(true)}>
-            <Icon name="plus" size={14} color="white" />
-            {t.newTransaction}
-          </Btn>
+          <div className="btn-new">
+            <Btn onClick={() => setShowForm(true)}>
+              <Icon name="plus" size={14} color="white" />
+              {t.newTransaction}
+            </Btn>
+          </div>
         )}
       </div>
 
-      <Card>
+      {/* ── Transactions table ── */}
+      <Card style={{ animation: 'fadeUp 0.35s ease 0.08s both' }}>
         <Table>
           <thead>
             <tr>
-              <Th>{t.txnNo}</Th><Th>{t.date}</Th><Th>{t.counterparty}</Th><Th>{t.type}</Th>
-              <Th>{t.summary}</Th><Th right>{t.netProfit}</Th><Th>{t.status}</Th><Th>{t.supplierCol}</Th>
+              <Th>{t.txnNo}</Th>
+              <Th>{t.date}</Th>
+              <Th>{t.counterparty}</Th>
+              <Th>{t.type}</Th>
+              <Th>{t.summary}</Th>
+              <Th right>{t.netProfit}</Th>
+              <Th>{t.status}</Th>
+              <Th>{t.supplierCol}</Th>
               {isAccounting && <Th />}
             </tr>
           </thead>
-          <tbody>
+          <tbody className={!isLoading ? 'tbody-stagger' : ''}>
             {isLoading
               ? Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} cols={isAccounting ? 9 : 8} />)
               : filtered.map(txn => {
-                  const outs = txn.legs?.filter(l => l.leg_type === 'out') ?? []
-                  const ins  = txn.legs?.filter(l => l.leg_type === 'in')  ?? []
-                  const tcol = TXN_TYPE_COLOR[txn.txn_type] ?? { bg: C.surface3, color: C.text2 }
-                  const ss   = txn.supplier_settlement
+                  const outs  = txn.legs?.filter(l => l.leg_type === 'out') ?? []
+                  const ins   = txn.legs?.filter(l => l.leg_type === 'in')  ?? []
+                  const tcol  = TXN_TYPE_COLOR[txn.txn_type] ?? { bg: C.surface3, color: C.text2 }
+                  const ss    = txn.supplier_settlement
                   const ssName = !ss ? null
                     : ss.settlement_type === 'registered' ? (ss.counterparty?.name ?? '—')
                     : ss.settlement_type === 'external'   ? (ss.external_name ?? '—')
@@ -152,7 +202,11 @@ export default function Transactions() {
 
                   return (
                     <TrHover key={txn.id}>
-                      <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3, letterSpacing: '0.02em' }}>{txn.txn_number}</span></Td>
+                      <Td>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3, letterSpacing: '0.02em' }}>
+                          {txn.txn_number}
+                        </span>
+                      </Td>
                       <Td style={{ color: C.text2, fontSize: 12.5 }}>{txn.txn_date}</Td>
                       <Td>
                         {txn.counterparty?.name
@@ -165,49 +219,85 @@ export default function Transactions() {
                               >
                                 {txn.counterparty.name}
                               </Link>
-                              {txn.counterparty.name_ar && <div style={{ fontSize: 11, color: C.text3, direction: 'rtl' }}>{txn.counterparty.name_ar}</div>}
+                              {txn.counterparty.name_ar && (
+                                <div style={{ fontSize: 11, color: C.text3, direction: 'rtl' }}>{txn.counterparty.name_ar}</div>
+                              )}
                             </div>
                           : <span style={{ color: C.text4 }}>—</span>
                         }
                       </Td>
                       <Td>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: 99, fontSize: 11.5, fontWeight: 500, ...tcol }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '3px 9px', borderRadius: 99,
+                          fontSize: 11.5, fontWeight: 500, ...tcol,
+                        }}>
                           {TXN_TYPE_LABEL[txn.txn_type]}
                         </span>
                       </Td>
                       <Td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          {outs[0] && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.red }}>−{fmt(outs[0].amount)} {outs[0].account?.currency?.code}</span>}
+                          {outs[0] && (
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.red }}>
+                              −{fmt(outs[0].amount)} {outs[0].account?.currency?.code}
+                            </span>
+                          )}
                           {outs[0] && ins[0] && <span style={{ color: C.text4, fontSize: 11 }}>›</span>}
-                          {ins[0]  && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.green }}>+{fmt(ins[0].amount)} {ins[0].account?.currency?.code}</span>}
+                          {ins[0] && (
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: C.green }}>
+                              +{fmt(ins[0].amount)} {ins[0].account?.currency?.code}
+                            </span>
+                          )}
                         </div>
                       </Td>
                       <Td right>
                         {txn.pnl && parseFloat(txn.pnl.net_pnl_usd) !== 0
-                          ? <span style={{ fontFamily: 'var(--mono)', fontWeight: 600, fontSize: 13, color: parseFloat(txn.pnl?.net_pnl_usd ?? 0) > 0 ? C.green : C.red }}>
+                          ? <span style={{
+                              fontFamily: 'var(--mono)', fontWeight: 600, fontSize: 13,
+                              color: parseFloat(txn.pnl?.net_pnl_usd ?? 0) > 0 ? C.green : C.red,
+                            }}>
                               {parseFloat(txn.pnl?.net_pnl_usd ?? 0) > 0 ? '+' : ''}${fmt(txn.pnl?.net_pnl_usd ?? 0)}
                             </span>
                           : <span style={{ color: C.text4 }}>—</span>
                         }
                       </Td>
-                      <Td><Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge></Td>
+                      <Td>
+                        <Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge>
+                      </Td>
                       <Td>
                         {!ss
                           ? <span style={{ fontSize: 11.5, color: C.text4 }}>{t.notAssigned}</span>
                           : <div>
-                              <span style={{ fontSize: 11.5, fontWeight: 500, color: ss.settlement_type === 'internal' ? C.text3 : C.blue }}>{ssName}</span>
-                              {ss.supplier_rate && <div style={{ fontSize: 10.5, color: C.text3, fontFamily: 'var(--mono)' }}>{ss.supplier_rate}</div>}
+                              <span style={{
+                                fontSize: 11.5, fontWeight: 500,
+                                color: ss.settlement_type === 'internal' ? C.text3 : C.blue,
+                              }}>
+                                {ssName}
+                              </span>
+                              {ss.supplier_rate && (
+                                <div style={{ fontSize: 10.5, color: C.text3, fontFamily: 'var(--mono)' }}>
+                                  {ss.supplier_rate}
+                                </div>
+                              )}
                             </div>
                         }
                       </Td>
                       {isAccounting && (
                         <Td>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                            <Btn variant="ghost" size="sm" style={{ color: C.purple, borderColor: 'rgba(107,70,193,0.25)', background: C.purpleBg }} onClick={() => setSettleTxn(txn)}>
+                            <Btn
+                              variant="ghost" size="sm"
+                              style={{ color: C.purple, borderColor: 'rgba(107,70,193,0.25)', background: C.purpleBg }}
+                              onClick={() => setSettleTxn(txn)}
+                            >
                               {t.assignSupplier}
                             </Btn>
                             {canApprove && txn.status === 'pending' && (
-                              <Btn variant="ghost" size="sm" style={{ color: C.blue, borderColor: 'rgba(43,108,176,0.25)', background: C.blueBg }} onClick={() => approveMutation.mutate(txn.id)}>
+                              <Btn
+                                variant="ghost" size="sm"
+                                style={{ color: C.blue, borderColor: 'rgba(43,108,176,0.25)', background: C.blueBg }}
+                                onClick={() => approveMutation.mutate(txn.id)}
+                              >
                                 <Icon name="check" size={12} color={C.blue} /> {t.approve}
                               </Btn>
                             )}
@@ -224,14 +314,18 @@ export default function Transactions() {
                 })
             }
             {!isLoading && !filtered.length && (
-              <tr><td colSpan={isAccounting ? 9 : 8} style={{ padding: 52, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noRecords}</td></tr>
+              <tr>
+                <td colSpan={isAccounting ? 9 : 8} style={{ padding: 52, textAlign: 'center', color: C.text4, fontSize: 13 }}>
+                  {t.noRecords}
+                </td>
+              </tr>
             )}
           </tbody>
         </Table>
       </Card>
 
-      {showForm   && <TransactionForm onClose={() => setShowForm(false)} accounts={accs} counterparties={cps} />}
-      {settleTxn  && <SupplierSettlementModal txn={settleTxn} counterparties={cps} onClose={() => setSettleTxn(null)} />}
+      {showForm  && <TransactionForm onClose={() => setShowForm(false)} accounts={accs} counterparties={cps} />}
+      {settleTxn && <SupplierSettlementModal txn={settleTxn} counterparties={cps} onClose={() => setSettleTxn(null)} />}
     </div>
   )
 }

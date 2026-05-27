@@ -11,6 +11,7 @@ from app.models.transaction import TxnType, TxnStatus, LegType
 class Token(BaseModel):
     access_token: str
     token_type: str
+    device_token: Optional[str] = None   # "Cihaza güven" seçilirse dolu gelir
 
 # ── Company ───────────────────────────────────────────────────────────────────
 class CompanyCreate(BaseModel):

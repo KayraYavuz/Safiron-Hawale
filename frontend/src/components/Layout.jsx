@@ -19,29 +19,27 @@ const S = {
 
 // ── Navigation config (stable reference — outside component) ─────────────────
 const BASE_NAV = [
-  { path: '/dashboard',      key: 'dashboard',      icon: 'dashboard'     },
-  { path: '/transactions',   key: 'transactions',   icon: 'transactions'  },
-  { path: '/counterparties', key: 'counterparties', icon: 'counterparties'},
-  { path: '/accounts',       key: 'accounts',       icon: 'accounts'      },
-  { path: '/rates',          key: 'rates',          icon: 'rates'         },
-  { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'      },
-  { path: '/reports',        key: 'reports',        icon: 'reports'       },
-  { path: '/analysis',       key: 'aiAnalysis',     icon: 'sparkles'      },
-  { path: '/cashflow',       key: 'cashFlow',       icon: 'cashflow'      },
+  { path: '/dashboard',      key: 'dashboard',      icon: 'dashboard'      },
+  { path: '/transactions',   key: 'transactions',   icon: 'transactions'   },
+  { path: '/counterparties', key: 'counterparties', icon: 'counterparties' },
+  { path: '/accounts',       key: 'accounts',       icon: 'accounts'       },
+  { path: '/rates',          key: 'rates',          icon: 'rates'          },
+  { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'       },
+  { path: '/reports',        key: 'reports',        icon: 'reports'        },
+  { path: '/analysis',       key: 'aiAnalysis',     icon: 'sparkles'       },
+  { path: '/cashflow',       key: 'cashFlow',       icon: 'cashflow'       },
 ]
 
 const ADMIN_NAV = [
-  { path: '/users',         key: 'users',         icon: 'users'   },
-  { path: '/audit',         key: 'audit',         icon: 'shield'  },
-  { path: '/integrations',  key: 'integrations',  icon: 'plug'    },
+  { path: '/users',        key: 'users',        icon: 'users'  },
+  { path: '/audit',        key: 'audit',        icon: 'shield' },
+  { path: '/integrations', key: 'integrations', icon: 'plug'   },
 ]
 
-// Auditor + manager: can see audit log but not user management
 const AUDIT_ONLY_NAV = [
   { path: '/audit', key: 'audit', icon: 'shield' },
 ]
 
-// Super admin only sees company management
 const SUPER_ADMIN_NAV = [
   { path: '/companies',    key: 'companies',    icon: 'building' },
   { path: '/users',        key: 'users',        icon: 'users'    },
@@ -50,14 +48,14 @@ const SUPER_ADMIN_NAV = [
 
 function Layout({ children }) {
   const { lang, setLang, t, dir } = useLang()
-  const { user, logout }       = useAuthStore()
+  const { user, logout }  = useAuthStore()
   const location  = useLocation()
   const navigate  = useNavigate()
 
-  const isRtl = dir === 'rtl'
+  const isRtl       = dir === 'rtl'
   const isSuperAdmin = user?.role === 'super_admin'
   const role = user?.role
-  const nav = isSuperAdmin
+  const nav  = isSuperAdmin
     ? SUPER_ADMIN_NAV
     : role === 'admin'
       ? [...BASE_NAV, ...ADMIN_NAV]
@@ -65,8 +63,7 @@ function Layout({ children }) {
         ? [...BASE_NAV, ...AUDIT_ONLY_NAV]
         : BASE_NAV
 
-  const ROLE_INFO = getRoleInfo(t)
-
+  const ROLE_INFO  = getRoleInfo(t)
   const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
   const handleLogout = () => { logout(); navigate('/') }
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -80,35 +77,58 @@ function Layout({ children }) {
         width: 232, background: S.navy,
         display: 'flex', flexDirection: 'column', flexShrink: 0,
         zIndex: 20,
-        borderRight: isRtl ? 'none' : '1px solid rgba(255,255,255,0.04)',
-        borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.04)' : 'none',
+        borderRight: isRtl ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.05)' : 'none',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.18)',
       }}>
 
         {/* Logo */}
-        <div style={{ padding: '16px 20px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            padding: '16px 20px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'fadeUp 0.4s ease both',
+          }}
+        >
           <img
             src="/emblem.png"
             alt="Safiron"
+            className="logo-sweep"
             style={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0 }}
           />
-          <div>
-            <div style={{ color: 'white', fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em', lineHeight: 1.1 }}>Safiron</div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Global Solutions</div>
+          <div className="logo-text">
+            <div style={{
+              color: 'white', fontWeight: 700, fontSize: 16,
+              letterSpacing: '-0.01em', lineHeight: 1.1,
+            }}>
+              Safiron
+            </div>
+            <div style={{
+              color: 'rgba(255,255,255,0.28)', fontSize: 9.5,
+              letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2,
+            }}>
+              Global Solutions
+            </div>
           </div>
         </div>
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 16px' }} />
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }} aria-label={t.dashboard}>
+        <nav
+          className="nav-stagger"
+          style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}
+          aria-label={t.dashboard}
+        >
           {nav.map((item, idx) => {
-            const active  = location.pathname === item.path
-            // Visual separator before "rates"
-            const addSep  = idx > 0 && item.path === '/rates'
+            const active = location.pathname === item.path
+            const addSep = idx > 0 && item.path === '/rates'
 
             return (
               <div key={item.path}>
-                {addSep && <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '6px 6px 8px' }} />}
+                {addSep && (
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 6px 8px' }} />
+                )}
                 <Link
                   to={item.path}
                   className={`nav-link${active ? ' nav-link-active' : ''}`}
@@ -119,25 +139,34 @@ function Layout({ children }) {
                     textDecoration: 'none', fontSize: 13,
                     fontWeight: active ? 500 : 400, letterSpacing: '-0.005em',
                     color:      active ? 'white' : 'rgba(255,255,255,0.42)',
-                    background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
+                    background: active
+                      ? 'rgba(255,255,255,0.09)'
+                      : 'transparent',
                     position: 'relative',
+                    transition: 'background 0.15s ease, color 0.15s ease, transform 0.15s ease',
                   }}
                 >
-                  {/* Active indicator bar — GPU-composited, no reflow */}
+                  {/* Active accent bar */}
                   {active && (
                     <div style={{
                       position: 'absolute',
                       ...(isRtl
                         ? { right: -10, borderRadius: '2px 0 0 2px' }
-                        : { left: -10, borderRadius: '0 2px 2px 0' }
+                        : { left:  -10, borderRadius: '0 2px 2px 0' }
                       ),
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: 3, height: 16, background: S.accent,
+                      top: '50%', transform: 'translateY(-50%)',
+                      width: 3, height: 18,
+                      background: `linear-gradient(180deg, ${S.accent}, #E8C76A)`,
+                      borderRadius: 2,
+                      boxShadow: `0 0 8px ${S.accent}66`,
                     }} />
                   )}
-                  <Icon name={item.icon} size={15} color={active ? S.accent : 'rgba(255,255,255,0.35)'} />
-                  <span>{t[item.key]}</span>
+                  <Icon
+                    name={item.icon}
+                    size={15}
+                    color={active ? S.accent : 'rgba(255,255,255,0.35)'}
+                  />
+                  <span className="nav-label">{t[item.key]}</span>
                 </Link>
               </div>
             )
@@ -145,27 +174,46 @@ function Layout({ children }) {
         </nav>
 
         {/* User block */}
-        <div style={{ padding: '10px 10px 14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div
+          style={{
+            padding: '10px 10px 14px',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            animation: 'fadeUp 0.4s ease 0.3s both',
+          }}
+        >
           <div style={{
             display: 'flex', alignItems: 'center', gap: 9,
-            padding: '9px 11px', borderRadius: 7,
-            background: 'rgba(255,255,255,0.04)', marginBottom: 6,
+            padding: '9px 11px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            marginBottom: 6,
           }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 6,
-              background: S.navy3,
-              border: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10.5, fontWeight: 700, color: S.accent,
-              flexShrink: 0, letterSpacing: '0.02em',
-            }} aria-hidden="true">
+            {/* Avatar */}
+            <div
+              className="avatar-glow"
+              style={{
+                width: 30, height: 30, borderRadius: 7,
+                background: 'linear-gradient(135deg, #1A2E48, #243D5A)',
+                border: `1.5px solid ${S.accent}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10.5, fontWeight: 700, color: S.accent,
+                flexShrink: 0, letterSpacing: '0.02em',
+              }}
+              aria-hidden="true"
+            >
               {initials}
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+            <div className="user-info" style={{ minWidth: 0, flex: 1 }}>
+              <div style={{
+                color: 'rgba(255,255,255,0.84)', fontSize: 12.5, fontWeight: 500,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                letterSpacing: '-0.01em',
+              }}>
                 {user?.name}
               </div>
-              <div style={{ color: 'rgba(255,255,255,0.28)', fontSize: 11, marginTop: 1 }}>{roleLabel}</div>
+              <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 1 }}>
+                {roleLabel}
+              </div>
             </div>
           </div>
 
@@ -182,7 +230,7 @@ function Layout({ children }) {
             }}
           >
             <Icon name="logout" size={13} color="currentColor" />
-            <span>{t.logout}</span>
+            <span className="logout-label">{t.logout}</span>
           </button>
         </div>
       </aside>
@@ -192,10 +240,15 @@ function Layout({ children }) {
 
         {/* Top bar */}
         <header style={{
-          background: 'white', borderBottom: `1px solid ${S.border}`,
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: `1px solid rgba(228,233,242,0.8)`,
           height: 50, padding: '0 24px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexShrink: 0,
+          boxShadow: '0 1px 6px rgba(13,27,46,0.04)',
+          position: 'sticky', top: 0, zIndex: 10,
         }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: S.text1, letterSpacing: '-0.02em' }}>
             {pageLabel}
@@ -210,12 +263,13 @@ function Layout({ children }) {
                 className="lang-btn"
                 aria-pressed={lang === l}
                 style={{
-                  padding: '3px 8px', borderRadius: 5,
+                  padding: '3px 9px', borderRadius: 5,
                   fontSize: 11, fontWeight: 500,
                   cursor: 'pointer', fontFamily: 'var(--font)',
                   background: lang === l ? S.navy : 'transparent',
                   color:      lang === l ? 'white' : S.text3,
                   border: 'none', letterSpacing: '0.02em',
+                  transition: 'background 0.15s, color 0.15s',
                 }}
               >
                 {l === 'tr' ? 'TR' : l === 'ar' ? 'ع' : 'EN'}
@@ -236,5 +290,4 @@ function Layout({ children }) {
   )
 }
 
-// memo: Layout only re-renders when children change (path change) — not on every query update
 export default memo(Layout)

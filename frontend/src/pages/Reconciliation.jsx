@@ -4,12 +4,13 @@ import { reconciliationApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, Btn, Input, Info, TrHover, C } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
-import { getStatusLabel } from '../constants'
+import { getStatusLabel, getTxnTypeLabel } from '../constants'
 import { useLang } from '../hooks/useLang'
 
 export default function Reconciliation() {
   const { t } = useLang()
-  const STATUS_LABEL = getStatusLabel(t)
+  const STATUS_LABEL   = getStatusLabel(t)
+  const TXN_TYPE_LABEL = getTxnTypeLabel(t)
   const today = new Date().toISOString().split('T')[0]
   const [reportDate, setReportDate] = useState(today)
 
@@ -99,7 +100,7 @@ export default function Reconciliation() {
                 {data.transactions?.map((txn, i) => (
                   <TrHover key={i}>
                     <Td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: C.text3 }}>{txn.txn_number}</span></Td>
-                    <Td style={{ fontSize: 12.5 }}>{txn.txn_type}</Td>
+                    <Td style={{ fontSize: 12.5 }}>{TXN_TYPE_LABEL[txn.txn_type] ?? txn.txn_type}</Td>
                     <Td style={{ fontSize: 12.5, color: C.text2 }}>{txn.counterparty}</Td>
                     <Td mono style={{ color: C.red,   fontSize: 12.5 }}>{txn.from}</Td>
                     <Td mono style={{ color: C.green, fontSize: 12.5 }}>{txn.to}</Td>

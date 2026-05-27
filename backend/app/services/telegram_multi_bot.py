@@ -17,6 +17,7 @@ Bağlanma akışı (KOD bazlı — güvenli):
 import asyncio
 import logging
 import threading
+import time
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from typing import Dict, Optional
@@ -104,6 +105,27 @@ BOT_L = {
             "• `🌐 Dil` → Dil değiştir\n"
             "• `iptal` → Aktif işlemi iptal et"
         ),
+        "txn_types": {
+            "remittance": "💸 Havale",
+            "fx":         "💱 Döviz",
+            "swift":      "🏦 SWIFT",
+            "deposit":    "📥 Yatırma",
+            "withdrawal": "📤 Çekme",
+            "internal_transfer": "🔄 İç Transfer",
+        },
+        "btn_no_customer": "⏭ Müşterisiz devam",
+        # Bakiye / Rapor mesajları
+        "q_balance_hdr":  "💰 *Kasa Bakiyeleri*",
+        "q_balance_total":"💵 *Toplam Portföy:*",
+        "q_no_account":   "📭 *Aktif hesap bulunamadı.*",
+        "q_report_hdr":   "📊 *Günlük Özet*",
+        "q_completed":    "📦 Tamamlanan",
+        "q_volume":       "💵 Toplam Ciro",
+        "q_net_pnl":      "📈 Net Kâr",
+        "q_pending":      "⏳ Bekleyen",
+        "q_no_txn":       "📭 *İşlem bulunamadı.*",
+        "q_no_rate":      "📭 *Kur kaydı bulunamadı.*",
+        "q_no_cp":        "📭 *Müşteri bulunamadı.*",
     },
     "ar": {
         "btn_balance":  "💰 الرصيد",
@@ -169,6 +191,26 @@ BOT_L = {
             "• `🌐 اللغة` → تغيير اللغة\n"
             "• `إلغاء` → إلغاء العملية الحالية"
         ),
+        "txn_types": {
+            "remittance": "💸 حوالة",
+            "fx":         "💱 صرف عملات",
+            "swift":      "🏦 سويفت",
+            "deposit":    "📥 إيداع",
+            "withdrawal": "📤 سحب",
+            "internal_transfer": "🔄 تحويل داخلي",
+        },
+        "btn_no_customer": "⏭ بدون عميل",
+        "q_balance_hdr":  "💰 *أرصدة الصناديق*",
+        "q_balance_total":"💵 *إجمالي المحفظة:*",
+        "q_no_account":   "📭 *لم يتم العثور على حسابات نشطة.*",
+        "q_report_hdr":   "📊 *الملخص اليومي*",
+        "q_completed":    "📦 المكتملة",
+        "q_volume":       "💵 إجمالي الحجم",
+        "q_net_pnl":      "📈 صافي الربح",
+        "q_pending":      "⏳ قيد الانتظار",
+        "q_no_txn":       "📭 *لا توجد معاملات.*",
+        "q_no_rate":      "📭 *لا توجد أسعار صرف مسجلة.*",
+        "q_no_cp":        "📭 *لا يوجد عملاء.*",
     },
     "en": {
         "btn_balance":  "💰 Balance",
@@ -234,8 +276,31 @@ BOT_L = {
             "• `🌐 Language` → Change language\n"
             "• `cancel` → Cancel current operation"
         ),
+        "txn_types": {
+            "remittance": "💸 Remittance",
+            "fx":         "💱 FX",
+            "swift":      "🏦 SWIFT",
+            "deposit":    "📥 Deposit",
+            "withdrawal": "📤 Withdrawal",
+            "internal_transfer": "🔄 Internal Transfer",
+        },
+        "btn_no_customer": "⏭ No customer",
+        "q_balance_hdr":  "💰 *Account Balances*",
+        "q_balance_total":"💵 *Total Portfolio:*",
+        "q_no_account":   "📭 *No active accounts found.*",
+        "q_report_hdr":   "📊 *Daily Summary*",
+        "q_completed":    "📦 Completed",
+        "q_volume":       "💵 Total Volume",
+        "q_net_pnl":      "📈 Net Profit",
+        "q_pending":      "⏳ Pending",
+        "q_no_txn":       "📭 *No transactions found.*",
+        "q_no_rate":      "📭 *No exchange rate records found.*",
+        "q_no_cp":        "📭 *No customers found.*",
     },
 }
+
+# Konuşma zaman aşımı (saniye) — 5 dakika
+_CONV_TIMEOUT = 300
 
 # Kullanıcı dil tercihleri (telegram_id → 'tr'|'ar'|'en')
 _user_langs: Dict[str, str] = {}
@@ -293,15 +358,25 @@ def _ckey(company_id, uid: int) -> str:
     return f"{company_id}:{uid}"
 
 def _cget(company_id, uid: int) -> Optional[dict]:
-    return _conversations.get(_ckey(company_id, uid))
+    k = _ckey(company_id, uid)
+    conv = _conversations.get(k)
+    if conv and time.time() - conv.get("ts", 0) > _CONV_TIMEOUT:
+        _conversations.pop(k, None)
+        return None
+    return conv
 
 def _cset(company_id, uid: int, state: str, data: dict = None):
-    _conversations[_ckey(company_id, uid)] = {"state": state, "data": data or {}}
+    _conversations[_ckey(company_id, uid)] = {
+        "state": state,
+        "data": data or {},
+        "ts": time.time(),
+    }
 
 def _cupd(company_id, uid: int, **kwargs):
     k = _ckey(company_id, uid)
     if k in _conversations:
         _conversations[k]["data"].update(kwargs)
+        _conversations[k]["ts"] = time.time()  # zaman aşımını sıfırla
 
 def _cclr(company_id, uid: int):
     _conversations.pop(_ckey(company_id, uid), None)
@@ -376,169 +451,225 @@ def make_handlers(company_id, company_name: str):
     async def on_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
         _cclr(company_id, uid)
-        from app.core.database import SessionLocal
-        db = SessionLocal()
-        try:
-            admin = _find_admin(uid, company_id, db)
-            if admin:
-                await update.message.reply_text(
-                    _L(uid, "welcome", company=company_name, name=admin.name),
-                    parse_mode="Markdown",
-                    reply_markup=_make_menu(uid),
-                )
-            else:
-                await update.message.reply_text(
-                    "🔐 *Safiron Hawale*\n\n"
-                    "Hesabınız bağlı değil. Bağlanmak için:\n"
-                    "1. Uygulamada *Kullanıcılar* sayfasını açın\n"
-                    "2. Pininizi kopyalayın\n"
-                    "3. Gönderin:\n\n"
-                    "`bağla PİNİNİZ`\n\n"
-                    "_Örnek: `bağla SAF-7K2M`_",
-                    parse_mode="Markdown",
-                )
-        finally:
-            db.close()
+
+        def _db_check():
+            from app.core.database import SessionLocal
+            db = SessionLocal()
+            try:
+                admin = _find_admin(uid, company_id, db)
+                return admin.name if admin else None
+            finally:
+                db.close()
+
+        admin_name = await asyncio.to_thread(_db_check)
+        if admin_name:
+            await update.message.reply_text(
+                _L(uid, "welcome", company=company_name, name=admin_name),
+                parse_mode="Markdown",
+                reply_markup=_make_menu(uid),
+            )
+        else:
+            await update.message.reply_text(
+                "🔐 *Safiron Hawale*\n\n"
+                "Hesabınız bağlı değil. Bağlanmak için:\n"
+                "1. Uygulamada *Kullanıcılar* sayfasını açın\n"
+                "2. Pininizi kopyalayın\n"
+                "3. Gönderin:\n\n"
+                "`bağla PİNİNİZ`\n\n"
+                "_Örnek: `bağla SAF-7K2M`_",
+                parse_mode="Markdown",
+            )
 
     async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid      = update.effective_user.id
         username = update.effective_user.username or str(uid)
         text     = (update.message.text or "").strip()
-        cmd      = text.lower()
+        cmd_lower = text.lower()
 
         logger.info(f"[{company_name}] @{username}: {text[:60]!r}")
 
-        from app.core.database import SessionLocal
-        db = SessionLocal()
-        try:
-            # İptal komutu her zaman çalışır (tüm dillerde)
-            if cmd in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
-                _cclr(company_id, uid)
-                await update.message.reply_text(
-                    _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
-                )
-                return
+        # İptal komutu — DB gerekmez, anında yanıt
+        if cmd_lower in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
+            _cclr(company_id, uid)
+            await update.message.reply_text(
+                _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
+            )
+            return
 
-            # bağla/link komutu HER ZAMAN önce işlenir — zaten bağlı olsak bile
-            # (yanlış hesaba bağlıyken yeniden bağlanmaya izin ver)
-            if cmd.startswith("bağla ") or cmd.startswith("bagla ") or cmd.startswith("link ") or cmd.startswith("ربط "):
-                parts = text.split()
-                if len(parts) >= 2:
-                    pin = parts[1].upper()
-                    result = _admin_pin_bagla(pin, uid, company_id, db)
-                    if result.startswith("✅"):
-                        await update.message.reply_text(result, parse_mode="Markdown", reply_markup=_make_menu(uid))
-                    else:
-                        await update.message.reply_text(result, parse_mode="Markdown")
+        # Tüm DB işlemlerini thread pool'a taşı (event loop'u bloke etme)
+        def _process():
+            from app.core.database import SessionLocal
+            db = SessionLocal()
+            try:
+                # bağla/link komutu — her zaman önce işlenir
+                if (cmd_lower.startswith("bağla ") or cmd_lower.startswith("bagla ") or
+                        cmd_lower.startswith("link ") or cmd_lower.startswith("ربط ")):
+                    parts = text.split()
+                    if len(parts) >= 2:
+                        pin = parts[1].upper()
+                        result = _admin_pin_bagla(pin, uid, company_id, db)
+                        return ("link", result)
+                    return ("not_linked", None)
+
+                admin = _find_admin(uid, company_id, db)
+                if not admin:
+                    return ("not_linked", None)
+
+                # Aktif konuşma varsa
+                conv = _cget(company_id, uid)
+                if conv:
+                    result = _conv_handle_text(conv, text, uid, company_id, db)
+                    return ("conv", result)
+
+                # Menü butonu → iç komuta dönüştür
+                mapped = _menu_to_cmd(uid, text)
+                effective_cmd = mapped if mapped else cmd_lower
+
+                # Dil değiştirme — inline klavye ile
+                if effective_cmd == "dil":
+                    return ("dil", None)
+
+                # Normal admin komutu
+                reply = _admin_cmd(effective_cmd, text, company_id, db, uid=uid)
+                if isinstance(reply, tuple):
+                    msg, kb = reply
+                    if msg == "__start_txn__":
+                        _cset(company_id, uid, S_TXN_TYPE, {})
+                        msg, kb = _start_txn_type(uid)
+                    elif msg == "__start_cp__":
+                        _cset(company_id, uid, S_CP_NAME, {})
+                        msg, kb = _start_cp_create(uid)
+                    return ("reply_kb", (msg, kb))
                 else:
-                    await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
-                return
+                    return ("reply_text", reply)
 
-            admin = _find_admin(uid, company_id, db)
+            except Exception as exc:
+                logger.exception(f"[{company_name}] Hata: {exc}")
+                return ("error", None)
+            finally:
+                db.close()
 
-            if not admin:
-                await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
-                return
+        try:
+            result_type, result_data = await asyncio.to_thread(_process)
 
-            # Aktif konuşma varsa → konuşma handler'ına yönlendir
-            conv = _cget(company_id, uid)
-            if conv:
-                result = await _conv_handle_text(conv, text, uid, company_id, db)
-                if result:
-                    msg, kb = result
-                    # kb None ise menüye dön
-                    if kb is None:
-                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
-                    else:
-                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
-                return
-
-            # Menü butonu mu? → iç komuta dönüştür
-            mapped = _menu_to_cmd(uid, text)
-            if mapped:
-                cmd = mapped
-
-            # Dil değiştirme
-            if cmd == "dil":
+            if result_type == "link":
+                msg = result_data
+                if msg.startswith("✅"):
+                    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                else:
+                    await update.message.reply_text(msg, parse_mode="Markdown")
+            elif result_type == "dil":
                 kb = _kb([
                     [("🇹🇷 Türkçe", "lang:tr"), ("🇸🇦 العربية", "lang:ar"), ("🇬🇧 English", "lang:en")],
                 ])
                 await update.message.reply_text(_L(uid, "lang_select"), parse_mode="Markdown", reply_markup=kb)
-                return
-
-            # Normal admin komutu
-            reply = _admin_cmd(cmd, text, company_id, db, uid=uid)
-            if isinstance(reply, tuple):
-                msg, kb = reply
-                if msg == "__start_txn__":
-                    _cset(company_id, uid, S_TXN_TYPE, {})
-                    msg, kb = _start_txn_type(uid)
-                elif msg == "__start_cp__":
-                    _cset(company_id, uid, S_CP_NAME, {})
-                    msg, kb = _start_cp_create(uid)
+            elif result_type == "not_linked":
+                await update.message.reply_text(_L(uid, "not_linked"), parse_mode="Markdown")
+            elif result_type == "conv":
+                if result_data:
+                    msg, kb = result_data
+                    if kb is None:
+                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=_make_menu(uid))
+                    else:
+                        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+            elif result_type == "reply_kb":
+                msg, kb = result_data
                 await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
-            else:
-                for chunk in [reply[i:i+4096] for i in range(0, len(reply), 4096)]:
+            elif result_type == "reply_text":
+                for chunk in [result_data[i:i+4096] for i in range(0, len(result_data), 4096)]:
                     await update.message.reply_text(chunk, parse_mode="Markdown")
-
+            elif result_type == "error":
+                await update.message.reply_text(_L(uid, "server_err"), parse_mode="Markdown")
         except Exception as exc:
-            logger.exception(f"[{company_name}] Hata: {exc}")
+            logger.exception(f"[{company_name}] Mesaj işleme hatası: {exc}")
             await update.message.reply_text(_L(uid, "server_err"), parse_mode="Markdown")
-        finally:
-            db.close()
 
     async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
+        # Hemen yanıt ver — Telegram "yükleniyor" animasyonunu kaldırır
         await query.answer()
         uid  = query.from_user.id
         data = query.data
 
-        from app.core.database import SessionLocal
-        db = SessionLocal()
+        # İptal — DB gerekmez
+        if data == "cancel":
+            _cclr(company_id, uid)
+            await query.edit_message_text(_L(uid, "cancelled"), parse_mode="Markdown")
+            return
+
+        # Dil değiştirme — DB gerekmez (sadece _set_lang)
+        if data.startswith("lang:"):
+            lang = data[5:]
+            _set_lang(uid, lang)
+            key = f"lang_set_{lang}"
+            msg = BOT_L.get(lang, BOT_L["tr"]).get(key, "✅")
+            await query.edit_message_text(msg, parse_mode="Markdown")
+
+            # Karşılama mesajı için admin adını al (DB'den)
+            def _get_name():
+                from app.core.database import SessionLocal
+                db = SessionLocal()
+                try:
+                    admin = _find_admin(uid, company_id, db)
+                    return admin.name if admin else "?"
+                finally:
+                    db.close()
+
+            admin_name = await asyncio.to_thread(_get_name)
+            await query.message.reply_text(
+                _L(uid, "welcome", company=company_name, name=admin_name),
+                parse_mode="Markdown",
+                reply_markup=_make_menu(uid),
+            )
+            return
+
+        # Diğer callback'ler — DB gerekli
+        def _process():
+            from app.core.database import SessionLocal
+            db = SessionLocal()
+            try:
+                admin = _find_admin(uid, company_id, db)
+                if not admin:
+                    return ("no_auth", None)
+
+                conv = _cget(company_id, uid)
+                if not conv:
+                    return ("timeout", None)
+
+                result = _conv_handle_cb(conv, data, uid, company_id, db)
+                return ("conv", result)
+
+            except Exception as exc:
+                logger.exception(f"[{company_name}] CB Hata: {exc}")
+                return ("error", None)
+            finally:
+                db.close()
+
         try:
-            admin = _find_admin(uid, company_id, db)
-            if not admin:
+            result_type, result_data = await asyncio.to_thread(_process)
+
+            if result_type == "no_auth":
                 await query.edit_message_text("🚫 Yetki yok.", parse_mode="Markdown")
-                return
-
-            # Dil değiştirme
-            if data.startswith("lang:"):
-                lang = data[5:]
-                _set_lang(uid, lang)
-                key = f"lang_set_{lang}"
-                msg = BOT_L.get(lang, BOT_L["tr"]).get(key, "✅")
-                await query.edit_message_text(msg, parse_mode="Markdown")
-                # Menüyü yeni dilde göster
-                await query.message.reply_text(
-                    _L(uid, "welcome", company=company_name, name=admin.name),
-                    parse_mode="Markdown",
-                    reply_markup=_make_menu(uid),
-                )
-                return
-
-            if data == "cancel":
-                _cclr(company_id, uid)
-                await query.edit_message_text(_L(uid, "cancelled"), parse_mode="Markdown")
-                return
-
-            conv = _cget(company_id, uid)
-            if not conv:
+            elif result_type == "timeout":
                 await query.edit_message_text(_L(uid, "timeout"), parse_mode="Markdown")
-                return
-
-            result = await _conv_handle_cb(conv, data, uid, company_id, db)
-            if result:
-                msg, kb = result
-                if kb is not None:
-                    await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=kb)
-                else:
-                    await query.edit_message_text(msg, parse_mode="Markdown")
-
+            elif result_type == "conv":
+                if result_data:
+                    msg, kb = result_data
+                    if kb is not None:
+                        await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=kb)
+                    else:
+                        await query.edit_message_text(msg, parse_mode="Markdown")
+            elif result_type == "error":
+                try:
+                    await query.edit_message_text(_L(uid, "server_err"))
+                except Exception:
+                    pass
         except Exception as exc:
-            logger.exception(f"[{company_name}] CB Hata: {exc}")
-            await query.edit_message_text(_L(uid, "server_err"))
-        finally:
-            db.close()
+            logger.exception(f"[{company_name}] Callback işleme hatası: {exc}")
+            try:
+                await query.edit_message_text(_L(uid, "server_err"))
+            except Exception:
+                pass
 
     return on_start, on_message, on_callback
 
@@ -552,15 +683,15 @@ def _admin_cmd(cmd: str, raw: str, company_id, db, uid: int = 0):
         return _L(uid, "help")
 
     if cmd in ("b", "bakiye", "balance", "الرصيد"):
-        return _q_bakiye(company_id, db)
+        return _q_bakiye(company_id, db, uid=uid)
     if cmd in ("r", "rapor", "report", "التقرير"):
-        return _q_rapor(company_id, db)
+        return _q_rapor(company_id, db, uid=uid)
     if cmd in ("k", "kur", "rates", "الأسعار"):
-        return _q_kurlar(db)
+        return _q_kurlar(db, uid=uid)
     if cmd.startswith("kur ") or cmd.startswith("rate "):
         return _q_tek_kur(db, cmd.split()[1].upper())
     if cmd in ("i", "işlemler", "islemler", "transactions", "المعاملات"):
-        return _q_son_islemler(company_id, db)
+        return _q_son_islemler(company_id, db, uid=uid)
 
     if cmd in ("müşteriler", "musteriler"):
         return _q_musteri_listesi(company_id, db)
@@ -588,11 +719,12 @@ def _admin_cmd(cmd: str, raw: str, company_id, db, uid: int = 0):
 
 def _start_txn_type(uid: int = 0):
     """İşlem türü seç ekranı."""
-    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    L  = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    TT = L.get("txn_types", BOT_L["tr"]["txn_types"])
     kb = _kb([
-        [("💸 Havale",  "t:remittance"), ("💱 Döviz",   "t:fx")],
-        [("🏦 SWIFT",   "t:swift"),      ("📥 Yatırma", "t:deposit")],
-        [("📤 Çekme",   "t:withdrawal"), ("🔄 İç Transfer", "t:internal_transfer")],
+        [(TT["remittance"], "t:remittance"), (TT["fx"],         "t:fx")],
+        [(TT["swift"],      "t:swift"),      (TT["deposit"],    "t:deposit")],
+        [(TT["withdrawal"], "t:withdrawal"), (TT["internal_transfer"], "t:internal_transfer")],
         [(L["btn_cancel"], "cancel")],
     ])
     return (L["txn_title"], kb)
@@ -613,7 +745,7 @@ def _cancel_kb_l(uid: int = 0):
 # Konuşma metin handler'ı
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
+def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
     """Aktif konuşmada metin mesajı işle. (msg, kb) tuple döner."""
     state = conv["state"]
     data  = conv["data"]
@@ -692,7 +824,7 @@ async def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
 # Konuşma callback handler'ı
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
+def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
     """Callback query işle. (msg, kb) tuple döner."""
     state = conv["state"]
     data  = conv["data"]
@@ -701,7 +833,7 @@ async def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
     if data_cb.startswith("t:") and state == S_TXN_TYPE:
         txn_type = data_cb[2:]
         _cset(company_id, uid, S_TXN_CP, {"txn_type": txn_type})
-        return _ask_cp(txn_type, company_id, db)
+        return _ask_cp(txn_type, company_id, db, uid=uid)
 
     # ── Müşteri seç ──────────────────────────────────────────────────────────
     if data_cb.startswith("cp:") and state == S_TXN_CP:
@@ -787,7 +919,7 @@ async def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
 
     # ── Onay ─────────────────────────────────────────────────────────────────
     if data_cb == "confirm_txn" and state == "txn_confirm":
-        return await _do_create_txn(data, uid, company_id, db)
+        return _do_create_txn(data, uid, company_id, db)
 
     # ── Müşteri ekleme callback'leri ──────────────────────────────────────────
     if data_cb == "skip_name_ar" and state == S_CP_NAME_AR:
@@ -819,9 +951,11 @@ async def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
 # Konuşma yardımcı fonksiyonları
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _ask_cp(txn_type: str, company_id, db):
+def _ask_cp(txn_type: str, company_id, db, uid: int = 0):
     """Müşteri seçim ekranı."""
     from app.models.master import Counterparty
+    L  = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    TT = L.get("txn_types", BOT_L["tr"]["txn_types"])
     cps = (db.query(Counterparty)
              .filter(Counterparty.company_id == company_id, Counterparty.is_active == True)
              .order_by(Counterparty.name).limit(20).all())
@@ -833,11 +967,11 @@ def _ask_cp(txn_type: str, company_id, db):
         if len(row) == 2:
             rows.append(row); row = []
     if row: rows.append(row)
-    is_simple = txn_type in ("deposit", "withdrawal")
-    rows.append([("⏭ Müşterisiz devam", "cp_skip")])
-    rows.append([("❌ İptal", "cancel")])
+    rows.append([(L.get("btn_no_customer", "⏭ Müşterisiz devam"), "cp_skip")])
+    rows.append([(L["btn_cancel"], "cancel")])
     kb = _kb(rows)
-    return (f"👥 *Müşteri Seç*\n\nİşlem türü: {TXN_LABELS.get(txn_type, txn_type)}", kb)
+    type_label = TT.get(txn_type, txn_type)
+    return (_L(uid, "txn_select_cp", type=type_label), kb)
 
 
 def _ask_from_acc(txn_type: str, company_id, db):
@@ -963,7 +1097,7 @@ def _cp_summary(data: dict):
     return ("\n".join(lines), kb)
 
 
-async def _do_create_txn(data: dict, uid: int, company_id, db):
+def _do_create_txn(data: dict, uid: int, company_id, db):
     """İşlemi DB'ye kaydet."""
     from datetime import date as dt_date
     from app.models.master import Account
@@ -1300,28 +1434,29 @@ def _admin_coz(kod: str, company_id, db) -> str:
 # Veri sorguları — company_id filtreli
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _q_bakiye(company_id, db) -> str:
+def _q_bakiye(company_id, db, uid: int = 0) -> str:
     from app.models.master import Account
     from app.services.balance import get_all_balances, get_all_usd_rates
     from sqlalchemy.orm import joinedload
+
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
 
     accounts = (db.query(Account)
                   .options(joinedload(Account.location), joinedload(Account.currency))
                   .filter(Account.is_active == True, Account.company_id == company_id)
                   .all())
     if not accounts:
-        return "📭 *Aktif hesap bulunamadı.*"
+        return L.get("q_no_account", "📭 *Aktif hesap bulunamadı.*")
 
     balances  = get_all_balances(db)
     usd_rates = get_all_usd_rates(db)
 
-    lines = ["💰 *Kasa Bakiyeleri*", f"📅 _{date.today():%d.%m.%Y}_", "━━━━━━━━━━━━━━━━━━━"]
+    lines = [L.get("q_balance_hdr", "💰 *Kasa Bakiyeleri*"), f"📅 _{date.today():%d.%m.%Y}_", "━━━━━━━━━━━━━━━━━━━"]
     total_usd = ZERO
-    
-    # Grupla ve sırala
+
     grouped = {}
     for acc in accounts:
-        loc = acc.location.name_tr if acc.location else "Diğer"
+        loc = acc.location.name_tr if acc.location else "—"
         grouped.setdefault(loc, []).append(acc)
 
     FLAGS = {"USD": "🇺🇸", "EUR": "🇪🇺", "TRY": "🇹🇷", "GBP": "🇬🇧", "AED": "🇦🇪", "EGP": "🇪🇬", "SAR": "🇸🇦", "QAR": "🇶🇦"}
@@ -1335,21 +1470,21 @@ def _q_bakiye(company_id, db) -> str:
             rate = usd_rates.get(cur, Decimal("1"))
             usd = (balance / rate).quantize(Decimal("0.01")) if rate else ZERO
             total_usd += usd
-            
             flag = FLAGS.get(cur, "💵")
             is_last = (idx == len(acc_sorted) - 1)
             tree_char = "└" if is_last else "├"
-            
             sign = "+" if balance > 0 else ""
             lines.append(f" {tree_char}  {flag} `{cur}` ➔  `{sign}{balance:,.2f}`  _(${usd:,.2f})_")
 
-    lines += ["\n━━━━━━━━━━━━━━━━━━━", f"💵 *Toplam Portföy:* `${total_usd:,.2f}`"]
+    lines += ["\n━━━━━━━━━━━━━━━━━━━", f"{L.get('q_balance_total', '💵 *Toplam Portföy:*')} `${total_usd:,.2f}`"]
     return "\n".join(lines)
 
 
-def _q_rapor(company_id, db) -> str:
+def _q_rapor(company_id, db, uid: int = 0) -> str:
     from app.models.transaction import Transaction, TransactionPnL, TxnStatus
     today = date.today()
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+
     txns = (db.query(Transaction)
               .filter(
                   Transaction.company_id == company_id,
@@ -1373,21 +1508,22 @@ def _q_rapor(company_id, db) -> str:
                  .scalar() or 0)
 
     lines = [
-        f"📊 *Günlük Özet Raporu*", 
-        f"📅 _{today:%d.%m.%Y}_", 
+        L.get("q_report_hdr",  "📊 *Günlük Özet*"),
+        f"📅 _{today:%d.%m.%Y}_",
         "━━━━━━━━━━━━━━━━━━━",
-        f"📦 Tamamlanan  ➔  `{len(txns)}` İşlem",
-        f"💵 Toplam Ciro ➔  `${total_usd:,.2f}`",
-        f"📈 Net Kâr     ➔  `${total_pnl:,.2f}`",
+        f"{L.get('q_completed', '📦 Tamamlanan')}  ➔  `{len(txns)}`",
+        f"{L.get('q_volume',    '💵 Toplam Ciro')} ➔  `${total_usd:,.2f}`",
+        f"{L.get('q_net_pnl',  '📈 Net Kâr')}     ➔  `${total_pnl:,.2f}`",
     ]
     if pending:
-        lines.append(f"⏳ Bekleyen    ➔  `{pending}` İşlem")
+        lines.append(f"{L.get('q_pending', '⏳ Bekleyen')}    ➔  `{pending}`")
     lines.append("━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
 
-def _q_kurlar(db) -> str:
+def _q_kurlar(db, uid: int = 0) -> str:
     from sqlalchemy import text
+    L = BOT_L.get(_get_lang(uid), BOT_L["tr"])
     rows = db.execute(text("""
         SELECT e1.currency_code, e1.rate_per_usd
         FROM exchange_rates e1
@@ -1398,10 +1534,11 @@ def _q_kurlar(db) -> str:
         ORDER BY e1.currency_code
     """)).fetchall()
     if not rows:
-        return "📭 *Kur kaydı bulunamadı.*"
-        
+        return L.get("q_no_rate", "📭 *Kur kaydı bulunamadı.*")
+
     FLAGS = {"USD": "🇺🇸", "EUR": "🇪🇺", "TRY": "🇹🇷", "GBP": "🇬🇧", "AED": "🇦🇪", "EGP": "🇪🇬", "SAR": "🇸🇦", "QAR": "🇶🇦"}
-    lines = ["💱 *Döviz Kurları (1 USD = ?)*", "━━━━━━━━━━━━━━━━━━━"]
+    hdr = L.get("btn_rates", "💱 Kurlar")
+    lines = [f"{hdr} *(1 USD = ?)*", "━━━━━━━━━━━━━━━━━━━"]
     for r in rows:
         cur = r.currency_code
         flag = FLAGS.get(cur, "💵")
@@ -1420,7 +1557,7 @@ def _q_tek_kur(db, currency: str) -> str:
     return f"💱 1 USD = {flag} *{rate:,.4f} {currency}*"
 
 
-def _q_son_islemler(company_id, db, limit: int = 10) -> str:
+def _q_son_islemler(company_id, db, limit: int = 10, uid: int = 0) -> str:
     from app.models.transaction import Transaction, TransactionPnL, TxnStatus
     from sqlalchemy.orm import joinedload
     txns = (db.query(Transaction)
@@ -1428,8 +1565,13 @@ def _q_son_islemler(company_id, db, limit: int = 10) -> str:
               .filter(Transaction.company_id == company_id)
               .order_by(Transaction.created_at.desc())
               .limit(limit).all())
+
+    L  = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    TT = L.get("txn_types", BOT_L["tr"]["txn_types"])
+    no_cp = L.get("btn_no_cp", "—")
+
     if not txns:
-        return "📭 *İşlem bulunamadı.*"
+        return f"📭 *{L.get('unknown_cmd', 'İşlem bulunamadı.')}*"
 
     ids     = [t.id for t in txns]
     pnl_map = {p.transaction_id: p
@@ -1437,28 +1579,21 @@ def _q_son_islemler(company_id, db, limit: int = 10) -> str:
                           .filter(TransactionPnL.transaction_id.in_(ids)).all()}
 
     STATUS = {"completed": "✅", "pending": "⏳", "cancelled": "❌"}
-    TYPE_LABELS = {
-        "remittance": "Havale",
-        "fx": "Döviz",
-        "swift": "SWIFT",
-        "deposit": "Yatırma",
-        "withdrawal": "Çekme",
-        "internal_transfer": "İç Transfer",
-    }
-    
-    lines  = [f"📋 *Son {limit} İşlem*", "━━━━━━━━━━━━━━━━━━━"]
+    header = L.get("btn_txns", "📋 İşlemler")
+
+    lines  = [f"{header} — *Son {limit}*", "━━━━━━━━━━━━━━━━━━━"]
     for t in txns:
         p   = pnl_map.get(t.id)
         usd = f"${Decimal(str(p.usd_amount)):,.2f}" if p and p.usd_amount else "—"
-        cp  = t.counterparty.name if t.counterparty else "Müşterisiz"
+        cp  = t.counterparty.name if t.counterparty else no_cp
         dt  = t.created_at.strftime("%d.%m %H:%M") if t.created_at else "—"
-        status_icon = STATUS.get(t.status.value, "•")
-        txn_type_lbl = TYPE_LABELS.get(t.txn_type.value, t.txn_type.value)
-        
+        status_icon  = STATUS.get(t.status.value, "•")
+        txn_type_lbl = TT.get(t.txn_type.value, t.txn_type.value)
+
         lines.append(f"{status_icon} *{t.txn_number}*  |  _{dt}_")
-        lines.append(f" ├  Tür: `{txn_type_lbl}`")
-        lines.append(f" ├  Miktar: `{usd}`")
-        lines.append(f" └  Müşteri: *{cp}*")
+        lines.append(f" ├  `{txn_type_lbl}`")
+        lines.append(f" ├  `{usd}`")
+        lines.append(f" └  *{cp}*")
         lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines).rstrip()

@@ -68,7 +68,7 @@ app.add_middleware(
     allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "PUT"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Device-Token"],
 )
 
 app.include_router(auth_router)
@@ -123,6 +123,14 @@ async def startup():
         run_migrations()
     except Exception as e:
         print(f"Multi-tenancy migration uyarısı: {e}")
+
+    # Güvenilir cihaz tokenleri tablosunu oluştur
+    try:
+        from app.services.trusted_device import ensure_table
+        ensure_table()
+        print("✅ trusted_device_tokens tablosu hazır.")
+    except Exception as e:
+        print(f"⚠️  trusted_device_tokens migration hatası: {e}")
 
     # Migration: mevcut DB'ye eksik kolonları ve indexleri ekle (idempotent — güvenli tekrar çalıştırılabilir)
     try:

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
-import { authApi } from '../utils/api'
+import { authApi, deviceToken } from '../utils/api'
 import { useAuthStore } from '../store'
 import { useLang } from '../hooks/useLang'
 import toast from 'react-hot-toast'
@@ -13,8 +13,8 @@ const COPY = {
   tr: {
     dir:        'ltr',
     badge:      'Para Hizmetleri Yazılımı',
-    heroH1a:    'Para Hizmet Servisleri İçin',
-    heroH1b:    'Kurumsal Platform',
+    heroH1a:    'Para Hizmetleri İçin',
+    heroH1b:    'Profesyonel Operasyon Platformu',
     heroSub:    'Havale, döviz alım-satım ve SWIFT işlemlerinizi tek ekranda yönetin. Çok şubeli mimari, gerçek zamanlı pozisyon takibi ve yapay zeka destekli finansal analiz.',
     heroCta:    'Platforma Giriş Yap',
     heroSec:    'Özellikleri İncele',
@@ -292,11 +292,12 @@ function LoginPanel({ open, onClose, syncLang }) {
   const [step,    setStep]    = useState('credentials')
   const [email,   setEmail]   = useState('')
   const [pass,    setPass]    = useState('')
-  const [otp,     setOtp]     = useState('')
-  const [session, setSession] = useState('')
-  const [hint,    setHint]    = useState('')
-  const [loading, setLoading] = useState(false)
-  const [showPwd, setShowPwd] = useState(false)
+  const [otp,         setOtp]         = useState('')
+  const [session,     setSession]     = useState('')
+  const [hint,        setHint]        = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [showPwd,     setShowPwd]     = useState(false)
+  const [trustDevice, setTrustDevice] = useState(false)
   const { setToken, setUser } = useAuthStore()
   const { lang, setLang, t }  = useLang()
   const navigate  = useNavigate()
@@ -323,10 +324,12 @@ function LoginPanel({ open, onClose, syncLang }) {
     try {
       const { data } = await authApi.login(email, pass)
       if (!data.otp_required) {
+        // Güvenilir cihaz veya super_admin — direkt JWT
+        if (data.device_token) deviceToken.save(data.device_token)
         setToken(data.access_token)
         const { data: me } = await authApi.me()
         setUser(me)
-        navigate('/companies')
+        navigate(me?.role === 'super_admin' ? '/companies' : '/dashboard')
       } else {
         setSession(data.session_token); setHint(data.email_hint); setStep('otp')
         setTimeout(() => otpRef.current?.focus(), 100)
@@ -339,7 +342,9 @@ function LoginPanel({ open, onClose, syncLang }) {
   const submitOtp = async e => {
     e.preventDefault(); setLoading(true)
     try {
-      const { data }     = await authApi.verifyOtp(session, otp)
+      const { data }     = await authApi.verifyOtp(session, otp, trustDevice)
+      // Cihaza güven seçilmişse device_token'ı sakla
+      if (data.device_token) deviceToken.save(data.device_token)
       setToken(data.access_token)
       const { data: me } = await authApi.me()
       setUser(me)
@@ -475,6 +480,32 @@ function LoginPanel({ open, onClose, syncLang }) {
                       onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                     />
                   </div>
+                  {/* Cihaza güven checkbox */}
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    cursor: 'pointer', userSelect: 'none', padding: '2px 0',
+                  }}>
+                    <div
+                      onClick={() => setTrustDevice(v => !v)}
+                      style={{
+                        width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                        border: `2px solid ${trustDevice ? '#C9A84C' : 'rgba(255,255,255,0.2)'}`,
+                        background: trustDevice ? '#C9A84C' : 'rgba(255,255,255,0.04)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s', cursor: 'pointer',
+                      }}
+                    >
+                      {trustDevice && (
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4L3.5 6.5L9 1" stroke="#0D1F3C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 13, color: '#94A3B8', lineHeight: 1.4 }}>
+                      {t.trustDevice || 'Bu cihaza 10 gün güven'}
+                    </span>
+                  </label>
+
                   <motion.button type="submit" disabled={loading || otp.length < 6}
                     whileHover={!(loading || otp.length < 6) ? { scale: 1.01 } : {}}
                     whileTap={!(loading || otp.length < 6) ? { scale: 0.97 } : {}}
