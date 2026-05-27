@@ -94,6 +94,7 @@ BOT_L = {
         "btn_founder":  "👑 Kurucu",
         "btn_create":   "✅ Oluştur",
         "user_not_found": "❌ Kullanıcı bulunamadı. Lütfen tekrar bağlanın.",
+        "main_menu":      "📋 Ana Menü",
         # Yardım
         "help": (
             "🔧 *Komutlar*\n\n"
@@ -183,6 +184,7 @@ BOT_L = {
         "btn_founder":  "👑 شريك",
         "btn_create":   "✅ إنشاء",
         "user_not_found": "❌ المستخدم غير موجود. يرجى إعادة الربط.",
+        "main_menu":      "📋 القائمة الرئيسية",
         "help": (
             "🔧 *الأوامر*\n\n"
             "• `💰 الرصيد` → أرصدة الصناديق\n"
@@ -270,6 +272,7 @@ BOT_L = {
         "btn_founder":  "👑 Founder",
         "btn_create":   "✅ Create",
         "user_not_found": "❌ User not found. Please re-link your account.",
+        "main_menu":      "📋 Main Menu",
         "help": (
             "🔧 *Commands*\n\n"
             "• `💰 Balance` → Safe balances\n"
@@ -789,7 +792,7 @@ def make_handlers(company_id, company_name: str):
                     else:
                         await query.edit_message_text(msg, parse_mode="Markdown")
                         await query.message.reply_text(
-                            "📋",
+                            _L(uid, "main_menu"),
                             reply_markup=_make_inline_menu(uid),
                         )
             elif result_type == "menu_reply":
