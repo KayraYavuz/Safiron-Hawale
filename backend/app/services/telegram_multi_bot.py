@@ -17,7 +17,6 @@ Bağlanma akışı (KOD bazlı — güvenli):
 import asyncio
 import logging
 import threading
-import time
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from typing import Dict, Optional
@@ -299,8 +298,6 @@ BOT_L = {
     },
 }
 
-# Konuşma zaman aşımı (saniye) — 5 dakika
-_CONV_TIMEOUT = 300
 
 # Kullanıcı dil tercihleri (telegram_id → 'tr'|'ar'|'en')
 _user_langs: Dict[str, str] = {}
@@ -350,36 +347,102 @@ def _menu_to_cmd(uid: int, text: str) -> Optional[str]:
 ZERO = Decimal("0")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Konuşma durumu (in-memory, company_id:uid bazlı)
+# Konuşma durumu (DB-backed, Cloud Run restart'larında hayatta kalır)
 # ─────────────────────────────────────────────────────────────────────────────
-_conversations: Dict[str, dict] = {}
+_CONV_TIMEOUT_HOURS = 2    # 2 saatten eski kayıtlar süresi dolmuş sayılır
+_CONV_CLEANUP_HOURS = 24   # 24 saatten eski kayıtlar silinir
+
 
 def _ckey(company_id, uid: int) -> str:
     return f"{company_id}:{uid}"
 
+
 def _cget(company_id, uid: int) -> Optional[dict]:
-    k = _ckey(company_id, uid)
-    conv = _conversations.get(k)
-    if conv and time.time() - conv.get("ts", 0) > _CONV_TIMEOUT:
-        _conversations.pop(k, None)
+    """DB'den konuşma durumunu oku. Yok veya süresi dolmuşsa None döner."""
+    import json
+    from datetime import timezone
+    from app.core.database import SessionLocal
+    from sqlalchemy import text as _text
+    key = _ckey(company_id, uid)
+    db = SessionLocal()
+    try:
+        row = db.execute(
+            _text("SELECT state, data, updated_at FROM bot_conversations WHERE key = :key"),
+            {"key": key},
+        ).fetchone()
+        if row is None:
+            return None
+        updated = row.updated_at
+        if updated.tzinfo is None:
+            updated = updated.replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - updated).total_seconds() / 3600
+        if age_hours > _CONV_TIMEOUT_HOURS:
+            _cclr(company_id, uid)
+            return None
+        return {"state": row.state, "data": json.loads(row.data)}
+    except Exception as e:
+        logger.warning("_cget error: %s", e)
         return None
-    return conv
+    finally:
+        db.close()
+
 
 def _cset(company_id, uid: int, state: str, data: dict = None):
-    _conversations[_ckey(company_id, uid)] = {
-        "state": state,
-        "data": data or {},
-        "ts": time.time(),
-    }
+    """Konuşma durumunu DB'ye kaydet (upsert). Eski kayıtları temizle."""
+    import json
+    from app.core.database import SessionLocal
+    from sqlalchemy import text as _text
+    key = _ckey(company_id, uid)
+    db = SessionLocal()
+    try:
+        db.execute(
+            _text("""
+                INSERT INTO bot_conversations (key, state, data, updated_at)
+                VALUES (:key, :state, :data, NOW())
+                ON CONFLICT (key) DO UPDATE
+                    SET state = EXCLUDED.state,
+                        data  = EXCLUDED.data,
+                        updated_at = NOW()
+            """),
+            {"key": key, "state": state, "data": json.dumps(data or {})},
+        )
+        db.execute(
+            _text(
+                f"DELETE FROM bot_conversations "
+                f"WHERE updated_at < NOW() - INTERVAL '{_CONV_CLEANUP_HOURS} hours'"
+            ),
+        )
+        db.commit()
+    except Exception as e:
+        logger.warning("_cset error: %s", e)
+        db.rollback()
+    finally:
+        db.close()
+
 
 def _cupd(company_id, uid: int, **kwargs):
-    k = _ckey(company_id, uid)
-    if k in _conversations:
-        _conversations[k]["data"].update(kwargs)
-        _conversations[k]["ts"] = time.time()  # zaman aşımını sıfırla
+    """Mevcut konuşma datasını güncelle."""
+    conv = _cget(company_id, uid)
+    if conv is None:
+        return
+    conv["data"].update(kwargs)
+    _cset(company_id, uid, conv["state"], conv["data"])
+
 
 def _cclr(company_id, uid: int):
-    _conversations.pop(_ckey(company_id, uid), None)
+    """Konuşma kaydını sil."""
+    from app.core.database import SessionLocal
+    from sqlalchemy import text as _text
+    key = _ckey(company_id, uid)
+    db = SessionLocal()
+    try:
+        db.execute(_text("DELETE FROM bot_conversations WHERE key = :key"), {"key": key})
+        db.commit()
+    except Exception as e:
+        logger.warning("_cclr error: %s", e)
+        db.rollback()
+    finally:
+        db.close()
 
 # Durum sabitleri
 S_TXN_TYPE    = "txn_type"

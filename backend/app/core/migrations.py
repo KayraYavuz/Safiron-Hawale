@@ -131,4 +131,15 @@ def run_migrations():
         _exec(f"DROP INDEX IF EXISTS {idx_name}")
         _exec(f"ALTER TABLE {tbl} ADD CONSTRAINT {constraint_name} UNIQUE (code, company_id)")
 
+    # ── Bot konuşma durumu tablosu ────────────────────────────────────────────
+    _exec("""
+        CREATE TABLE IF NOT EXISTS bot_conversations (
+            key         TEXT PRIMARY KEY,
+            state       TEXT NOT NULL,
+            data        TEXT NOT NULL DEFAULT '{}',
+            updated_at  TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    _exec("CREATE INDEX IF NOT EXISTS idx_bot_conv_updated ON bot_conversations(updated_at)")
+
     print("✅ Migration tamamlandı.")
