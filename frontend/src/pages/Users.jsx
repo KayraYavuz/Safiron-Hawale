@@ -57,7 +57,7 @@ export default function Users() {
   })
   const approveMut = useMutation({
     mutationFn: usersApi.approve,
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Kullanıcı onaylandı') },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success(t.userApproved) },
     onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const regenPinMut = useMutation({
@@ -65,7 +65,7 @@ export default function Users() {
     onSuccess:  (res) => {
       qc.invalidateQueries({ queryKey: ['users'] })
       navigator.clipboard.writeText(`bağla ${res.data.new_pin}`)
-      toast.success(`Yeni PIN: ${res.data.new_pin} — panoya kopyalandı`)
+      toast.success(`${t.newPinLabel} ${res.data.new_pin} — ${t.copiedToClipboard}`)
     },
     onError: e => toast.error(e.response?.data?.detail || t.error),
   })
@@ -124,12 +124,12 @@ export default function Users() {
               </Select>
               {isSuperAdmin && (
                 <Select
-                  label="Şirket"
+                  label={t.companyCol}
                   value={form.company_id}
                   onChange={e => setForm(x => ({ ...x, company_id: e.target.value }))}
                   style={{ gridColumn: '1 / -1' }}
                 >
-                  <option value="">— Şirket Seç —</option>
+                  <option value="">{t.selectCompany}</option>
                   {companies.map(c => (
                     <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
                   ))}
@@ -161,7 +161,7 @@ export default function Users() {
               fontSize: 12.5, fontFamily: 'var(--font)', cursor: 'pointer', fontWeight: 500,
             }}
           >
-            Tümü <span style={{ opacity: 0.7, fontSize: 11 }}>({users.length})</span>
+            {t.allFilter} <span style={{ opacity: 0.7, fontSize: 11 }}>({users.length})</span>
           </button>
           {companies.map(co => (
             <button
@@ -188,7 +188,7 @@ export default function Users() {
             <Th>{t.nameLabel}</Th>
             <Th>{t.email}</Th>
             <Th>{t.role}</Th>
-            {isSuperAdmin && <Th>Şirket</Th>}
+            {isSuperAdmin && <Th>{t.companyCol}</Th>}
             <Th>Telegram PIN</Th>
             <Th>{t.status}</Th>
             <Th right>{t.action}</Th>
@@ -223,12 +223,12 @@ export default function Users() {
                         }}>
                           {u.bot_pin}
                         </span>
-                        <span title={u.telegram_id ? "Telegram'a bağlı" : "Henüz bağlı değil"} style={{ fontSize: 13 }}>
+                        <span title={u.telegram_id ? t.telegramConnected : t.telegramNotConnected} style={{ fontSize: 13 }}>
                           {u.telegram_id ? '🔗' : '💬'}
                         </span>
                         <button
-                          title="Kopyala"
-                          onClick={() => { navigator.clipboard.writeText(`bağla ${u.bot_pin}`); toast.success('Kopyalandı!') }}
+                          title={t.copied}
+                          onClick={() => { navigator.clipboard.writeText(`bağla ${u.bot_pin}`); toast.success(t.copied) }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', color: C.text3, fontSize: 13 }}
                         >📋</button>
                       </div>
@@ -242,7 +242,7 @@ export default function Users() {
                     </span>
                     {!u.is_approved && (
                       <span style={{ fontSize: 11, marginLeft: 6, padding: '2px 7px', borderRadius: 100, background: '#FFF3CD', color: '#856404' }}>
-                        Onay Bekliyor
+                        {t.pendingApproval}
                       </span>
                     )}
                   </Td>
@@ -259,7 +259,7 @@ export default function Users() {
                           style={{ fontSize: 12, padding: '6px 12px' }}
                           disabled={!newPass || resetMut.isPending}
                           onClick={() => {
-                            if (window.confirm(`${u.name} için şifre değiştirilsin mi?`))
+                            if (window.confirm(`${u.name} ${t.confirmPasswordReset}`))
                               resetMut.mutate({ id: u.id, password: newPass })
                           }}
                         >{t.save}</Btn>
@@ -269,15 +269,15 @@ export default function Users() {
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                         {!u.is_approved && (
                           <Btn style={{ fontSize: 12, padding: '5px 10px', background: C.green }} onClick={() => approveMut.mutate(u.id)} disabled={approveMut.isPending}>
-                            Onayla
+                            {t.approve}
                           </Btn>
                         )}
                         <Btn variant="ghost" style={{ fontSize: 12, padding: '5px 10px' }} onClick={() => setResetId(u.id)}>{t.passwordBtn}</Btn>
                         <button
-                          title="PIN yenile — Telegram bağlantısı sıfırlanır"
+                          title={t.regenPinTooltip}
                           disabled={regenPinMut.isPending}
                           onClick={() => {
-                            if (window.confirm(`${u.name} için yeni PIN oluşturulsun mu?\nEski PIN ve Telegram bağlantısı silinir.`))
+                            if (window.confirm(`${u.name} ${t.confirmRegenPin}`))
                               regenPinMut.mutate(u.id)
                           }}
                           style={{
@@ -296,7 +296,7 @@ export default function Users() {
             {!isLoading && filteredUsers.length === 0 && (
               <tr>
                 <td colSpan={colCount} style={{ padding: 32, textAlign: 'center', color: C.text4, fontSize: 13 }}>
-                  {filterCo !== 'all' ? 'Bu şirkette kullanıcı yok.' : 'Henüz kullanıcı yok.'}
+                  {filterCo !== 'all' ? t.noUsersInThisCompany : t.noUsersYet}
                 </td>
               </tr>
             )}

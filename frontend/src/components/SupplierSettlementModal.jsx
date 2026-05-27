@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supplierSettlementApi } from '../utils/api'
 import { fmt, stripCommas } from '../utils/format'
 import { Modal, Btn, Input, Select, RateInput, SumRow, Info, CPSearch, C } from './UI'
+import { useLang } from '../hooks/useLang'
 import toast from 'react-hot-toast'
 
 function calcSettlement({ sourceCur, destCur, settlementUsd, supplierRate }) {
@@ -50,6 +51,7 @@ function calcSettlement({ sourceCur, destCur, settlementUsd, supplierRate }) {
 
 export default function SupplierSettlementModal({ txn, counterparties = [], onClose }) {
   const qc = useQueryClient()
+  const { t } = useLang()
 
   // İşlemden yön ve tutar bilgisi al — müşteri kuru DEĞİL
   const sourceCur     = txn?.pnl?.source_currency ?? ''
@@ -82,30 +84,30 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
     mutationFn: (data) => supplierSettlementApi.create(txn?.id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey:['transactions'] })
-      toast.success('Tedarikçi uzlaşması kaydedildi ✓')
+      toast.success(t.settlementSaved)
       onClose()
     },
-    onError: e => toast.error(e.response?.data?.detail || 'Kaydetme hatası'),
+    onError: e => toast.error(e.response?.data?.detail || t.saveError),
   })
 
   const deleteMutation = useMutation({
     mutationFn: () => supplierSettlementApi.delete(txn?.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey:['transactions'] })
-      toast.success('Uzlaşma silindi')
+      toast.success(t.settlementDeleted)
       onClose()
     },
   })
 
   const handleSave = () => {
     if (settlementType === 'registered' && !supplierId) {
-      return toast.error('Kayıtlı tedarikçi seçiniz')
+      return toast.error(t.selectRegistered)
     }
     if (settlementType === 'external' && !externalName.trim()) {
-      return toast.error('Harici tedarikçi adı giriniz')
+      return toast.error(t.enterExternalName)
     }
     if (settlementType !== 'internal' && !supplierRate) {
-      return toast.error('Tedarikçi kuru giriniz')
+      return toast.error(t.enterSupplierRate)
     }
 
     mutation.mutate({
@@ -119,71 +121,70 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
   }
 
   const TYPE_LABELS = {
-    registered: 'Kayıtlı Tedarikçi',
-    external:   'Harici Tedarikçi',
-    internal:   'Tedarikçisiz / İç Kasa',
+    registered: t.registeredSupplier,
+    external:   t.externalSupplier,
+    internal:   t.noSupplier,
   }
 
   const selSupplier = suppliers.find(s => s.id === supplierId)
 
   return (
     <Modal
-      title="Tedarikçi Uzlaşması"
+      title={t.supplierSettlementTitle}
       subtitle={`${txn?.txn_number ?? ''} · ${sourceCur} → ${destCur}`}
       onClose={onClose}
       footer={
         <div style={{ display:'flex', gap:10, width:'100%' }}>
           {existing && (
             <Btn variant="danger" size="sm"
-              onClick={() => window.confirm('Uzlaşma silinsin mi?') && deleteMutation.mutate()}
+              onClick={() => window.confirm(t.deleteSettlement) && deleteMutation.mutate()}
               disabled={deleteMutation.isPending}>
-              Sil
+              {t.delete}
             </Btn>
           )}
           <div style={{ flex:1 }} />
-          <Btn variant="ghost" onClick={onClose}>İptal</Btn>
+          <Btn variant="ghost" onClick={onClose}>{t.cancel}</Btn>
           <Btn variant="success" onClick={handleSave} disabled={mutation.isPending}>
-            {mutation.isPending ? '⏳ Kaydediliyor...' : '✓ Kaydet'}
+            {mutation.isPending ? `⏳ ${t.saving}` : `✓ ${t.save}`}
           </Btn>
         </div>
       }
     >
       <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
-        {/* Uyarı: müşteri kuru bu adımda yok */}
+        {/* Supplier-side only warning */}
         <Info type="info">
-          <strong>Not:</strong> Bu adım yalnızca tedarikçi tarafını kapsar.
-          Müşteri kuru ve müşteri fiyatlandırması burada görünmez ve kullanılmaz.
+          <strong>{t.note}:</strong> {t.supplierSettlementNote}
         </Info>
 
-        {/* İşlem özeti — yalnızca yön bilgisi */}
+        {/* Transaction summary — direction only */}
         <div style={{
           background: C.surface2,
           border: `1px solid ${C.border}`,
           borderRadius: 9, padding:'12px 14px',
         }}>
           <div style={{ fontSize:11, fontWeight:600, color:C.text3, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>
-            İşlem Bilgisi
+            {t.txnInfo}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
             <div>
-              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>İşlem No</div>
+              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>{t.txnNo}</div>
               <div style={{ fontFamily:'var(--mono)', fontSize:12, fontWeight:500 }}>{txn?.txn_number ?? '—'}</div>
             </div>
             <div>
-              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>Yön</div>
+              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>{t.directionLabel}</div>
               <div style={{ fontWeight:600, fontSize:13 }}>{sourceCur} → {destCur}</div>
             </div>
             <div>
-              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>Lokasyon</div>
+              <div style={{ fontSize:11, color:C.text3, marginBottom:2 }}>{t.locationLabel}</div>
               <div style={{ fontSize:12, color:C.text2 }}>{sourceLocName} → {destLocName}</div>
             </div>
           </div>
         </div>
 
-        {/* Uzlaşma türü */}
+        {/* Settlement type */}
         <div>
-          <div style={{ fontSize:12, fontWeight:500, color:C.text2, marginBottom:8 }}>Uzlaşma Türü</div>
+          <div style={{ fontSize:12, fontWeight:500, color:C.text2, marginBottom:8 }}>{t.settlementType}</div>
           <div style={{ display:'flex', gap:8 }}>
             {['registered','external','internal'].map(t => (
               <button
@@ -204,50 +205,49 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
           </div>
         </div>
 
-        {/* Kayıtlı tedarikçi */}
+        {/* Registered supplier */}
         {settlementType === 'registered' && (
           <CPSearch
             list={suppliers}
             value={supplierId}
             onChange={setSupplierId}
-            label="Tedarikçi Seç"
+            label={t.selectSupplier}
           />
         )}
 
-        {/* Harici tedarikçi */}
+        {/* External supplier */}
         {settlementType === 'external' && (
           <Input
-            label="Harici Tedarikçi Adı"
+            label={t.externalSupplierName}
             value={externalName}
             onChange={e => setExternalName(e.target.value)}
             placeholder="Al-Rashidi Exchange"
           />
         )}
 
-        {/* İç kasa */}
+        {/* Internal safe */}
         {settlementType === 'internal' && (
           <Info type="success">
-            ✓ İç kasa hareketi — tedarikçi uzlaşma girişi yapılmayacak.
-            İşlem kendi lokasyonlar/kasalar arası olarak kapatılır.
+            {t.internalInfo}
           </Info>
         )}
 
-        {/* Tedarikçi Kuru — sadece internal değilse */}
+        {/* Supplier rate — only when not internal */}
         {settlementType !== 'internal' && (
           <RateInput
             value={supplierRate}
             onChange={setSupplierRate}
             accent="red"
-            label={`Tedarikçi Kuru — 1 USD = ? ${nonUsdCur || '?'}`}
-            hint={`Piyasadan/tedarikçiden aldığın kur. Müşteri kuruyla KARISTIRILMAZ.`}
+            label={`${t.supplierRate} — 1 USD = ? ${nonUsdCur || '?'}`}
+            hint={t.supplierRateHint}
           />
         )}
 
-        {/* Referans USD tutarı */}
+        {/* Reference USD amount */}
         {settlementType !== 'internal' && (
           <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
             <label style={{ fontSize:12, fontWeight:500, color:C.text2 }}>
-              Referans USD Miktarı
+              {t.refUsdAmount}
             </label>
             <input
               type="text"
@@ -265,7 +265,7 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
           </div>
         )}
 
-        {/* Uzlaşma önizlemesi — yalnızca tedarikçi tarafı */}
+        {/* Settlement preview — supplier side only */}
         {settlementType !== 'internal' && preview && (
           <div style={{
             background: C.surface,
@@ -276,18 +276,18 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
               fontSize:11, fontWeight:600, color:C.text3,
               textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12,
             }}>
-              Tedarikçi Uzlaşma Önizlemesi
+              {t.settlementPreview}
             </div>
 
-            {/* Kim */}
+            {/* Who */}
             {(selSupplier || externalName) && (
               <SumRow
-                label="Tedarikçi"
+                label={t.supplierCol}
                 value={selSupplier?.name || externalName}
               />
             )}
 
-            <SumRow label="Tedarikçi Kuru" value={`1 USD = ${supplierRate} ${nonUsdCur}`} />
+            <SumRow label={t.supplierRate} value={`1 USD = ${supplierRate} ${nonUsdCur}`} />
 
             {/* Receivable */}
             <div style={{
@@ -296,10 +296,10 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
             }}>
               <div>
                 <div style={{ fontSize:13, fontWeight:600, color:C.text1 }}>
-                  Tedarikçi Alacağı (Receivable)
+                  {t.receivable}
                 </div>
                 <div style={{ fontSize:11.5, color:C.text3, marginTop:2 }}>
-                  {sourceLocName} lokasyonundan alacaklı
+                  {sourceLocName} {t.receivableFrom}
                 </div>
               </div>
               <span style={{
@@ -316,10 +316,10 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
             }}>
               <div>
                 <div style={{ fontSize:13, fontWeight:600, color:C.text1 }}>
-                  Tedarikçi Borcu (Payable)
+                  {t.payable}
                 </div>
                 <div style={{ fontSize:11.5, color:C.text3, marginTop:2 }}>
-                  {destLocName} lokasyonuna borçlu
+                  {destLocName} {t.payableTo}
                 </div>
               </div>
               <span style={{
@@ -328,27 +328,15 @@ export default function SupplierSettlementModal({ txn, counterparties = [], onCl
                 {fmt(preview.payable.amount)} {preview.payable.currency}
               </span>
             </div>
-
-            {/* Açıklama kutusu */}
-            <div style={{
-              marginTop:8, padding:'10px 12px',
-              background:`rgba(37,99,235,0.05)`, borderRadius:7,
-              fontSize:12, color:C.blue, lineHeight:1.6,
-            }}>
-              {destCur === 'USD'
-                ? <>Tedarikçi <strong>{sourceLocName}</strong>'dan <strong>{fmt(preview.receivable.amount)} {sourceCur}</strong> tahsil edecek ve <strong>{destLocName}</strong>'a <strong>{fmt(preview.payable.amount)} USD</strong> ödeyecek.</>
-                : <>Tedarikçi <strong>{sourceLocName}</strong>'dan <strong>{fmt(preview.receivable.amount)} USD</strong> tahsil edecek ve <strong>{destLocName}</strong>'a <strong>{fmt(preview.payable.amount)} {destCur}</strong> ödeyecek.</>
-              }
-            </div>
           </div>
         )}
 
-        {/* Not */}
+        {/* Note */}
         <Input
-          label="Not (opsiyonel)"
+          label={t.noteOptional}
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder="Uzlaşma notu..."
+          placeholder={t.settlementNote}
         />
 
       </div>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { addCommas, stripCommas } from '../utils/format'
+import { useLang } from '../hooks/useLang'
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 export const C = {
@@ -625,6 +626,7 @@ export function StatCard({ label, value, sub, color, icon: IconComp }) {
 
 // ── CPSearch ──────────────────────────────────────────────────────────────────
 export function CPSearch({ list = [], value, onChange, label }) {
+  const { t } = useLang()
   const [q, setQ]       = useState('')
   const [open, setOpen] = useState(false)
   const sel = list.find(c => c.id === value)
@@ -645,7 +647,7 @@ export function CPSearch({ list = [], value, onChange, label }) {
     both:     { bg: C.greenBg,  color: C.green  },
     founder:  { bg: C.purpleBg, color: C.purple },
   }
-  const tl = { customer: 'Müşteri', supplier: 'Tedarikçi', both: 'Her ikisi', founder: 'Ortak' }
+  const tl = { customer: t.cpCustomer, supplier: t.cpSupplier, both: t.cpBoth, founder: t.cpFounder }
 
   return (
     <div>
@@ -684,7 +686,7 @@ export function CPSearch({ list = [], value, onChange, label }) {
             onChange={e => { setQ(e.target.value); setOpen(true) }}
             onFocus={() => setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
-            placeholder="İsim veya kod ara..."
+            placeholder={t.searchNameCode}
             style={{
               width: '100%', padding: '8px 11px',
               border: `1px solid ${C.border}`,
@@ -726,7 +728,7 @@ export function CPSearch({ list = [], value, onChange, label }) {
               </div>
             ))}
             {!filtered.length && (
-              <div style={{ padding: 16, textAlign: 'center', color: C.text3, fontSize: 13 }}>Bulunamadı</div>
+              <div style={{ padding: 16, textAlign: 'center', color: C.text3, fontSize: 13 }}>{t.notFound}</div>
             )}
           </div>
         )}
@@ -737,6 +739,7 @@ export function CPSearch({ list = [], value, onChange, label }) {
 
 // ── LocAccPicker ──────────────────────────────────────────────────────────────
 export function LocAccPicker({ locations = [], accounts = [], locVal, onLoc, accVal, onAcc, label }) {
+  const { t } = useLang()
   const locAccounts = accounts.filter(a => a.location_id === locVal)
   const selAcc = accounts.find(a => a.id === accVal)
   const icons  = { cash: '💵', bank: '🏦', crypto: '₿' }
@@ -745,12 +748,12 @@ export function LocAccPicker({ locations = [], accounts = [], locVal, onLoc, acc
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       {label && <div style={{ fontSize: 12, fontWeight: 500, color: C.text2 }}>{label}</div>}
       <Select value={locVal || ''} onChange={e => { onLoc(e.target.value); onAcc('') }}>
-        <option value="">— lokasyon seç —</option>
+        <option value="">{t.selectLocation}</option>
         {locations.map(l => <option key={l.id} value={l.id}>{l.name_tr}</option>)}
       </Select>
       {locVal && (
         <Select value={accVal || ''} onChange={e => onAcc(e.target.value)}>
-          <option value="">— kasa seç —</option>
+          <option value="">{t.selectSafe}</option>
           {locAccounts.map(a => (
             <option key={a.id} value={a.id}>{icons[a.account_type]} {a.name} · {a.currency?.code}</option>
           ))}

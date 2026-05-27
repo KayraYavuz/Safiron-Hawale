@@ -148,7 +148,7 @@ export default function AiAnalysis() {
 
   useEffect(() => {
     if (aiData?.analysis && !reportTitle) {
-      setReportTitle(`Stratejik Analiz - ${new Date().toLocaleDateString('tr-TR')}`)
+      setReportTitle(`${t.aiDefaultTitlePrefix} - ${new Date().toLocaleDateString('tr-TR')}`)
     }
   }, [aiData])
 
@@ -160,12 +160,12 @@ export default function AiAnalysis() {
 
   const saveMutation = useMutation({
     mutationFn: (data) => reportsApi.createSavedReport(data),
-    onSuccess: () => { toast.success("Rapor arşive eklendi"); qc.invalidateQueries({ queryKey: ['savedReports'] }) }
+    onSuccess: () => { toast.success(t.reportSaved); qc.invalidateQueries({ queryKey: ['savedReports'] }) }
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id) => reportsApi.deleteSavedReport(id),
-    onSuccess: () => { toast.success("Rapor silindi"); qc.invalidateQueries({ queryKey: ['savedReports'] }) }
+    onSuccess: () => { toast.success(t.reportDeleted); qc.invalidateQueries({ queryKey: ['savedReports'] }) }
   })
 
   const favMutation = useMutation({
@@ -173,8 +173,8 @@ export default function AiAnalysis() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['savedReports'] })
   })
 
-  const [chatMessages, setChatMessages] = useState([
-    { text: "Sayın Yönetici, Akıllı Finansal Asistanınız olarak hizmetinizdeyim. Kurumunuzun son 30 günlük verilerini analiz edebilir veya stratejik finansal sorularınızı yanıtlayabilirim.", isUser: false }
+  const [chatMessages, setChatMessages] = useState(() => [
+    { text: t.aiGreeting, isUser: false }
   ])
   const [chatInput, setChatInput] = useState('')
   const chatScrollRef = useRef(null)
@@ -182,7 +182,7 @@ export default function AiAnalysis() {
   const chatMutation = useMutation({
     mutationFn: (msg) => reportsApi.aiChat({ message: msg, history: chatMessages }),
     onSuccess: (res) => setChatMessages(prev => [...prev, { text: res.data.response, isUser: false }]),
-    onError: () => toast.error("Bağlantı hatası.")
+    onError: () => toast.error(t.connectionError)
   })
 
   const handleSendMessage = (e) => {
@@ -196,20 +196,15 @@ export default function AiAnalysis() {
 
   useEffect(() => { if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight }, [chatMessages])
 
-  const quickQuestions = [
-    "Operasyonel kârlılık trendimiz nasıl?",
-    "En verimli çalışan şube hangisi?",
-    "Risk yönetimi için hangi alanlara odaklanmalıyız?",
-    "Hacim ve kâr dengesi ideal mi?"
-  ]
+  const quickQuestions = [t.aiQ1, t.aiQ2, t.aiQ3, t.aiQ4]
 
   const handleStartAI = async () => {
-    toast.loading("Veriler işleniyor...", { id: 'ai-load' })
+    toast.loading(t.processingData, { id: 'ai-load' })
     try {
       const res = await refetchAI()
-      if (res.data?.analysis) toast.success("Analiz tamamlandı", { id: 'ai-load' })
-      else toast.error("Veri alınamadı", { id: 'ai-load' })
-    } catch (err) { toast.error("Hata: " + (err.response?.data?.detail || err.message), { id: 'ai-load' }) }
+      if (res.data?.analysis) toast.success(t.analysisComplete, { id: 'ai-load' })
+      else toast.error(t.dataFetchError, { id: 'ai-load' })
+    } catch (err) { toast.error(`${t.error}: ` + (err.response?.data?.detail || err.message), { id: 'ai-load' }) }
   }
 
   const [selectedSaved, setSelectedSaved] = useState(null)
@@ -218,9 +213,9 @@ export default function AiAnalysis() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', gap: 8, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
         {[
-          { k: 'new', l: 'Yeni Analiz' },
-          { k: 'chat', l: 'Asistan ile Sohbet' },
-          { k: 'saved', l: 'Analiz Arşivi' }
+          { k: 'new', l: t.aiTabNew },
+          { k: 'chat', l: t.aiTabChat },
+          { k: 'saved', l: t.aiTabSaved }
         ].map(tab => (
           <button key={tab.k} onClick={() => setActiveTab(tab.k)} style={{ 
             padding: '12px 24px', cursor: 'pointer', border: 'none', background: 'none', fontSize: '13.5px', fontWeight: 600,
@@ -246,8 +241,8 @@ export default function AiAnalysis() {
                 <Icon name="sparkles" size={24} color="white" />
               </div>
               <div>
-                <h1 style={{ fontSize: '20px', fontWeight: 800, color: C.navy, margin: 0 }}>Stratejik Finansal Değerlendirme</h1>
-                <p style={{ fontSize: '12.5px', color: C.text3, margin: '3px 0 0' }}>Son 30 günlük veriler temel alınmaktadır</p>
+                <h1 style={{ fontSize: '20px', fontWeight: 800, color: C.navy, margin: 0 }}>{t.aiPageTitle}</h1>
+                <p style={{ fontSize: '12.5px', color: C.text3, margin: '3px 0 0' }}>{t.aiPageSub}</p>
               </div>
             </div>
 
@@ -261,7 +256,7 @@ export default function AiAnalysis() {
                     📊 Excel
                   </Btn>
                   <Btn variant="ghost" onClick={() => saveMutation.mutate({ title: reportTitle, content: aiData.analysis })} disabled={saveMutation.isPending} style={{ borderRadius: 8 }}>
-                    <Icon name="check" size={16} /> Kaydet
+                    <Icon name="check" size={16} /> {t.save}
                   </Btn>
                 </>
               )}
@@ -271,14 +266,14 @@ export default function AiAnalysis() {
                   boxShadow: '0 6px 18px rgba(107,70,193,0.3)', border: 'none', color: 'white', borderRadius: 10
                 }}>
                 <Icon name="refresh" size={18} color="white" style={{ marginRight: 8 }} />
-                {isAiLoading ? "Analiz Ediliyor..." : "Yeni Analiz Başlat"}
+                {isAiLoading ? t.aiRunning : t.aiStartBtn}
               </Btn>
             </div>
           </div>
 
           {aiData?.analysis && (
             <div style={{ maxWidth: 450, background: 'white', padding: '12px 16px', borderRadius: 10, border: `1px solid ${C.border}`, boxShadow: C.shSm }}>
-               <Input label="Rapor Başlığı" value={reportTitle} onChange={e => setReportTitle(e.target.value)} placeholder="İsim belirleyin..." />
+               <Input label={t.reportTitleLabel} value={reportTitle} onChange={e => setReportTitle(e.target.value)} placeholder={t.reportTitlePlaceholder} />
             </div>
           )}
 
@@ -287,8 +282,8 @@ export default function AiAnalysis() {
               {isAiLoading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 25, padding: '120px 0' }}>
                   <div className="spinner-ai" />
-                  <div style={{ color: C.navy, fontSize: '16px', fontWeight: 600 }}>Stratejik Analiz Hazırlanıyor</div>
-                  <div style={{ color: C.text3, fontSize: '14px', textAlign: 'center', maxWidth: 300 }}>Verileriniz derinlemesine inceleniyor ve uzman yorumuyla harmanlanıyor...</div>
+                  <div style={{ color: C.navy, fontSize: '16px', fontWeight: 600 }}>{t.aiLoadingTitle}</div>
+                  <div style={{ color: C.text3, fontSize: '14px', textAlign: 'center', maxWidth: 300 }}>{t.aiLoadingDesc}</div>
                 </div>
               ) : aiData?.analysis ? (
                 <AnalysisContent text={aiData.analysis} />
@@ -300,8 +295,8 @@ export default function AiAnalysis() {
                   }}>
                     <Icon name="sparkles" size={36} color={C.text4} />
                   </div>
-                  <div style={{ fontSize: '17px', fontWeight: 600, color: C.text3, marginBottom: 10 }}>Henüz bir analiz oluşturulmadı</div>
-                  <div style={{ fontSize: '14.5px' }}>Yeni bir stratejik değerlendirme için yukarıdaki butonu kullanın.</div>
+                  <div style={{ fontSize: '17px', fontWeight: 600, color: C.text3, marginBottom: 10 }}>{t.aiNoAnalysis}</div>
+                  <div style={{ fontSize: '14.5px' }}>{t.aiNoAnalysisSub}</div>
                 </div>
               )}
             </div>
@@ -334,7 +329,7 @@ export default function AiAnalysis() {
               )}
             </div>
             <form onSubmit={handleSendMessage} style={{ padding: 20, borderTop: `1px solid ${C.border}`, display: 'flex', gap: 12, background: 'white' }}>
-              <Input placeholder="Finansal bir analiz veya soru sorun..." value={chatInput} onChange={e => setChatInput(e.target.value)} style={{ borderRadius: 24, padding: '12px 20px', fontSize: '14.5px' }} />
+              <Input placeholder={t.aiChatPlaceholder} value={chatInput} onChange={e => setChatInput(e.target.value)} style={{ borderRadius: 24, padding: '12px 20px', fontSize: '14.5px' }} />
               <Btn type="submit" disabled={chatMutation.isPending} style={{ borderRadius: '50%', width: 46, height: 46, padding: 0, justifyContent: 'center' }}>
                 <Icon name="arrowRight" size={20} color="white" />
               </Btn>
@@ -342,7 +337,7 @@ export default function AiAnalysis() {
           </Card>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: C.navy, marginLeft: 5, letterSpacing: '0.05em' }}>STRATEJİK SORGULAR</div>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: C.navy, marginLeft: 5, letterSpacing: '0.05em' }}>{t.strategicQueries}</div>
             {quickQuestions.map((q, i) => (
               <button key={i} onClick={() => setChatInput(q)} style={{ 
                   textAlign: 'left', padding: '14px 16px', borderRadius: 12, border: `1.5px solid ${C.border}`, background: 'white',
@@ -355,7 +350,7 @@ export default function AiAnalysis() {
               </button>
             ))}
             <Info type="info" style={{ marginTop: 'auto', borderRadius: 12 }}>
-              Akıllı Asistan, son 30 günlük operasyonel verilerinizle senkronize çalışır.
+              {t.aiAssistantNote}
             </Info>
           </div>
         </div>
@@ -365,7 +360,7 @@ export default function AiAnalysis() {
         <div style={{ display: 'grid', gridTemplateColumns: selectedSaved ? '380px 1fr' : '1fr', gap: 24 }}>
           <Card style={{ borderRadius: 12 }}>
             <Table>
-              <thead><tr><Th>Analiz Başlığı</Th><Th>Tarih</Th><Th right>Yönet</Th></tr></thead>
+              <thead><tr><Th>{t.aiArchiveTitle}</Th><Th>{t.date}</Th><Th right>{t.aiArchiveManage}</Th></tr></thead>
               <tbody>
                 {savedReports.map(r => (
                   <TrHover key={r.id} onClick={() => setSelectedSaved(r)} style={{ background: selectedSaved?.id === r.id ? C.surface3 : 'none' }}>
@@ -376,7 +371,7 @@ export default function AiAnalysis() {
                     <Td style={{ fontSize: '12px', color: C.text3 }}>{new Date(r.created_at).toLocaleDateString('tr-TR')}</Td>
                     <Td right><div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         <Btn variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); exportAnalysisPDF(r.title, r.content, t) }}><Icon name="reports" size={14} /></Btn>
-                        <Btn variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); if(confirm('Bu analiz silinsin mi?')) deleteMutation.mutate(r.id) }}><Icon name="trash" size={14} /></Btn>
+                        <Btn variant="danger" size="sm" onClick={(e) => { e.stopPropagation(); if(confirm(t.deleteAnalysis)) deleteMutation.mutate(r.id) }}><Icon name="trash" size={14} /></Btn>
                     </div></Td>
                   </TrHover>
                 ))}
@@ -391,7 +386,7 @@ export default function AiAnalysis() {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Btn variant="subtle" size="sm" onClick={() => exportAnalysisPDF(selectedSaved.title, selectedSaved.content, t)}>PDF</Btn>
                   <Btn variant="subtle" size="sm" onClick={() => exportAnalysisExcel(selectedSaved.title, selectedSaved.content, t)}>EXCEL</Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => setSelectedSaved(null)}>KAPAT</Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => setSelectedSaved(null)}>{t.aiCloseBtn}</Btn>
                 </div>
               </div>
               <div style={{ padding: '40px 50px', background: '#fff' }}>
@@ -406,8 +401,8 @@ export default function AiAnalysis() {
         <div style={{ display: 'flex', gap: 12 }}>
           <span style={{ fontSize: '20px' }}>🔐</span>
           <div>
-            <strong style={{ display: 'block', marginBottom: 3, color: C.navy }}>Üst Düzey Veri Güvenliği</strong>
-            <span style={{ fontSize: '13px', opacity: 0.85 }}>Raporlarınız tamamen anonim verilerle üretilir; müşteri isimleri veya özel bilgiler asla sisteme dışına çıkmaz.</span>
+            <strong style={{ display: 'block', marginBottom: 3, color: C.navy }}>{t.aiSecurityTitle}</strong>
+            <span style={{ fontSize: '13px', opacity: 0.85 }}>{t.aiSecurityDesc}</span>
           </div>
         </div>
       </Info>

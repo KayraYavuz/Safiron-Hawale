@@ -117,17 +117,19 @@ function SectionHeader({ icon, label, count }) {
 }
 
 function ComingSoonBadge() {
+  const { t } = useLang()
   return (
     <span style={{
       fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
       background: '#F1F5F9', color: C.text3, letterSpacing: '0.04em', textTransform: 'uppercase',
     }}>
-      Yakında
+      {t.comingSoon}
     </span>
   )
 }
 
 function BuiltinCard({ service }) {
+  const { t } = useLang()
   return (
     <div style={{
       border: '1.5px solid #D1FAE5', borderRadius: 12, padding: 18,
@@ -147,7 +149,7 @@ function BuiltinCard({ service }) {
           <span style={{
             fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
             background: '#D1FAE5', color: '#065F46', letterSpacing: '0.05em',
-          }}>AKTİF</span>
+          }}>{t.activeLabel}</span>
         </div>
         <div style={{ fontSize: 12, color: C.text3, marginTop: 3 }}>{service.description}</div>
       </div>
@@ -158,6 +160,7 @@ function BuiltinCard({ service }) {
 function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal]         = useState('')
+  const { t } = useLang()
   const isSet = setting?.is_set
 
   return (
@@ -186,7 +189,7 @@ function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
                 fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100,
                 background: '#D1FAE5', color: '#065F46', letterSpacing: '0.04em',
               }}>
-                AKTİF
+                {t.activeLabel}
               </span>
             )}
           </div>
@@ -211,7 +214,7 @@ function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
             flex: 1, padding: '8px 12px', borderRadius: 8, background: '#F8FAFC',
             border: `1px solid ${C.border}`, fontFamily: 'var(--mono)', fontSize: 12, color: C.text2,
           }}>
-            {isSet ? setting.value_masked : '— API key girilmemiş —'}
+            {isSet ? setting.value_masked : t.apiKeyNotSet}
           </div>
           <Btn
             variant="ghost"
@@ -219,13 +222,13 @@ function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
             onClick={() => { setEditing(true); setVal('') }}
           >
             <Icon name="key" size={13} color={C.navy} />
-            {isSet ? 'Güncelle' : 'Ekle'}
+            {isSet ? t.update : t.apiKeyAdd}
           </Btn>
           {isSet && (
             <Btn
               variant="danger"
               style={{ fontSize: 12, padding: '7px 12px', flexShrink: 0 }}
-              onClick={() => { if (window.confirm(`${service.name} API key silinsin mi?`)) onClear(service.key) }}
+              onClick={() => { if (window.confirm(`${service.name} — ${t.confirmDeleteApiKey}`)) onClear(service.key) }}
             >
               <Icon name="trash" size={13} color="white" />
             </Btn>
@@ -246,14 +249,14 @@ function ApiKeyCard({ service, setting, onSave, onClear, saving }) {
             onClick={() => { onSave(service.key, val); setEditing(false) }}
             disabled={!val || saving}
           >
-            {saving ? '...' : 'Kaydet'}
+            {saving ? '...' : t.save}
           </Btn>
           <Btn
             variant="ghost"
             style={{ fontSize: 12, padding: '7px 12px', flexShrink: 0 }}
             onClick={() => setEditing(false)}
           >
-            İptal
+            {t.cancel}
           </Btn>
         </div>
       )}
@@ -304,13 +307,13 @@ export default function Integrations() {
 
   const saveMut = useMutation({
     mutationFn: ({ key, value }) => settingsApi.update(key, value),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success('API key kaydedildi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success(t.apiKeySaved) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
   const clearMut = useMutation({
     mutationFn: (key) => settingsApi.clear(key),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success('API key silindi') },
-    onError:    e  => toast.error(e.response?.data?.detail || 'Hata'),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['settings'] }); toast.success(t.apiKeyDeleted) },
+    onError:    e  => toast.error(e.response?.data?.detail || t.error),
   })
 
   const getSettingFor = (key) => settings.find(s => s.key === key)
@@ -343,7 +346,7 @@ export default function Integrations() {
 
       {!isAdmin && (
         <div style={{ padding: '14px 18px', borderRadius: 10, background: '#FFF3CD', border: '1px solid #F0C040', color: '#856404', fontSize: 13 }}>
-          API key yönetimi yalnızca admin kullanıcılar içindir.
+          {t.adminOnlyApiKey}
         </div>
       )}
 
@@ -396,8 +399,7 @@ export default function Integrations() {
         background: '#F8FAFC', border: `1px solid ${C.border}`,
         fontSize: 12, color: C.text3, lineHeight: 1.6,
       }}>
-        API key'ler şifrelenmiş olarak veritabanında saklanır. Hiçbir zaman log dosyalarına yazılmaz.
-        Yeni entegrasyonlar için geliştirici ekibiyle iletişime geçin.
+        {t.apiKeySecurityNote}
       </div>
     </div>
   )

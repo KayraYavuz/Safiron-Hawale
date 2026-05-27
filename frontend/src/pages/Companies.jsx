@@ -18,11 +18,11 @@ function TelegramBotForm({ company, t }) {
     mutationFn: ({ token }) => companiesApi.updateTelegramBot(company.id, token),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['companies'] })
-      toast.success(data.data.status === 'bot_started' ? 'Bot başarıyla başlatıldı!' : 'Token kaldırıldı.')
+      toast.success(data.data.status === 'bot_started' ? t.botStarted : t.tokenCleared)
       setIsEditing(false)
       setTokenInput('')
     },
-    onError: e => toast.error(e.response?.data?.detail || 'Hata oluştu'),
+    onError: e => toast.error(e.response?.data?.detail || t.error),
   })
 
   const handleSave = () => {
@@ -30,7 +30,7 @@ function TelegramBotForm({ company, t }) {
   }
 
   const handleClear = () => {
-    if (window.confirm('Bu şirketin Telegram bot bağlantısını silmek istediğinize emin misiniz?')) {
+    if (window.confirm(t.confirmDeleteBot)) {
       botMut.mutate({ token: '' })
     }
   }
@@ -50,25 +50,25 @@ function TelegramBotForm({ company, t }) {
         <span style={{ fontSize: 18 }}>✈️</span>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 13.5, color: C.navy }}>Telegram Bot Entegrasyonu</span>
+            <span style={{ fontWeight: 700, fontSize: 13.5, color: C.navy }}>{t.telegramBotTitle}</span>
             {isSet ? (
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
                 background: '#BAE6FD', color: '#0369A1', letterSpacing: '0.04em',
               }}>
-                AKTİF
+                {t.botActive}
               </span>
             ) : (
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 100,
                 background: '#F1F5F9', color: C.text3, letterSpacing: '0.04em',
               }}>
-                BAĞLI DEĞİL
+                {t.botNotConnected}
               </span>
             )}
           </div>
           <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>
-            Bu şirkete özel Telegram botunun token'ını tanımlayın. (Örn: `123456:ABC-DEF...`)
+            {t.telegramBotDesc}
           </div>
         </div>
       </div>
@@ -80,7 +80,7 @@ function TelegramBotForm({ company, t }) {
             border: `1px solid ${C.border}`, fontFamily: 'var(--mono)', fontSize: 12, color: C.text2,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {isSet ? '••••••••••••••••••••••••••••••••' : '— API Token tanımlanmamış —'}
+            {isSet ? '••••••••••••••••••••••••••••••••' : t.noApiToken}
           </div>
           <Btn
             variant="ghost"
@@ -88,7 +88,7 @@ function TelegramBotForm({ company, t }) {
             onClick={() => { setIsEditing(true); setTokenInput('') }}
           >
             <Icon name="key" size={13} color={C.navy} />
-            {isSet ? 'Güncelle' : 'Token Ekle'}
+            {isSet ? t.update : t.addToken}
           </Btn>
           {isSet && (
             <Btn
@@ -106,7 +106,7 @@ function TelegramBotForm({ company, t }) {
           <Input
             value={tokenInput}
             onChange={e => setTokenInput(e.target.value)}
-            placeholder="Bot Token girin..."
+            placeholder={t.enterBotToken}
             style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 12 }}
             autoFocus
           />
@@ -115,14 +115,14 @@ function TelegramBotForm({ company, t }) {
             onClick={handleSave}
             disabled={botMut.isPending || !tokenInput.trim()}
           >
-            {botMut.isPending ? '...' : 'Kaydet'}
+            {botMut.isPending ? '...' : t.save}
           </Btn>
           <Btn
             variant="ghost"
             style={{ fontSize: 12, padding: '7px 12px', flexShrink: 0 }}
             onClick={() => setIsEditing(false)}
           >
-            İptal
+            {t.cancel}
           </Btn>
         </div>
       )}
