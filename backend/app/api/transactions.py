@@ -28,6 +28,21 @@ from app.services.audit import log as audit_log
 
 router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 
+# Telegram bildirim — opsiyonel (bot çalışmıyorsa sessizce atlanır)
+try:
+    from app.services.telegram_multi_bot import notify_company as _tg_notify
+except ImportError:
+    def _tg_notify(company_id: str, message: str) -> None:
+        pass
+
+
+def _notify(company_id, message: str) -> None:
+    """Fire-and-forget Telegram bildirimi — hiçbir zaman exception fırlatmaz."""
+    try:
+        _tg_notify(str(company_id), message)
+    except Exception:
+        pass
+
 
 def _require(user: User, *roles: UserRole):
     if user.role not in roles:
@@ -153,6 +168,21 @@ def create_transaction(
               entity_id=txn.id, detail={"txn_number": txn.txn_number, "type": data.txn_type})
     db.commit()
     db.refresh(txn)
+
+    # Telegram bildirimi
+    cp_name = "—"
+    try:
+        if data.counterparty_id:
+            from app.models.master import Counterparty
+            cp_obj = db.query(Counterparty).filter(Counterparty.id == data.counterparty_id).first()
+            cp_name = cp_obj.name if cp_obj else "—"
+    except Exception:
+        pass
+    _notify(
+        txn.company_id,
+        f"⏳ *Yeni İşlem*\n• No: `{txn.txn_number}`\n• Tür: {txn.txn_type.value}\n• Müşteri: {cp_name}",
+    )
+
     return txn
 
 
@@ -279,6 +309,7 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
               detail={"txn_number": txn.txn_number})
     db.commit()
     db.refresh(txn)
+    _notify(txn.company_id, f"✅ *Onaylandı*\n• No: `{txn.txn_number}`")
     return txn
 
 

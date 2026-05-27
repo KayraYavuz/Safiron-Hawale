@@ -19,7 +19,7 @@ import logging
 import threading
 from decimal import Decimal
 from datetime import date, datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, CallbackQueryHandler, filters
@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 
 # company_id → Thread
 _running_bots: Dict[str, threading.Thread] = {}
+# company_id → Application instance (for notify_company)
+_running_apps: Dict[str, Any] = {}
+# company_id → asyncio event loop (for notify_company)
+_running_loops: Dict[str, Any] = {}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Çok dilli bot metinleri
@@ -2089,6 +2093,57 @@ def _q_cp_islemler(cp, db, limit: int = 10) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Bildirim — web uygulamasından Telegram'a fire-and-forget mesaj
+# ─────────────────────────────────────────────────────────────────────────────
+
+def notify_company(company_id: str, message: str) -> None:
+    """Şirketin tüm Telegram ID'li admin/yöneticilerine mesaj gönder.
+
+    Bloke etmez — asyncio.run_coroutine_threadsafe ile bot thread'ine gönderilir.
+    Bot çalışmıyorsa sessizce hiçbir şey yapmaz.
+    """
+    company_id = str(company_id)
+    app  = _running_apps.get(company_id)
+    loop = _running_loops.get(company_id)
+    if not app or not loop or not loop.is_running():
+        return
+
+    async def _send_all():
+        from app.core.database import SessionLocal
+        from app.models.user import User, UserRole
+        db = SessionLocal()
+        try:
+            notify_roles = (
+                UserRole.super_admin, UserRole.admin,
+                UserRole.manager, UserRole.branch_manager,
+            )
+            admins = db.query(User).filter(
+                User.company_id == company_id,
+                User.telegram_id.isnot(None),
+                User.role.in_(notify_roles),
+                User.is_active == True,
+            ).all()
+            for admin in admins:
+                try:
+                    await app.bot.send_message(
+                        chat_id=int(admin.telegram_id),
+                        text=message,
+                        parse_mode="Markdown",
+                    )
+                except Exception as e:
+                    logger.warning("notify_company send error uid=%s: %s", admin.telegram_id, e)
+        except Exception as e:
+            logger.warning("notify_company error: %s", e)
+        finally:
+            db.close()
+
+    try:
+        asyncio.run_coroutine_threadsafe(_send_all(), loop)
+    except Exception as e:
+        logger.warning("notify_company dispatch error: %s", e)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Bot thread başlatıcı
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2112,6 +2167,8 @@ def start_company_bot(company_id: str, company_name: str, token: str):
             app.add_handler(CallbackQueryHandler(on_callback))
             await app.initialize()
             await app.start()
+            _running_apps[str(company_id)] = app
+            _running_loops[str(company_id)] = loop
 
             # Webhook varsa sil — polling ile çakışmasın
             try:
@@ -2174,6 +2231,8 @@ def start_company_bot(company_id: str, company_name: str, token: str):
 
             await app.stop()
             await app.shutdown()
+            _running_apps.pop(str(company_id), None)
+            _running_loops.pop(str(company_id), None)
 
         loop.run_until_complete(_poll())
 
