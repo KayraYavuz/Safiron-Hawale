@@ -5,10 +5,16 @@ from app.models.transaction import Transaction
 from datetime import datetime, timedelta
 import json
 
-def get_financial_summary(db: Session):
+def get_financial_summary(db: Session, company_id: str = None):
     """30 günlük anonimleştirilmiş finansal özeti hazırlar."""
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    txns = db.query(Transaction).filter(Transaction.txn_date >= thirty_days_ago.date(), Transaction.status == 'completed').all()
+    q = db.query(Transaction).filter(
+        Transaction.txn_date >= thirty_days_ago.date(),
+        Transaction.status == 'completed'
+    )
+    if company_id:
+        q = q.filter(Transaction.company_id == company_id)
+    txns = q.all()
     
     summary = {
         "period": "Son 30 Gün",
@@ -40,13 +46,13 @@ def _get_groq_key(db: Session) -> str | None:
     return settings.GROQ_API_KEY
 
 
-def get_ai_financial_analysis(db: Session, prompt: str = None):
+def get_ai_financial_analysis(db: Session, prompt: str = None, company_id: str = None):
     """Güvenli AI Analizi (Groq)"""
     groq_key = _get_groq_key(db)
     if not groq_key:
         return "AI Analizcisi şu an aktif değil (Groq API Key eksik)."
 
-    summary = get_financial_summary(db)
+    summary = get_financial_summary(db, company_id)
     
     try:
         client = Groq(api_key=groq_key)
@@ -88,13 +94,13 @@ def get_ai_financial_analysis(db: Session, prompt: str = None):
         print(f"Groq Analiz hatası: {error_msg}")
         return f"Analiz servisine şu an ulaşılamıyor. Detay: {error_msg}"
 
-def get_ai_chat_response(db: Session, message: str, history: list = []):
+def get_ai_chat_response(db: Session, message: str, history: list = [], company_id: str = None):
     """Kullanıcı ile interaktif finansal sohbet."""
     groq_key = _get_groq_key(db)
     if not groq_key:
         return "Chat servisi aktif değil."
 
-    summary = get_financial_summary(db)
+    summary = get_financial_summary(db, company_id)
     
     try:
         client = Groq(api_key=groq_key)

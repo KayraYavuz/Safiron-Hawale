@@ -625,7 +625,7 @@ def ai_analysis(
     from app.services.audit import log as audit_log
     audit_log(db, "AI_ANALYSIS", user_id=cu.id, entity="AI", detail={"prompt": prompt})
     
-    analysis = get_ai_financial_analysis(db, prompt)
+    analysis = get_ai_financial_analysis(db, prompt, company_id=str(cu.company_id))
     return {"analysis": analysis}
 
 @router.post("/ai-chat")
@@ -641,7 +641,7 @@ def ai_chat(
     from app.services.audit import log as audit_log
     audit_log(db, "AI_CHAT", user_id=cu.id, entity="AI", detail={"msg": message})
     
-    response = get_ai_chat_response(db, message, history)
+    response = get_ai_chat_response(db, message, history, company_id=str(cu.company_id))
     return {"response": response}
 
 @router.get("/saved-reports", response_model=List[SavedReportOut])
