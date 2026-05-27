@@ -907,7 +907,7 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
             rate = float(text.replace(",", "."))
             if rate <= 0: raise ValueError
         except ValueError:
-            return ("❌ Geçersiz kur. Sayısal bir değer girin:\n_Örnek: 38.50_", _cancel_kb())
+            return (_L(uid, "txn_inv_rate"), _cancel_kb())
         _cupd(company_id, uid, customer_rate=rate)
         # Tedarikçi kuruna geç (opsiyonel)
         from_cur = data.get("from_cur", "")
@@ -926,20 +926,18 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
             rate = float(text.replace(",", "."))
             if rate <= 0: raise ValueError
         except ValueError:
-            return ("❌ Geçersiz kur. Sayısal bir değer girin:", _cancel_kb())
+            return (_L(uid, "txn_inv_rate"), _cancel_kb())
         _cupd(company_id, uid, supplier_rate=rate)
         _cupd(company_id, uid, **{"state_next": S_TXN_AMT})
         _cset(company_id, uid, S_TXN_AMT, {**data, "supplier_rate": rate})
-        return _ask_amount(data)
+        return _ask_amount(data, uid=uid)
 
     if state == S_TXN_AMT:
         try:
-            amt = float(text.replace(",", "").replace(".", "").replace(",", "."))
-            # Virgüllü/noktalı sayı için yeniden parse
             amt = float(text.replace(",", ".")) if "," in text else float(text.replace(",", ""))
             if amt <= 0: raise ValueError
         except ValueError:
-            return ("❌ Geçersiz miktar. Sayısal bir değer girin:\n_Örnek: 1000 veya 1500.50_", _cancel_kb())
+            return (_L(uid, "txn_inv_amt"), _cancel_kb())
         _cset(company_id, uid, "txn_confirm", {**data, "amount": amt})
         return _txn_summary(company_id, uid, {**data, "amount": amt}, db)
 
@@ -955,7 +953,7 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
     if state == S_CP_NAME_AR:
         name_ar = text.strip()
         _cset(company_id, uid, S_CP_TYPE, {**data, "name_ar": name_ar})
-        return _ask_cp_type(data.get("name", ""))
+        return _ask_cp_type(data.get("name", ""), uid=uid)
 
     if state == S_CP_COUNTRY:
         country = text.strip().upper()[:3]
@@ -994,12 +992,12 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
         cp_name = cp.name if cp else "—"
         txn_type = data["txn_type"]
         _cset(company_id, uid, S_TXN_FROM, {**data, "cp_id": cp_id, "cp_name": cp_name})
-        return _ask_from_acc(txn_type, company_id, db)
+        return _ask_from_acc(txn_type, company_id, db, uid=uid)
 
     if data_cb == "cp_skip" and state == S_TXN_CP:
         txn_type = data["txn_type"]
         _cset(company_id, uid, S_TXN_FROM, {**data, "cp_id": None, "cp_name": None})
-        return _ask_from_acc(txn_type, company_id, db)
+        return _ask_from_acc(txn_type, company_id, db, uid=uid)
 
     # ── Kaynak kasa seç ───────────────────────────────────────────────────────
     if data_cb.startswith("from:") and state == S_TXN_FROM:
@@ -1032,7 +1030,7 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
                 "from_acc_name": f"{from_loc} · {acc.name if acc else '?'}",
                 "from_cur": from_cur,
             })
-            return _ask_to_acc(company_id, db, exclude_id=acc_id)
+            return _ask_to_acc(company_id, db, uid=uid, exclude_id=acc_id)
 
     # ── Hedef kasa seç ────────────────────────────────────────────────────────
     if data_cb.startswith("to:") and state == S_TXN_TO:
@@ -1053,7 +1051,7 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
         })
 
         if same_cur or not non_usd_cur:
-            return _ask_amount({**data, "to_cur": to_cur, "from_cur": from_cur})
+            return _ask_amount({**data, "to_cur": to_cur, "from_cur": from_cur}, uid=uid)
         else:
             return (
                 f"📈 *Müşteri Kuru*\n\n"
@@ -1066,7 +1064,7 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
     # ── Tedarikçi kurunu atla ─────────────────────────────────────────────────
     if data_cb == "skip_srate":
         _cset(company_id, uid, S_TXN_AMT, data)
-        return _ask_amount(data)
+        return _ask_amount(data, uid=uid)
 
     # ── Onay ─────────────────────────────────────────────────────────────────
     if data_cb == "confirm_txn" and state == "txn_confirm":
@@ -1075,7 +1073,7 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
     # ── Müşteri ekleme callback'leri ──────────────────────────────────────────
     if data_cb == "skip_name_ar" and state == S_CP_NAME_AR:
         _cset(company_id, uid, S_CP_TYPE, {**data, "name_ar": None})
-        return _ask_cp_type(data.get("name", ""))
+        return _ask_cp_type(data.get("name", ""), uid=uid)
 
     if data_cb.startswith("cpt:") and state == S_CP_TYPE:
         cp_type = data_cb[4:]
@@ -1125,64 +1123,59 @@ def _ask_cp(txn_type: str, company_id, db, uid: int = 0):
     return (_L(uid, "txn_select_cp", type=type_label), kb)
 
 
-def _ask_from_acc(txn_type: str, company_id, db):
+def _ask_from_acc(txn_type: str, company_id, db, uid: int = 0):
     """Kaynak (çıkış) kasası seçim ekranı."""
     from app.models.master import Account
     from sqlalchemy.orm import joinedload
-    label = "📤 *Kaynak Kasa*" if txn_type != "deposit" else "📥 *Hedef Kasa*"
-    hint  = "_(Müşterinin para VERDİĞİ kasa)_" if txn_type not in ("deposit","withdrawal") else "_(İşlemin yapılacağı kasa)_"
-    accs  = (db.query(Account)
+    if txn_type in ("deposit", "withdrawal"):
+        label = _L(uid, "txn_simple_acc")
+    else:
+        label = _L(uid, "txn_from_acc")
+    L    = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    accs = (db.query(Account)
                .options(joinedload(Account.location), joinedload(Account.currency))
                .filter(Account.is_active == True, Account.company_id == company_id)
                .all())
     rows = [[( f"{a.location.name_tr if a.location else '?'} · {a.name} ({a.currency.code if a.currency else '?'})"[:40], f"from:{a.id}")] for a in accs]
-    rows.append([("❌ İptal", "cancel")])
-    return (f"{label}\n{hint}", _kb(rows))
+    rows.append([(L.get("btn_cancel", "❌ İptal"), "cancel")])
+    return (label, _kb(rows))
 
 
-def _ask_to_acc(company_id, db, exclude_id=None):
+def _ask_to_acc(company_id, db, uid: int = 0, exclude_id=None):
     """Hedef (giriş) kasası seçim ekranı."""
     from app.models.master import Account
     from sqlalchemy.orm import joinedload
+    L    = BOT_L.get(_get_lang(uid), BOT_L["tr"])
     accs = (db.query(Account)
               .options(joinedload(Account.location), joinedload(Account.currency))
               .filter(Account.is_active == True, Account.company_id == company_id)
               .all())
     rows = [[( f"{a.location.name_tr if a.location else '?'} · {a.name} ({a.currency.code if a.currency else '?'})"[:40], f"to:{a.id}")] for a in accs if str(a.id) != str(exclude_id)]
-    rows.append([("❌ İptal", "cancel")])
-    return ("📥 *Hedef Kasa*\n_(Müşterinin para ALDIĞI kasa)_", _kb(rows))
+    rows.append([(L.get("btn_cancel", "❌ İptal"), "cancel")])
+    return (_L(uid, "txn_to_acc"), _kb(rows))
 
 
-def _ask_amount(data: dict):
+def _ask_amount(data: dict, uid: int = 0):
     """Miktar giriş ekranı."""
     from_cur = data.get("from_cur", "")
-    to_cur   = data.get("to_cur", "")
     same_cur = data.get("same_cur", False)
     cr       = data.get("customer_rate")
     non_usd  = data.get("non_usd_cur", "")
 
     if same_cur or not non_usd:
-        return (
-            f"💰 *Miktar*\n\n"
-            f"Miktarı {from_cur or 'USD'} cinsinden girin:",
-            _cancel_kb()
-        )
-    return (
-        f"💰 *Miktar*\n\n"
-        f"USD miktarını girin:\n"
-        f"_(Kur: 1 USD = {cr or '?'} {non_usd})_",
-        _cancel_kb()
-    )
+        return (_L(uid, "txn_amount_s", cur=from_cur or "USD"), _cancel_kb())
+    return (_L(uid, "txn_amount", rate=cr or "?", non_usd=non_usd), _cancel_kb())
 
 
-def _ask_cp_type(name: str):
+def _ask_cp_type(name: str, uid: int = 0):
     """Müşteri türü seçim ekranı."""
+    L  = BOT_L.get(_get_lang(uid), BOT_L["tr"])
     kb = _kb([
-        [("👤 Müşteri", "cpt:customer"), ("🏭 Tedarikçi", "cpt:supplier")],
-        [("🔄 Her İkisi", "cpt:both"),   ("👑 Kurucu",    "cpt:founder")],
-        [("❌ İptal", "cancel")],
+        [(L.get("btn_customer", "👤 Müşteri"), "cpt:customer"), (L.get("btn_supplier", "🏭 Tedarikçi"), "cpt:supplier")],
+        [(L.get("btn_both",     "🔄 Her İkisi"), "cpt:both"),   (L.get("btn_founder",  "👑 Kurucu"),    "cpt:founder")],
+        [(L.get("btn_cancel",   "❌ İptal"), "cancel")],
     ])
-    return (f"👤 *{name}*\n\nMüşteri türünü seçin:", kb)
+    return (_L(uid, "cp_type", name=name), kb)
 
 
 def _txn_summary(company_id, uid, data: dict, db):
@@ -1722,7 +1715,7 @@ def _q_son_islemler(company_id, db, limit: int = 10, uid: int = 0) -> str:
     no_cp = L.get("btn_no_cp", "—")
 
     if not txns:
-        return f"📭 *{L.get('unknown_cmd', 'İşlem bulunamadı.')}*"
+        return L.get('q_no_txn', '📭 *İşlem bulunamadı.*')
 
     ids     = [t.id for t in txns]
     pnl_map = {p.transaction_id: p
