@@ -377,7 +377,8 @@ def _cget(company_id, uid: int) -> Optional[dict]:
             updated = updated.replace(tzinfo=timezone.utc)
         age_hours = (datetime.now(timezone.utc) - updated).total_seconds() / 3600
         if age_hours > _CONV_TIMEOUT_HOURS:
-            _cclr(company_id, uid)
+            db.execute(_text("DELETE FROM bot_conversations WHERE key = :key"), {"key": key})
+            db.commit()
             return None
         return {"state": row.state, "data": json.loads(row.data)}
     except Exception as e:
@@ -407,10 +408,8 @@ def _cset(company_id, uid: int, state: str, data: dict = None):
             {"key": key, "state": state, "data": json.dumps(data or {})},
         )
         db.execute(
-            _text(
-                f"DELETE FROM bot_conversations "
-                f"WHERE updated_at < NOW() - INTERVAL '{_CONV_CLEANUP_HOURS} hours'"
-            ),
+            _text("DELETE FROM bot_conversations WHERE updated_at < NOW() - (INTERVAL '1 hour' * :hours)"),
+            {"hours": _CONV_CLEANUP_HOURS},
         )
         db.commit()
     except Exception as e:
@@ -513,7 +512,7 @@ def make_handlers(company_id, company_name: str):
 
     async def on_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
-        _cclr(company_id, uid)
+        await asyncio.to_thread(_cclr, company_id, uid)
 
         def _db_check():
             from app.core.database import SessionLocal
@@ -553,7 +552,7 @@ def make_handlers(company_id, company_name: str):
 
         # İptal komutu — DB gerekmez, anında yanıt
         if cmd_lower in ("iptal", "/iptal", "cancel", "/cancel", "إلغاء"):
-            _cclr(company_id, uid)
+            await asyncio.to_thread(_cclr, company_id, uid)
             await update.message.reply_text(
                 _L(uid, "cancelled"), parse_mode="Markdown", reply_markup=_make_menu(uid)
             )
@@ -656,7 +655,7 @@ def make_handlers(company_id, company_name: str):
 
         # İptal — DB gerekmez
         if data == "cancel":
-            _cclr(company_id, uid)
+            await asyncio.to_thread(_cclr, company_id, uid)
             await query.edit_message_text(_L(uid, "cancelled"), parse_mode="Markdown")
             return
 

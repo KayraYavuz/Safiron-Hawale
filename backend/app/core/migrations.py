@@ -137,7 +137,7 @@ def run_migrations():
             key         TEXT PRIMARY KEY,
             state       TEXT NOT NULL,
             data        TEXT NOT NULL DEFAULT '{}',
-            updated_at  TIMESTAMP DEFAULT NOW()
+            updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
     _exec("CREATE INDEX IF NOT EXISTS idx_bot_conv_updated ON bot_conversations(updated_at)")
