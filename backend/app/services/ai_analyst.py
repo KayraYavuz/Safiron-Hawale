@@ -12,7 +12,7 @@ def get_financial_summary(db: Session, company_id: str = None):
         Transaction.txn_date >= thirty_days_ago.date(),
         Transaction.status == 'completed'
     )
-    if company_id:
+    if company_id is not None:
         q = q.filter(Transaction.company_id == company_id)
     txns = q.all()
     
@@ -94,8 +94,10 @@ def get_ai_financial_analysis(db: Session, prompt: str = None, company_id: str =
         print(f"Groq Analiz hatası: {error_msg}")
         return f"Analiz servisine şu an ulaşılamıyor. Detay: {error_msg}"
 
-def get_ai_chat_response(db: Session, message: str, history: list = [], company_id: str = None):
+def get_ai_chat_response(db: Session, message: str, history: list = None, company_id: str = None):
     """Kullanıcı ile interaktif finansal sohbet."""
+    if history is None:
+        history = []
     groq_key = _get_groq_key(db)
     if not groq_key:
         return "Chat servisi aktif değil."
