@@ -128,6 +128,17 @@ BOT_L = {
         "q_no_txn":       "📭 *İşlem bulunamadı.*",
         "q_no_rate":      "📭 *Kur kaydı bulunamadı.*",
         "q_no_cp":        "📭 *Müşteri bulunamadı.*",
+        # Kur güncelleme
+        "rate_select_prompt": "💱 *Hangi kuru güncellemek istiyorsunuz?*",
+        "rate_current":       "💱 *{currency}* — Mevcut kur: 1 USD = {current:.4f} {currency}\n\nYeni değeri girin:",
+        "rate_updated":       "✅ *{currency}* güncellendi: 1 USD = {rate:.4f} {currency}",
+        "rate_invalid":       "❌ Geçersiz değer. Pozitif bir sayı girin.",
+        "rate_no_perm":       "❌ Bu işlem için yetkiniz yok.",
+        # Müşteri ekstre
+        "stmt_search_prompt": "👤 Müşteri adı veya kodunu yazın:",
+        "stmt_no_results":    "📭 *Eşleşen müşteri bulunamadı.*",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Net Bakiye: ${balance:,.2f}\n─────────────────────\nSon 5 İşlem:",
+        "stmt_footer":        "─────────────────────",
     },
     "ar": {
         "btn_balance":  "💰 الرصيد",
@@ -216,6 +227,17 @@ BOT_L = {
         "q_no_txn":       "📭 *لا توجد معاملات.*",
         "q_no_rate":      "📭 *لا توجد أسعار صرف مسجلة.*",
         "q_no_cp":        "📭 *لا يوجد عملاء.*",
+        # Kur güncelleme
+        "rate_select_prompt": "💱 *أي سعر تريد تحديثه؟*",
+        "rate_current":       "💱 *{currency}* — السعر الحالي: 1 USD = {current:.4f} {currency}\n\nأدخل القيمة الجديدة:",
+        "rate_updated":       "✅ تم تحديث *{currency}*: 1 USD = {rate:.4f} {currency}",
+        "rate_invalid":       "❌ قيمة غير صالحة. أدخل رقمًا موجبًا.",
+        "rate_no_perm":       "❌ ليس لديك صلاحية لهذه العملية.",
+        # Müşteri ekstre
+        "stmt_search_prompt": "👤 أدخل اسم العميل أو الرمز:",
+        "stmt_no_results":    "📭 *لم يتم العثور على عملاء مطابقين.*",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 الرصيد الصافي: ${balance:,.2f}\n─────────────────────\nآخر 5 معاملات:",
+        "stmt_footer":        "─────────────────────",
     },
     "en": {
         "btn_balance":  "💰 Balance",
@@ -304,6 +326,17 @@ BOT_L = {
         "q_no_txn":       "📭 *No transactions found.*",
         "q_no_rate":      "📭 *No exchange rate records found.*",
         "q_no_cp":        "📭 *No customers found.*",
+        # Rate update
+        "rate_select_prompt": "💱 *Which rate do you want to update?*",
+        "rate_current":       "💱 *{currency}* — Current rate: 1 USD = {current:.4f} {currency}\n\nEnter new value:",
+        "rate_updated":       "✅ *{currency}* updated: 1 USD = {rate:.4f} {currency}",
+        "rate_invalid":       "❌ Invalid value. Enter a positive number.",
+        "rate_no_perm":       "❌ You do not have permission for this action.",
+        # Customer statement
+        "stmt_search_prompt": "👤 Enter customer name or code:",
+        "stmt_no_results":    "📭 *No matching customers found.*",
+        "stmt_header":        "─────────────────────\n👤 *{name}*\n📊 Net Balance: ${balance:,.2f}\n─────────────────────\nLast 5 Transactions:",
+        "stmt_footer":        "─────────────────────",
     },
 }
 
@@ -496,6 +529,12 @@ S_CP_NAME_AR  = "cp_name_ar"
 S_CP_TYPE     = "cp_type"
 S_CP_COUNTRY  = "cp_country"
 S_CP_PHONE    = "cp_phone"
+# Kur güncelleme akışı
+S_RATE_SELECT = "rate_select"
+S_RATE_VALUE  = "rate_value"
+# Müşteri ekstre akışı
+S_STMT_SEARCH = "stmt_search"
+S_STMT_SELECT = "stmt_select"
 
 TXN_LABELS = {
     "remittance":        "💸 Havale",
@@ -755,9 +794,13 @@ def make_handlers(company_id, company_name: str):
                         msg, kb = _start_cp_create(uid)
                         return ("reply_kb", (msg, kb))
                     elif action == "update_rate":
-                        return ("menu_reply", "🚧 *Yakında / Coming soon*")   # Task 5 implements this
+                        msg, kb = _start_rate_update(company_id, uid, db)
+                        if kb is None:
+                            return ("menu_reply", msg)
+                        return ("reply_kb", (msg, kb))
                     elif action == "statement":
-                        return ("menu_reply", "🚧 *Yakında / Coming soon*")   # Task 6 implements this
+                        msg, kb = _start_statement(company_id, uid, db)
+                        return ("reply_kb", (msg, kb))
                     elif action == "lang":
                         return ("lang_menu", None)
                     elif action == "help":
@@ -893,6 +936,136 @@ def _cancel_kb_l(uid: int = 0):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Kur Güncelleme
+# ─────────────────────────────────────────────────────────────────────────────
+
+_RATE_CURRENCIES = ["SAR", "AED", "EGP", "TRY", "GBP", "EUR"]
+_RATE_FLAGS      = {"SAR": "🇸🇦", "AED": "🇦🇪", "EGP": "🇪🇬", "TRY": "🇹🇷", "GBP": "🇬🇧", "EUR": "🇪🇺"}
+_RATE_MANAGER_ROLES = ("admin", "super_admin", "manager", "branch_manager")
+
+
+def _start_rate_update(company_id, uid: int, db):
+    """Kur güncelleme akışını başlat. (msg, kb) tuple döner."""
+    admin = _find_admin(uid, company_id, db)
+    if not admin or admin.role.value not in _RATE_MANAGER_ROLES:
+        return (_L(uid, "rate_no_perm"), None)
+    L    = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    rows = [
+        [(_RATE_FLAGS.get(c, "") + " " + c, f"rate_sel:{c}")]
+        for c in _RATE_CURRENCIES
+    ]
+    rows.append([(L.get("btn_cancel", "❌ İptal"), "cancel")])
+    _cset(company_id, uid, S_RATE_SELECT, {})
+    return (_L(uid, "rate_select_prompt"), _kb(rows))
+
+
+def _do_update_rate(currency: str, rate: float, company_id, uid: int, db) -> str:
+    """Yeni ExchangeRate kaydı ekle."""
+    from app.models.transaction import ExchangeRate
+    from decimal import Decimal
+    from datetime import date as _date
+    try:
+        er = ExchangeRate(
+            date=_date.today(),
+            currency_code=currency,
+            rate_per_usd=Decimal(str(rate)),
+            source="telegram_bot",
+            company_id=company_id,
+        )
+        db.add(er)
+        db.commit()
+        return _L(uid, "rate_updated", currency=currency, rate=rate)
+    except Exception as e:
+        db.rollback()
+        logger.error("_do_update_rate error: %s", e)
+        return _L(uid, "server_err")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Müşteri Ekstre
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _start_statement(company_id, uid: int, db):
+    """Ekstre akışını başlat. (msg, kb) tuple döner."""
+    _cset(company_id, uid, S_STMT_SEARCH, {})
+    return (_L(uid, "stmt_search_prompt"), _cancel_kb_l(uid))
+
+
+def _search_counterparties(query: str, company_id, db):
+    """İsim (ILIKE) veya tam kod eşleşmesiyle müşteri ara."""
+    from app.models.master import Counterparty, CounterpartyType
+    results = (
+        db.query(Counterparty)
+        .filter(
+            Counterparty.company_id == company_id,
+            Counterparty.is_active == True,
+            Counterparty.type.in_([CounterpartyType.customer, CounterpartyType.both]),
+        )
+        .filter(
+            (Counterparty.name.ilike(f"%{query}%")) | (Counterparty.code == query.upper())
+        )
+        .limit(10)
+        .all()
+    )
+    return results
+
+
+def _build_statement(cp_id, company_id, uid: int, db) -> str:
+    """Müşteri için ekstre metni oluştur: net bakiye + son 5 işlem."""
+    from app.models.master import Counterparty
+    from app.models.transaction import Transaction, TransactionPnL
+    cp = db.query(Counterparty).filter(
+        Counterparty.id == cp_id,
+        Counterparty.company_id == company_id,
+    ).first()
+    if not cp:
+        return _L(uid, "server_err")
+
+    txns = (
+        db.query(Transaction)
+        .filter(
+            Transaction.company_id == company_id,
+            Transaction.counterparty_id == cp_id,
+        )
+        .order_by(Transaction.created_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    ids     = [t.id for t in txns]
+    pnl_map = {p.transaction_id: p
+               for p in db.query(TransactionPnL)
+                          .filter(TransactionPnL.transaction_id.in_(ids)).all()} if ids else {}
+
+    # Net bakiye: tamamlanan işlemlerin USD toplamı (direction-agnostic — PnL usd_amount kullan)
+    completed_usd = sum(
+        float(pnl_map[t.id].usd_amount)
+        for t in txns
+        if t.status.value == "completed" and t.id in pnl_map and pnl_map[t.id].usd_amount
+    )
+
+    L      = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+    header = _L(uid, "stmt_header", name=cp.name, balance=completed_usd)
+    lines  = [header]
+
+    STATUS = {"completed": "✅", "pending": "⏳", "cancelled": "❌"}
+    for t in txns[:5]:
+        p      = pnl_map.get(t.id)
+        usd    = f"${float(p.usd_amount):,.2f}" if p and p.usd_amount else "—"
+        dt     = t.created_at.strftime("%d.%m %H:%M") if t.created_at else "—"
+        status = STATUS.get(t.status.value, "•")
+        lines.append(
+            f"{status} `{t.txn_number}` | _{dt}_\n"
+            f" ├ 💸 {t.txn_type.value}\n"
+            f" ├ {usd}\n"
+            f" └ —"
+        )
+
+    lines.append(L.get("stmt_footer", "─────────────────────"))
+    return "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Konuşma metin handler'ı
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -965,6 +1138,35 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
         phone = text.strip()
         _cset(company_id, uid, "cp_confirm", {**data, "phone": phone})
         return _cp_summary({**data, "phone": phone})
+
+    # ── Kur güncelleme akışı ─────────────────────────────────────────────────
+    if state == S_RATE_VALUE:
+        try:
+            new_rate = float(text.replace(",", "."))
+            if new_rate <= 0 or new_rate > 10000:
+                raise ValueError("out of range")
+        except ValueError:
+            return (_L(uid, "rate_invalid"), _cancel_kb_l(uid))
+        currency = data.get("currency", "")
+        result   = _do_update_rate(currency, new_rate, company_id, uid, db)
+        _cclr(company_id, uid)
+        return (result, None)
+
+    # ── Müşteri ekstre akışı ─────────────────────────────────────────────────
+    if state == S_STMT_SEARCH:
+        query   = text.strip()
+        results = _search_counterparties(query, company_id, db)
+        if not results:
+            _cclr(company_id, uid)
+            return (_L(uid, "stmt_no_results"), None)
+        L    = BOT_L.get(_get_lang(uid), BOT_L["tr"])
+        rows = [
+            [(f"{cp.name} ({cp.code})", f"stmt_cp:{cp.id}")]
+            for cp in results
+        ]
+        rows.append([(L.get("btn_cancel", "❌ İptal"), "cancel")])
+        _cset(company_id, uid, S_STMT_SELECT, {"search": query})
+        return (_L(uid, "stmt_search_prompt"), _kb(rows))
 
     return None
 
@@ -1092,6 +1294,27 @@ def _conv_handle_cb(conv: dict, data_cb: str, uid: int, company_id, db):
 
     if data_cb == "confirm_cp" and state == "cp_confirm":
         return _do_create_cp(data, company_id, db)
+
+    # ── Kur seçimi ───────────────────────────────────────────────────────────
+    if data_cb.startswith("rate_sel:") and state == S_RATE_SELECT:
+        currency = data_cb[9:]
+        from app.models.transaction import ExchangeRate
+        rate_row = (
+            db.query(ExchangeRate)
+            .filter(ExchangeRate.currency_code == currency, ExchangeRate.company_id == company_id)
+            .order_by(ExchangeRate.date.desc())
+            .first()
+        )
+        current = float(rate_row.rate_per_usd) if rate_row else 0.0
+        _cset(company_id, uid, S_RATE_VALUE, {"currency": currency})
+        return (_L(uid, "rate_current", currency=currency, current=current), _cancel_kb_l(uid))
+
+    # ── Ekstre müşteri seçimi ────────────────────────────────────────────────
+    if data_cb.startswith("stmt_cp:") and state == S_STMT_SELECT:
+        cp_id = data_cb[8:]
+        stmt  = _build_statement(cp_id, company_id, uid, db)
+        _cclr(company_id, uid)
+        return (stmt, None)
 
     return None
 
