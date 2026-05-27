@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './store'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -42,6 +42,7 @@ function Protected({ children }) {
   const { user }    = useAuthStore()
   const { t } = useLang()
   const timerRef = useRef(null)
+  const location = useLocation()
 
   // 30 min inactivity auto-logout
   useEffect(() => {
@@ -68,7 +69,7 @@ function Protected({ children }) {
 
   if (!token) return <Navigate to="/" replace />
   // Super admin goes to company management, not dashboard
-  if (user?.role === 'super_admin' && window.location.pathname === '/dashboard') {
+  if (user?.role === 'super_admin' && location.pathname === '/dashboard') {
     return <Navigate to="/companies" replace />
   }
   return <Layout>{children}</Layout>
