@@ -23,15 +23,13 @@ err()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
 # Hangi servis(ler) deploy edilecek?
 # Kullanım:
-#   ./deploy.sh                    → tüm servisler
-#   ./deploy.sh hawale-backend     → sadece hawale-backend
-#   ./deploy.sh hawale-frontend    → sadece hawale-frontend
-#   ./deploy.sh hawala-backend     → sadece hawala-backend
-#   ./deploy.sh hawala-frontend    → sadece hawala-frontend
+#   ./deploy.sh                 → tüm servisler
+#   ./deploy.sh hawale-backend  → sadece hawale-backend
+#   ./deploy.sh hawale-frontend → sadece hawale-frontend
 
 SERVICES=("$@")
 if [ ${#SERVICES[@]} -eq 0 ]; then
-  SERVICES=("hawale-backend" "hawale-frontend" "hawala-backend" "hawala-frontend")
+  SERVICES=("hawale-backend" "hawale-frontend")
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,10 +39,10 @@ deploy_service() {
   local SOURCE_DIR=""
 
   case "$SERVICE" in
-    hawale-backend|hawala-backend)
+    hawale-backend)
       SOURCE_DIR="$SCRIPT_DIR/backend"
       ;;
-    hawale-frontend|hawala-frontend)
+    hawale-frontend)
       SOURCE_DIR="$SCRIPT_DIR/frontend"
       ;;
     *)
