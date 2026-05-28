@@ -2109,20 +2109,29 @@ def notify_company(company_id: str, message: str) -> None:
         return
 
     async def _send_all():
-        from app.core.database import SessionLocal
-        from app.models.user import User, UserRole
-        db = SessionLocal()
+        def _fetch_recipients():
+            from app.core.database import SessionLocal
+            from app.models.user import User, UserRole
+            db = SessionLocal()
+            try:
+                notify_roles = (
+                    UserRole.super_admin, UserRole.admin,
+                    UserRole.manager, UserRole.branch_manager,
+                )
+                return db.query(User).filter(
+                    User.company_id == company_id,
+                    User.telegram_id.isnot(None),
+                    User.role.in_(notify_roles),
+                    User.is_active == True,
+                ).all()
+            except Exception as e:
+                logger.warning("notify_company fetch error: %s", e)
+                return []
+            finally:
+                db.close()
+
         try:
-            notify_roles = (
-                UserRole.super_admin, UserRole.admin,
-                UserRole.manager, UserRole.branch_manager,
-            )
-            admins = db.query(User).filter(
-                User.company_id == company_id,
-                User.telegram_id.isnot(None),
-                User.role.in_(notify_roles),
-                User.is_active == True,
-            ).all()
+            admins = await asyncio.to_thread(_fetch_recipients)
             for admin in admins:
                 try:
                     await app.bot.send_message(
@@ -2134,8 +2143,6 @@ def notify_company(company_id: str, message: str) -> None:
                     logger.warning("notify_company send error uid=%s: %s", admin.telegram_id, e)
         except Exception as e:
             logger.warning("notify_company error: %s", e)
-        finally:
-            db.close()
 
     try:
         asyncio.run_coroutine_threadsafe(_send_all(), loop)

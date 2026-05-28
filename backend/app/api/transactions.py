@@ -178,9 +178,10 @@ def create_transaction(
             cp_name = cp_obj.name if cp_obj else "—"
     except Exception:
         pass
+    safe_cp = cp_name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
     _notify(
         txn.company_id,
-        f"⏳ *Yeni İşlem*\n• No: `{txn.txn_number}`\n• Tür: {txn.txn_type.value}\n• Müşteri: {cp_name}",
+        f"⏳ *Yeni İşlem*\n• No: `{txn.txn_number}`\n• Tür: {txn.txn_type.value}\n• Müşteri: {safe_cp}",
     )
 
     return txn
