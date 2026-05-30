@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.database import engine, Base, SessionLocal
@@ -39,8 +39,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"]          = "1; mode=block"
         response.headers["Referrer-Policy"]            = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"]         = "geolocation=(), microphone=(), camera=()"
-        # HSTS — sadece production HTTPS'de aktif edilmeli
-        # response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+        # HSTS — Force HTTPS for 1 year
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -87,17 +87,32 @@ app.include_router(whatsapp_router)
 def root():
     return {"status": "ok", "version": "2.0.0"}
 
+
+@app.post("/telegram/webhook/{company_id}")
+async def telegram_webhook(company_id: str, request: Request):
+    from app.services.telegram_multi_bot import _webhook_secret, process_webhook_update
+    secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if _webhook_secret and secret != _webhook_secret:
+        return {"ok": False}
+    data = await request.json()
+    await process_webhook_update(company_id, data)
+    return {"ok": True}
+
 @app.on_event("startup")
 async def startup():
     from app.core.security import hash_password
     from app.models.user import User, UserRole
     from app.models.master import Location, Currency
 
-    # ── Telegram — her şirketin botunu başlat ────────────────────────────
+    # ── Telegram — webhook modu ───────────────────────────────────────────
     if os.environ.get("START_TELEGRAM_BOT", "true").lower() == "true":
         try:
-            from app.services.telegram_multi_bot import start_all_bots
-            start_all_bots()
+            webhook_base = os.environ.get("WEBHOOK_BASE_URL", "").rstrip("/")
+            if webhook_base:
+                from app.services.telegram_multi_bot import init_all_bots
+                await init_all_bots(webhook_base)
+            else:
+                print("⚠️  WEBHOOK_BASE_URL tanımlı değil — Telegram bot devre dışı")
         except Exception as e:
             print(f"⚠️  Telegram bot başlatma hatası: {e}")
 

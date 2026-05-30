@@ -6,14 +6,26 @@ from datetime import datetime, timedelta
 import json
 
 def get_financial_summary(db: Session, company_id: str = None):
-    """30 günlük anonimleştirilmiş finansal özeti hazırlar."""
+    """30 günlük anonimleştirilmiş finansal özeti hazırlar. Güvenlik için company_id zorunludur (super_admin hariç)."""
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    
+    # Temel filtreleme
     q = db.query(Transaction).filter(
         Transaction.txn_date >= thirty_days_ago.date(),
         Transaction.status == 'completed'
     )
+    
+    # Multi-tenancy isolation: company_id None ise (super_admin) tümünü görür,
+    # değilse SADECE kendi şirketini görür.
     if company_id is not None:
         q = q.filter(Transaction.company_id == company_id)
+    else:
+        # EĞER company_id None gelmişse ve çağıran bir hata yapmışsa 
+        # (Örn: super_admin olmayan biri için None geçmişse) 
+        # veri sızıntısını önlemek için boş küme döndürmek daha güvenlidir.
+        # Ancak mevcut yapıda super_admin için None geçiliyor.
+        pass
+
     txns = q.all()
     
     summary = {
@@ -25,12 +37,22 @@ def get_financial_summary(db: Session, company_id: str = None):
     }
 
     for t in txns:
+        # Çift kontrol: t.company_id eşleşmeli (ekstra güvenlik katmanı)
+        if company_id is not None and str(t.company_id) != str(company_id):
+            continue
+
         summary["transaction_types"][t.txn_type.value] = summary["transaction_types"].get(t.txn_type.value, 0) + 1
         if t.pnl:
             summary["total_estimated_pnl_usd"] += float(t.pnl.net_pnl_usd or 0)
+        
+        # Lokasyon performansı - anonimleştirilmiş
         if t.legs:
-            loc_name = t.legs[0].account.location.name_tr if t.legs[0].account and t.legs[0].account.location else "Unknown"
-            summary["location_performance"][loc_name] = summary["location_performance"].get(loc_name, 0) + 1
+            # Sadece ilk bacağın lokasyonunu al (temsili)
+            for leg in t.legs:
+                if leg.account and leg.account.location:
+                    loc_name = leg.account.location.name_tr
+                    summary["location_performance"][loc_name] = summary["location_performance"].get(loc_name, 0) + 1
+                    break
     
     return summary
 

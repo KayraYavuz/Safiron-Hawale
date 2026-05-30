@@ -322,15 +322,35 @@ a:focus:not(:focus-visible) {
 
 /* ── Mobile ──────────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  aside { width: 190px !important; }
+  .mobile-toggle-btn { display: flex !important; }
+  .mobile-close-btn { display: block !important; }
+
+  .app-sidebar {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 260px !important;
+    transform: translateX(-100%);
+    box-shadow: 0 0 40px rgba(0,0,0,0.3) !important;
+  }
+
+  [dir="rtl"] .app-sidebar {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  main { padding: 16px !important; }
   .stat-grid { grid-template-columns: 1fr 1fr !important; }
 }
-@media (max-width: 650px) {
-  aside { width: 52px !important; }
-  aside span.nav-label,
-  aside .logo-text,
-  aside .user-info,
-  aside .logout-label { display: none !important; }
-  main  { padding: 12px !important; }
+
+@media (max-width: 600px) {
   .stat-grid { grid-template-columns: 1fr !important; }
+  header { padding: 0 16px !important; }
+  .nav-label, .logout-label { font-size: 14px !important; }
 }

@@ -2,7 +2,7 @@
 Çok Şirketli Telegram Bot Yöneticisi
 ======================================
 - Her şirketin kendi bot token'ı vardır (companies.telegram_bot_token)
-- Her şirket için ayrı polling thread başlatılır
+- Her şirket için ayrı webhook endpoint kaydedilir
 - Tüm sorgular company_id ile izole edilir
 
 Kullanıcı tipleri:
@@ -16,7 +16,8 @@ Bağlanma akışı (KOD bazlı — güvenli):
 """
 import asyncio
 import logging
-import threading
+import os
+import secrets as _secrets_mod
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
@@ -26,12 +27,14 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 logger = logging.getLogger(__name__)
 
-# company_id → Thread
-_running_bots: Dict[str, threading.Thread] = {}
-# company_id → Application instance (for notify_company)
+# company_id → Application instance (update processing + notifications)
 _running_apps: Dict[str, Any] = {}
-# company_id → asyncio event loop (for notify_company)
-_running_loops: Dict[str, Any] = {}
+# FastAPI event loop — set at startup, used by notify_company
+_main_loop: Optional[asyncio.AbstractEventLoop] = None
+# Webhook secret for request validation (stable across restarts if set via env)
+_webhook_secret: str = os.environ.get(
+    "TELEGRAM_WEBHOOK_SECRET", _secrets_mod.token_hex(32)
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Çok dilli bot metinleri
@@ -2099,13 +2102,12 @@ def _q_cp_islemler(cp, db, limit: int = 10) -> str:
 def notify_company(company_id: str, message: str) -> None:
     """Şirketin tüm Telegram ID'li admin/yöneticilerine mesaj gönder.
 
-    Bloke etmez — asyncio.run_coroutine_threadsafe ile bot thread'ine gönderilir.
+    Bloke etmez — FastAPI event loop'una run_coroutine_threadsafe ile gönderilir.
     Bot çalışmıyorsa sessizce hiçbir şey yapmaz.
     """
     company_id = str(company_id)
-    app  = _running_apps.get(company_id)
-    loop = _running_loops.get(company_id)
-    if not app or not loop or not loop.is_running():
+    app = _running_apps.get(company_id)
+    if not app or not _main_loop or not _main_loop.is_running():
         return
 
     async def _send_all():
@@ -2145,112 +2147,48 @@ def notify_company(company_id: str, message: str) -> None:
             logger.warning("notify_company error: %s", e)
 
     try:
-        asyncio.run_coroutine_threadsafe(_send_all(), loop)
+        asyncio.run_coroutine_threadsafe(_send_all(), _main_loop)
     except Exception as e:
         logger.warning("notify_company dispatch error: %s", e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Bot thread başlatıcı
+# Webhook tabanlı bot yöneticisi
 # ─────────────────────────────────────────────────────────────────────────────
 
-def start_company_bot(company_id: str, company_name: str, token: str):
-    """Belirli bir şirket için Telegram bot thread'i başlat."""
-    if company_id in _running_bots and _running_bots[company_id].is_alive():
-        logger.info(f"Bot zaten çalışıyor: {company_name}")
+async def init_company_bot(company_id: str, company_name: str, token: str, webhook_url: str):
+    """Belirli bir şirket için bot Application'ını başlat ve webhook'u kaydet."""
+    if company_id in _running_apps:
+        logger.info(f"Bot zaten başlatıldı: {company_name}")
         return
 
     on_start, on_message, on_callback = make_handlers(company_id, company_name)
 
-    def _run():
-        import httpx
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    bot_app = Application.builder().token(token).updater(None).build()
+    bot_app.add_handler(CommandHandler("start", on_start))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
+    bot_app.add_handler(CallbackQueryHandler(on_callback))
+    await bot_app.initialize()
+    await bot_app.start()
+    _running_apps[company_id] = bot_app
 
-        async def _poll():
-            app = Application.builder().token(token).updater(None).build()
-            app.add_handler(CommandHandler("start", on_start))
-            app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
-            app.add_handler(CallbackQueryHandler(on_callback))
-            await app.initialize()
-            await app.start()
-            _running_apps[str(company_id)] = app
-            _running_loops[str(company_id)] = loop
-
-            # Webhook varsa sil — polling ile çakışmasın
-            try:
-                async with httpx.AsyncClient(timeout=10) as client:
-                    resp = await client.post(
-                        f"https://api.telegram.org/bot{token}/deleteWebhook",
-                        json={"drop_pending_updates": False},
-                    )
-                    wh_result = resp.json()
-                    if wh_result.get("ok"):
-                        logger.info(f"[{company_name}] Webhook temizlendi")
-                    else:
-                        logger.warning(f"[{company_name}] Webhook silme yanıtı: {wh_result}")
-            except Exception as e:
-                logger.warning(f"[{company_name}] Webhook silme hatası: {e}")
-
-            logger.info(f"✅ Bot başladı: {company_name}")
-            print(f"✅ Telegram bot: {company_name}")
-
-            offset = None
-            conflict_backoff = 5  # 409 Conflict için başlangıç bekleme (saniye)
-            MAX_BACKOFF = 60
-
-            async with httpx.AsyncClient(timeout=35) as client:
-                while True:
-                    try:
-                        params = {"timeout": 30, "allowed_updates": ["message", "callback_query"]}
-                        if offset is not None:
-                            params["offset"] = offset
-                        resp = await client.get(
-                            f"https://api.telegram.org/bot{token}/getUpdates",
-                            params=params,
-                        )
-                        data = resp.json()
-
-                        if data.get("ok"):
-                            conflict_backoff = 5  # Başarılı → backoff sıfırla
-                            from telegram import Update as TGUpdate
-                            for upd_data in data.get("result", []):
-                                offset = upd_data["update_id"] + 1
-                                upd = TGUpdate.de_json(upd_data, app.bot)
-                                await app.process_update(upd)
-                        elif data.get("error_code") == 409:
-                            # Başka bir instance çalışıyor — exponential backoff
-                            logger.warning(
-                                f"[{company_name}] 409 Conflict — başka bir bot instance çalışıyor. "
-                                f"{conflict_backoff}s bekleniyor…"
-                            )
-                            await asyncio.sleep(conflict_backoff)
-                            conflict_backoff = min(conflict_backoff * 2, MAX_BACKOFF)
-                        else:
-                            logger.error(f"[{company_name}] getUpdates hata: {data}")
-                            await asyncio.sleep(5)
-
-                    except asyncio.CancelledError:
-                        break
-                    except Exception as exc:
-                        logger.error(f"[{company_name}] Polling hata: {exc}")
-                        await asyncio.sleep(5)
-
-            await app.stop()
-            await app.shutdown()
-            _running_apps.pop(str(company_id), None)
-            _running_loops.pop(str(company_id), None)
-
-        loop.run_until_complete(_poll())
-
-    t = threading.Thread(target=_run, daemon=True, name=f"tg-{company_name}")
-    t.start()
-    _running_bots[str(company_id)] = t
-    logger.info(f"Bot thread başlatıldı: {company_name}")
+    try:
+        await bot_app.bot.set_webhook(
+            url=webhook_url,
+            allowed_updates=["message", "callback_query"],
+            secret_token=_webhook_secret,
+        )
+        logger.info(f"✅ Webhook ayarlandı: {company_name} → {webhook_url}")
+        print(f"✅ Telegram webhook: {company_name}")
+    except Exception as e:
+        logger.error(f"[{company_name}] Webhook ayarlama hatası: {e}")
 
 
-def start_all_bots():
-    """Startup'ta tüm şirketlerin botlarını başlat."""
+async def init_all_bots(webhook_base: str):
+    """Startup'ta tüm şirketlerin botlarını webhook modunda başlat."""
+    global _main_loop
+    _main_loop = asyncio.get_running_loop()
+
     from app.core.database import SessionLocal
     from app.models.master import Company
 
@@ -2267,6 +2205,21 @@ def start_all_bots():
 
         for co in companies:
             if co.telegram_bot_token and co.telegram_bot_token.strip():
-                start_company_bot(str(co.id), co.name, co.telegram_bot_token.strip())
+                webhook_url = f"{webhook_base}/telegram/webhook/{co.id}"
+                await init_company_bot(
+                    str(co.id), co.name,
+                    co.telegram_bot_token.strip(),
+                    webhook_url,
+                )
     finally:
         db.close()
+
+
+async def process_webhook_update(company_id: str, update_data: dict):
+    """Telegram'dan gelen webhook güncellemesini işle."""
+    from telegram import Update as TGUpdate
+    bot_app = _running_apps.get(company_id)
+    if not bot_app:
+        return
+    update = TGUpdate.de_json(update_data, bot_app.bot)
+    await bot_app.process_update(update)

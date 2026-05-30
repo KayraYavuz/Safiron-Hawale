@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLang } from '../hooks/useLang'
 import { useAuthStore } from '../store'
@@ -51,6 +51,7 @@ function Layout({ children }) {
   const { user, logout }  = useAuthStore()
   const location  = useLocation()
   const navigate  = useNavigate()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const isRtl       = dir === 'rtl'
   const isSuperAdmin = user?.role === 'super_admin'
@@ -69,18 +70,41 @@ function Layout({ children }) {
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   const roleLabel  = ROLE_INFO[role]?.label || role
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
+
   return (
     <div style={{ display: 'flex', height: '100%', background: S.bg, fontFamily: 'var(--font)', direction: dir }}>
 
+      {/* ── Mobile Overlay ── */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(13,27,46,0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 90,
+            animation: 'fadeIn 0.2s ease both',
+          }}
+        />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside style={{
-        width: 232, background: S.navy,
-        display: 'flex', flexDirection: 'column', flexShrink: 0,
-        zIndex: 20,
-        borderRight: isRtl ? 'none' : '1px solid rgba(255,255,255,0.05)',
-        borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.05)' : 'none',
-        boxShadow: '4px 0 24px rgba(0,0,0,0.18)',
-      }}>
+      <aside
+        className={`app-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}
+        style={{
+          width: 232, background: S.navy,
+          display: 'flex', flexDirection: 'column', flexShrink: 0,
+          zIndex: 100,
+          borderRight: isRtl ? 'none' : '1px solid rgba(255,255,255,0.05)',
+          borderLeft:  isRtl ? '1px solid rgba(255,255,255,0.05)' : 'none',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.18)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease',
+        }}
+      >
 
         {/* Logo */}
         <div
@@ -110,6 +134,22 @@ function Layout({ children }) {
               Global Solutions
             </div>
           </div>
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="mobile-close-btn"
+            style={{
+              marginLeft: isRtl ? 0 : 'auto',
+              marginRight: isRtl ? 'auto' : 0,
+              background: 'rgba(255,255,255,0.05)',
+              border: 'none', borderRadius: 6,
+              color: 'white', padding: 6, cursor: 'pointer',
+              display: 'none', // Shown via CSS
+            }}
+          >
+            <Icon name="close" size={18} color="white" />
+          </button>
         </div>
 
         <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />
@@ -250,9 +290,25 @@ function Layout({ children }) {
           boxShadow: '0 1px 6px rgba(13,27,46,0.04)',
           position: 'sticky', top: 0, zIndex: 10,
         }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: S.text1, letterSpacing: '-0.02em' }}>
-            {pageLabel}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Hamburger Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="mobile-toggle-btn"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: S.navy, padding: 6, borderRadius: 6,
+                display: 'none', // Shown via CSS
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Icon name="menu" size={20} color={S.navy} />
+            </button>
+
+            <span style={{ fontSize: 14, fontWeight: 600, color: S.text1, letterSpacing: '-0.02em' }}>
+              {pageLabel}
+            </span>
+          </div>
 
           {/* Language switcher */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }} role="group" aria-label={t.langLabel}>
