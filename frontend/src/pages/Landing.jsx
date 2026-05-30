@@ -72,7 +72,7 @@ const COPY = {
     days:       [['Pazartesi – Cuma', '09:00 – 18:00'], ['Cumartesi', '10:00 – 14:00'], ['Pazar', '—']],
     footerDesc: 'Havale, döviz ve para transferi operasyonları için geliştirilmiş profesyonel para hizmetleri yazılımı.',
     footerCols: [
-      { title: 'Platform',  links: [['Özellikler', '#features'], ['Nasıl Çalışır', '#how'], ['Telegram Bot', '#features']] },
+      { title: 'Platform',  links: [['Özellikler', '/features'], ['Fiyatlandırma', '/pricing'], ['Nasıl Çalışır', '#how']] },
       { title: 'Şirket',    links: [['Hakkımızda', '#about'], ['İletişim', '#contact'], ['Gizlilik', '/gizlilik-politikasi']] },
     ],
     rights:     'Tüm hakları saklıdır.',
@@ -141,7 +141,7 @@ const COPY = {
     days:       [['الاثنين – الجمعة', '09:00 – 18:00'], ['السبت', '10:00 – 14:00'], ['الأحد', '—']],
     footerDesc: 'برنامج احترافي لعمليات الحوالة وصرف العملات والتحويلات المالية.',
     footerCols: [
-      { title: 'المنصة',  links: [['المميزات', '#features'], ['كيف يعمل', '#how'], ['بوت تيليغرام', '#features']] },
+      { title: 'المنصة',  links: [['المميزات', '/features'], ['الأسعار', '/pricing'], ['كيف يعمل', '#how']] },
       { title: 'الشركة',  links: [['عن الشركة', '#about'], ['تواصل', '#contact'], ['الخصوصية', '/gizlilik-politikasi']] },
     ],
     rights:     'جميع الحقوق محفوظة.',
@@ -210,7 +210,7 @@ const COPY = {
     days:       [['Monday – Friday', '09:00 – 18:00'], ['Saturday', '10:00 – 14:00'], ['Sunday', '—']],
     footerDesc: 'Professional money services software for remittance, FX, and payment transfer operations.',
     footerCols: [
-      { title: 'Platform', links: [['Features', '#features'], ['How It Works', '#how'], ['Telegram Bot', '#features']] },
+      { title: 'Platform', links: [['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how']] },
       { title: 'Company',  links: [['About', '#about'], ['Contact', '#contact'], ['Privacy', '/gizlilik-politikasi']] },
     ],
     rights:     'All rights reserved.',
