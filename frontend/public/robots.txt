@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /api
+Disallow: /login
+
+Sitemap: https://safironpay.com/sitemap.xml
