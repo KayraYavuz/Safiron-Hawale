@@ -1,164 +1,161 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <!-- Landing EN -->
+  <!-- ════ Landing ════ -->
   <url>
-    <loc>https://safironpay.com/en/</loc>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/" />
+    <loc>https://safironpay.com</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- Landing TR -->
   <url>
-    <loc>https://safironpay.com/tr/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/" />
+    <loc>https://safironpay.com/tr</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- Landing AR -->
   <url>
-    <loc>https://safironpay.com/ar/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/" />
-    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/" />
+    <loc>https://safironpay.com/ar</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- Features EN -->
+
+  <!-- ════ Features ════ -->
   <url>
-    <loc>https://safironpay.com/en/features</loc>
+    <loc>https://safironpay.com/features</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/features" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/features" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/features" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/features" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Features TR -->
   <url>
     <loc>https://safironpay.com/tr/features</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/features" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/features" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/features" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/features" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/features" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Features AR -->
   <url>
     <loc>https://safironpay.com/ar/features</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/features" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/features" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/features" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/features" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/features" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Pricing EN -->
+
+  <!-- ════ Pricing ════ -->
   <url>
-    <loc>https://safironpay.com/en/pricing</loc>
+    <loc>https://safironpay.com/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/pricing" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/pricing" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/pricing" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/pricing" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Pricing TR -->
   <url>
     <loc>https://safironpay.com/tr/pricing</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/pricing" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/pricing" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/pricing" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/pricing" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Pricing AR -->
   <url>
     <loc>https://safironpay.com/ar/pricing</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/pricing" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/pricing" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/pricing" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/pricing" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Blog EN -->
+
+  <!-- ════ About ════ -->
   <url>
-    <loc>https://safironpay.com/en/blog</loc>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog" />
-    <lastmod>2026-05-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <!-- Blog TR -->
-  <url>
-    <loc>https://safironpay.com/tr/blog</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/blog" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog" />
-    <lastmod>2026-05-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <!-- Blog AR -->
-  <url>
-    <loc>https://safironpay.com/ar/blog</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/blog" />
-    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog" />
-    <lastmod>2026-05-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <!-- About EN -->
-  <url>
-    <loc>https://safironpay.com/en/about</loc>
+    <loc>https://safironpay.com/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/about" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/about" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/about" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- About TR -->
   <url>
     <loc>https://safironpay.com/tr/about</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/about" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/about" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/about" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- About AR -->
   <url>
     <loc>https://safironpay.com/ar/about</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/about" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/about" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/about" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- Contact EN -->
+
+  <!-- ════ Contact ════ -->
   <url>
-    <loc>https://safironpay.com/en/contact</loc>
+    <loc>https://safironpay.com/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/contact" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/contact" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/contact" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- Contact TR -->
   <url>
     <loc>https://safironpay.com/tr/contact</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/contact" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/contact" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/contact" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- Contact AR -->
   <url>
     <loc>https://safironpay.com/ar/contact</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/en/contact" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/contact" />
     <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/contact" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/contact" />
     <lastmod>2026-05-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

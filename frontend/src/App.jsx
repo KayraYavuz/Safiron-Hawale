@@ -32,6 +32,16 @@ const Integrations        = lazy(() => import('./pages/Integrations'))
 const GizlilikPolitikasi  = lazy(() => import('./pages/GizlilikPolitikasi'))
 const KullanimSartlari    = lazy(() => import('./pages/KullanimSartlari'))
 
+// ── SEO multi-language routing ───────────────────────────────────────────────
+// English lives at the bare root; Turkish under /tr, Arabic under /ar.
+const LANG_PREFIXES = ['tr', 'ar']
+const PUBLIC_PAGES  = [
+  ['features', Features],
+  ['pricing',  Pricing],
+  ['about',    About],
+  ['contact',  Contact],
+]
+
 // Giriş yapmamış kullanıcılar için — giriş yapılmışsa dashboard'a yönlendir
 function PublicOnly({ children }) {
   const { token } = useAuthStore()
@@ -88,12 +98,21 @@ export default function App() {
       <CookieConsent />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
-          {/* Genel (halka açık) sayfalar */}
+          {/* Genel (halka açık) sayfalar — İngilizce (çıplak kök) */}
           <Route path="/"               element={<PublicOnly><Landing /></PublicOnly>} />
           <Route path="/features"       element={<Features />} />
           <Route path="/pricing"        element={<Pricing />} />
           <Route path="/about"          element={<About />} />
           <Route path="/contact"        element={<Contact />} />
+
+          {/* Dil önekli SEO route'ları — /tr, /ar */}
+          {LANG_PREFIXES.flatMap(lng => [
+            <Route key={lng} path={`/${lng}`} element={<PublicOnly><Landing lang={lng} /></PublicOnly>} />,
+            ...PUBLIC_PAGES.map(([slug, Page]) => (
+              <Route key={`${lng}/${slug}`} path={`/${lng}/${slug}`} element={<Page lang={lng} />} />
+            )),
+          ])}
+
           <Route path="/login"          element={<PublicOnly><Login /></PublicOnly>} />
 
           {/* Korumalı sayfalar */}

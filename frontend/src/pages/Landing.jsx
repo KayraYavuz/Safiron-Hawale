@@ -9,6 +9,7 @@ import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData, { softwareApplicationSchema } from '../components/StructuredData'
 import { createSeoMetadata } from '../utils/seo'
+import { normalizeLang, langPath } from '../utils/lang'
 
 const NAV_H = 68
 
@@ -585,12 +586,17 @@ function SectionReveal({ children, delay = 0, direction = 'up', className = '' }
 }
 
 /* ── Ana Sayfa ──────────────────────────────────────────────────────────────── */
-export default function Landing() {
+export default function Landing({ lang }) {
   const [loginOpen, setLoginOpen] = useState(false)
   const [scrolled,  setScrolled]  = useState(false)
-  const [uiLang,    setUiLang]    = useState('tr')
+  const navigate = useNavigate()
+  const uiLang = normalizeLang(lang)
   const c = COPY[uiLang]
   const isRTL = c.dir === 'rtl'
+
+  // Language-prefix multilingual route links; leave anchors and legal pages as-is
+  const localizeHref = (h) =>
+    ['/features', '/pricing', '/about', '/contact'].includes(h) ? langPath(uiLang, h.slice(1)) : h
 
   // Get SEO metadata for the landing page
   const seoData = createSeoMetadata('landing', uiLang)
@@ -758,7 +764,7 @@ export default function Landing() {
           {/* Dil toggle */}
           <div style={{ display: 'flex', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
             {[['tr','TR'],['ar','ع'],['en','EN']].map(([l, lbl]) => (
-              <button key={l} onClick={() => setUiLang(l)} style={{
+              <button key={l} onClick={() => navigate(langPath(l))} style={{
                 padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none',
                 background: uiLang === l ? '#0D1F3C' : 'transparent',
                 color: uiLang === l ? '#fff' : '#94A3B8',
@@ -1402,7 +1408,7 @@ export default function Landing() {
               <div key={col.title}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</p>
                 {col.links.map(([l, h]) => (
-                  <a key={l} href={h} className="lp-footer-link">{l}</a>
+                  <a key={l} href={localizeHref(h)} className="lp-footer-link">{l}</a>
                 ))}
               </div>
             ))}

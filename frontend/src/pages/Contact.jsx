@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData, { organizationSchema } from '../components/StructuredData'
 import { createSeoMetadata } from '../utils/seo'
+import { normalizeLang, langPath } from '../utils/lang'
 
 const NAV_H = 68
 const GOLD = '#C9A84C'
@@ -79,8 +79,8 @@ const MAIL_ICON = (
   </svg>
 )
 
-export default function Contact() {
-  const [uiLang, setUiLang] = useState('tr')
+export default function Contact({ lang }) {
+  const uiLang = normalizeLang(lang)
   const c = COPY[uiLang]
   const isRTL = c.dir === 'rtl'
   const navigate = useNavigate()
@@ -126,7 +126,7 @@ export default function Contact() {
           background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #E2E8F0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 max(5%, 24px)',
         }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+          <Link to={langPath(uiLang)} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <OptimizedImage src="/emblem.png" alt="Safiron" width={42} height={42} loading="eager" style={{ objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: 17, fontWeight: 900, color: NAVY, letterSpacing: '-0.5px', lineHeight: 1.05 }}>Safiron</div>
@@ -135,13 +135,13 @@ export default function Contact() {
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, fontSize: 13.5 }}>
             <div className="ct-nav-links" style={{ display: 'flex', gap: 24 }}>
-              <Link to="/features" className="ct-link">{c.features}</Link>
-              <Link to="/pricing" className="ct-link">{c.pricing}</Link>
-              <Link to="/about" className="ct-link">{c.about}</Link>
+              <Link to={langPath(uiLang, 'features')} className="ct-link">{c.features}</Link>
+              <Link to={langPath(uiLang, 'pricing')} className="ct-link">{c.pricing}</Link>
+              <Link to={langPath(uiLang, 'about')} className="ct-link">{c.about}</Link>
             </div>
             <div style={{ display: 'flex', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
               {[['tr', 'TR'], ['ar', 'ع'], ['en', 'EN']].map(([l, lbl]) => (
-                <button key={l} onClick={() => setUiLang(l)} style={{
+                <button key={l} onClick={() => navigate(langPath(l, 'contact'))} style={{
                   padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none',
                   background: uiLang === l ? NAVY : 'transparent', color: uiLang === l ? '#fff' : '#94A3B8',
                   transition: 'all 0.15s', textTransform: 'uppercase', letterSpacing: '0.04em',
@@ -229,10 +229,10 @@ export default function Contact() {
               <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Safiron Global Solutions</span>
             </div>
             <nav style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
-              <Link to="/" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
-              <Link to="/features" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.features}</Link>
-              <Link to="/pricing" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
-              <Link to="/about" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.about}</Link>
+              <Link to={langPath(uiLang)} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
+              <Link to={langPath(uiLang, 'features')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.features}</Link>
+              <Link to={langPath(uiLang, 'pricing')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
+              <Link to={langPath(uiLang, 'about')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.about}</Link>
             </nav>
             <span style={{ fontSize: 12.5, color: '#475569' }}>© {new Date().getFullYear()} Safiron. {c.rights}</span>
           </div>

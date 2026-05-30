@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData, { organizationSchema } from '../components/StructuredData'
 import { createSeoMetadata } from '../utils/seo'
+import { normalizeLang, langPath } from '../utils/lang'
 
 const NAV_H = 68
 const GOLD = '#C9A84C'
@@ -85,8 +85,8 @@ const COPY = {
   },
 }
 
-export default function About() {
-  const [uiLang, setUiLang] = useState('tr')
+export default function About({ lang }) {
+  const uiLang = normalizeLang(lang)
   const c = COPY[uiLang]
   const isRTL = c.dir === 'rtl'
   const navigate = useNavigate()
@@ -119,7 +119,7 @@ export default function About() {
           background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #E2E8F0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 max(5%, 24px)',
         }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+          <Link to={langPath(uiLang)} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <OptimizedImage src="/emblem.png" alt="Safiron" width={42} height={42} loading="eager" style={{ objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: 17, fontWeight: 900, color: NAVY, letterSpacing: '-0.5px', lineHeight: 1.05 }}>Safiron</div>
@@ -128,13 +128,13 @@ export default function About() {
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, fontSize: 13.5 }}>
             <div className="ab-nav-links" style={{ display: 'flex', gap: 24 }}>
-              <Link to="/features" className="ab-link">{c.features}</Link>
-              <Link to="/pricing" className="ab-link">{c.pricing}</Link>
-              <Link to="/contact" className="ab-link">{c.contact}</Link>
+              <Link to={langPath(uiLang, 'features')} className="ab-link">{c.features}</Link>
+              <Link to={langPath(uiLang, 'pricing')} className="ab-link">{c.pricing}</Link>
+              <Link to={langPath(uiLang, 'contact')} className="ab-link">{c.contact}</Link>
             </div>
             <div style={{ display: 'flex', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
               {[['tr', 'TR'], ['ar', 'ع'], ['en', 'EN']].map(([l, lbl]) => (
-                <button key={l} onClick={() => setUiLang(l)} style={{
+                <button key={l} onClick={() => navigate(langPath(l, 'about'))} style={{
                   padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none',
                   background: uiLang === l ? NAVY : 'transparent', color: uiLang === l ? '#fff' : '#94A3B8',
                   transition: 'all 0.15s', textTransform: 'uppercase', letterSpacing: '0.04em',
@@ -210,9 +210,9 @@ export default function About() {
             <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.8px', marginBottom: 16 }}>{c.ctaH2}</h2>
             <p style={{ fontSize: 16, color: '#8899AA', lineHeight: 1.7, marginBottom: 32 }}>{c.ctaP}</p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/contact" style={{ padding: '13px 30px', borderRadius: 10, fontSize: 15, fontWeight: 700,
+              <Link to={langPath(uiLang, 'contact')} style={{ padding: '13px 30px', borderRadius: 10, fontSize: 15, fontWeight: 700,
                 background: 'linear-gradient(135deg, #C9A84C, #E8C56B)', color: NAVY, textDecoration: 'none' }}>{c.ctaBtn}</Link>
-              <Link to="/features" style={{ padding: '13px 30px', borderRadius: 10, fontSize: 15, fontWeight: 600,
+              <Link to={langPath(uiLang, 'features')} style={{ padding: '13px 30px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 background: 'rgba(255,255,255,0.06)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.12)', textDecoration: 'none' }}>{c.features}</Link>
             </div>
           </div>
@@ -226,10 +226,10 @@ export default function About() {
               <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Safiron Global Solutions</span>
             </div>
             <nav style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
-              <Link to="/" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
-              <Link to="/features" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.features}</Link>
-              <Link to="/pricing" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
-              <Link to="/contact" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.contact}</Link>
+              <Link to={langPath(uiLang)} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
+              <Link to={langPath(uiLang, 'features')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.features}</Link>
+              <Link to={langPath(uiLang, 'pricing')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
+              <Link to={langPath(uiLang, 'contact')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.contact}</Link>
             </nav>
             <span style={{ fontSize: 12.5, color: '#475569' }}>© {new Date().getFullYear()} Safiron. {c.rights}</span>
           </div>

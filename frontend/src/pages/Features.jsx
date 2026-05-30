@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData, { softwareApplicationSchema } from '../components/StructuredData'
 import { createSeoMetadata } from '../utils/seo'
+import { normalizeLang, langPath } from '../utils/lang'
 
 const NAV_H = 68
 
@@ -229,8 +229,8 @@ const COPY = {
   },
 }
 
-export default function Features() {
-  const [uiLang, setUiLang] = useState('tr')
+export default function Features({ lang }) {
+  const uiLang = normalizeLang(lang)
   const c = COPY[uiLang]
   const isRTL = c.dir === 'rtl'
   const navigate = useNavigate()
@@ -264,7 +264,7 @@ export default function Features() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 max(5%, 24px)',
         }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+          <Link to={langPath(uiLang)} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <OptimizedImage src="/emblem.png" alt="Safiron" width={42} height={42} loading="eager" style={{ objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: 17, fontWeight: 900, color: NAVY, letterSpacing: '-0.5px', lineHeight: 1.05 }}>Safiron</div>
@@ -274,12 +274,12 @@ export default function Features() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, fontSize: 13.5 }}>
             <div className="ft-nav-links" style={{ display: 'flex', gap: 24 }}>
-              <Link to="/" className="ft-link">{c.backHome}</Link>
-              <Link to="/pricing" className="ft-link">{c.pricing}</Link>
+              <Link to={langPath(uiLang)} className="ft-link">{c.backHome}</Link>
+              <Link to={langPath(uiLang, 'pricing')} className="ft-link">{c.pricing}</Link>
             </div>
             <div style={{ display: 'flex', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
               {[['tr', 'TR'], ['ar', 'ع'], ['en', 'EN']].map(([l, lbl]) => (
-                <button key={l} onClick={() => setUiLang(l)} style={{
+                <button key={l} onClick={() => navigate(langPath(l, 'features'))} style={{
                   padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none',
                   background: uiLang === l ? NAVY : 'transparent',
                   color: uiLang === l ? '#fff' : '#94A3B8',
@@ -324,7 +324,7 @@ export default function Features() {
                 border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 boxShadow: '0 4px 24px rgba(201,168,76,0.35)',
               }}>{c.ctaPrimary}</button>
-              <Link to="/pricing" style={{
+              <Link to={langPath(uiLang, 'pricing')} style={{
                 padding: '13px 28px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 background: 'rgba(255,255,255,0.06)', color: '#CBD5E1',
                 border: '1px solid rgba(255,255,255,0.12)', textDecoration: 'none',
@@ -387,7 +387,7 @@ export default function Features() {
                 background: 'linear-gradient(135deg, #C9A84C, #E8C56B)', color: NAVY,
                 border: 'none', cursor: 'pointer', fontFamily: 'inherit',
               }}>{c.ctaPrimary}</button>
-              <Link to="/pricing" style={{
+              <Link to={langPath(uiLang, 'pricing')} style={{
                 padding: '13px 30px', borderRadius: 10, fontSize: 15, fontWeight: 600,
                 background: 'rgba(255,255,255,0.06)', color: '#CBD5E1',
                 border: '1px solid rgba(255,255,255,0.12)', textDecoration: 'none',
@@ -405,8 +405,8 @@ export default function Features() {
               <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Safiron Global Solutions</span>
             </div>
             <nav style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
-              <Link to="/" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
-              <Link to="/pricing" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
+              <Link to={langPath(uiLang)} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.backHome}</Link>
+              <Link to={langPath(uiLang, 'pricing')} style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>{c.pricing}</Link>
               <Link to="/gizlilik-politikasi" style={{ fontSize: 13.5, color: '#94A3B8', textDecoration: 'none' }}>Privacy</Link>
             </nav>
             <span style={{ fontSize: 12.5, color: '#475569' }}>© {new Date().getFullYear()} Safiron. {c.rights}</span>
