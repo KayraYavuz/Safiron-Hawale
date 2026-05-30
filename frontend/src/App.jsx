@@ -7,6 +7,7 @@ import { PageSpinner } from './components/Skeleton'
 import { useLang } from './hooks/useLang'
 import toast from 'react-hot-toast'
 import CookieConsent from './components/CookieConsent'
+import StructuredData, { organizationSchema, softwareApplicationSchema } from './components/StructuredData'
 
 // ── Lazy-loaded pages — each route is its own JS chunk ────────────────────────
 const Landing        = lazy(() => import('./pages/Landing'))
@@ -78,6 +79,8 @@ function Protected({ children }) {
 export default function App() {
   return (
     <ErrorBoundary>
+      <StructuredData schema={organizationSchema} />
+      <StructuredData schema={softwareApplicationSchema} />
       <CookieConsent />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
