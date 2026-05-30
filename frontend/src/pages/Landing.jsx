@@ -6,6 +6,9 @@ import { useAuthStore } from '../store'
 import { useLang } from '../hooks/useLang'
 import toast from 'react-hot-toast'
 import { OptimizedImage } from '../components/OptimizedImage'
+import SEO from '../components/SEO'
+import StructuredData, { softwareApplicationSchema } from '../components/StructuredData'
+import { createSeoMetadata } from '../utils/seo'
 
 const NAV_H = 68
 
@@ -152,10 +155,10 @@ const COPY = {
   en: {
     dir:        'ltr',
     badge:      'Money Services Software',
-    heroH1a:    'The Professional Platform',
-    heroH1b:    'for Money Services',
-    heroSub:    'Manage your remittance, FX, and SWIFT operations on a single screen. Multi-branch architecture, real-time position tracking, and AI-powered financial analytics.',
-    heroCta:    'Sign In to Platform',
+    heroH1a:    'Streamline Your Hawala',
+    heroH1b:    '& Forex Operations',
+    heroSub:    'Multi-tenant platform for real-time position tracking, AI-powered analysis, and SWIFT integration. Manage remittance, FX, and international transfers on a single professional dashboard.',
+    heroCta:    'Start Free Trial',
     heroSec:    'Explore Features',
     txnLabel:   'Supported Transaction Types',
     txnTypes:   ['Remittance', 'FX (Forex)', 'SWIFT', 'Deposit', 'Withdrawal', 'Internal Transfer'],
@@ -171,12 +174,12 @@ const COPY = {
     featH2:     'Everything you need to run your operations',
     featSub:    'Accounting, reporting, AI analysis, and integrations — all in one platform.',
     features: [
-      { title: 'Multi-Branch Management',   desc: 'Each company and branch operates in full isolation. Monitor all locations with USD-consolidated position in one dashboard.' },
-      { title: 'Financial Reporting',       desc: 'Income statement, cash flow, location P&L, and counterparty statement. Includes PDF and Excel export.' },
-      { title: 'Exchange Rate Management',  desc: 'Automatic rate updates via ECB/Frankfurter API. Spread calculation and real-time profit/loss tracking.' },
-      { title: 'AI Financial Assistant',    desc: 'Groq-powered chat assistant. Query your data, get trend analysis, and generate report summaries in natural language.' },
+      { title: 'Multi-Currency Hawala Management',   desc: 'Real-time transaction tracking. Automated profit calculations. Compliance audit logs for remittance operations.' },
+      { title: 'Forex Trading & Exchange Rate Management',  desc: 'Real-time exchange rates. Automated conversions with spread tracking. Profit calculations and FX analysis.' },
+      { title: 'SWIFT Integration & International Transfers',    desc: 'Seamless SWIFT payment processing. Multi-currency accounts. ISO 20022 compliance for global transfers.' },
+      { title: 'AI-Powered Financial Analysis',    desc: 'Transaction pattern recognition. Fraud detection algorithms. Groq-powered financial assistant for insights.' },
       { title: 'Security Infrastructure',   desc: '2FA email verification, role-based access (admin/accounting/viewer), full audit log, and 30-min auto logout.' },
-      { title: 'Telegram Bot',              desc: 'Company-specific bot for balance queries, transaction entry, and customer registration. Available in TR, AR, and EN.' },
+      { title: 'Telegram Bot Integration',              desc: 'Company-specific bot for balance queries, transaction entry, and customer registration. Available in TR, AR, and EN.' },
     ],
     howTag:     'Getting Started',
     howH2:      'Operational in 4 steps',
@@ -589,6 +592,9 @@ export default function Landing() {
   const c = COPY[uiLang]
   const isRTL = c.dir === 'rtl'
 
+  // Get SEO metadata for the landing page
+  const seoData = createSeoMetadata('landing', uiLang)
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 30)
     window.addEventListener('scroll', fn, { passive: true })
@@ -598,7 +604,10 @@ export default function Landing() {
   const TICKER_ITEMS = ['SWIFT', 'ECB API', 'Frankfurter API', 'Groq AI', 'Telegram Bot', 'PDF Export', 'Excel Export', '2FA Auth', 'Multi-Branch', 'Real-Time FX']
 
   return (
-    <div dir={c.dir} style={{ fontFamily: isRTL ? "'Segoe UI', Tahoma, Arial, sans-serif" : "'DM Sans', -apple-system, 'Segoe UI', sans-serif", color: '#0F172A', lineHeight: 1, overflowX: 'hidden' }}>
+    <>
+      <SEO {...seoData} />
+      <StructuredData schema={softwareApplicationSchema} />
+      <div dir={c.dir} style={{ fontFamily: isRTL ? "'Segoe UI', Tahoma, Arial, sans-serif" : "'DM Sans', -apple-system, 'Segoe UI', sans-serif", color: '#0F172A', lineHeight: 1, overflowX: 'hidden' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&display=swap');
         @keyframes lp-spin { to { transform: rotate(360deg); } }
@@ -1049,21 +1058,25 @@ export default function Landing() {
 
           <div className="lp-feat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
             {c.features.map((f, i) => (
-              <motion.div key={i}
+              <article key={i}
                 className="lp-feat-card"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ boxShadow: `0 0 0 2px ${FEAT_GLOW[i]}, 0 16px 40px rgba(13,31,60,0.1)` }}
                 style={{ padding: '28px 26px', borderRadius: 16, border: '1px solid #EDF2F7', background: '#FAFBFD' }}
               >
-                <div style={{ width: 46, height: 46, borderRadius: 12, background: FEAT_BG[i], display: 'flex', alignItems: 'center', justifyContent: 'center', color: FEAT_COLORS[i], marginBottom: 18 }}>
-                  {FEAT_ICONS[i]}
-                </div>
-                <h3 style={{ fontSize: 15.5, fontWeight: 800, color: '#0D1F3C', marginBottom: 10, letterSpacing: '-0.2px' }}>{f.title}</h3>
-                <p style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.72 }}>{f.desc}</p>
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ boxShadow: `0 0 0 2px ${FEAT_GLOW[i]}, 0 16px 40px rgba(13,31,60,0.1)` }}
+                  style={{ width: '100%' }}
+                >
+                  <div style={{ width: 46, height: 46, borderRadius: 12, background: FEAT_BG[i], display: 'flex', alignItems: 'center', justifyContent: 'center', color: FEAT_COLORS[i], marginBottom: 18 }}>
+                    {FEAT_ICONS[i]}
+                  </div>
+                  <h3 style={{ fontSize: 15.5, fontWeight: 800, color: '#0D1F3C', marginBottom: 10, letterSpacing: '-0.2px' }}>{f.title}</h3>
+                  <p style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.72 }}>{f.desc}</p>
+                </motion.div>
+              </article>
             ))}
           </div>
         </div>
@@ -1201,6 +1214,100 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ══ FAQ / SORULAR ══════════════════════════════════════════════════════ */}
+      <section style={{ padding: '100px max(5%, 32px)', background: '#F8FAFD' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <SectionReveal>
+            <div style={{ textAlign: 'center', marginBottom: 60 }}>
+              <SectionTag color="#2B6CB0">FAQ</SectionTag>
+              <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 900, color: '#0D1F3C', letterSpacing: '-1px', marginBottom: 16 }}>
+                {uiLang === 'en' ? 'Frequently Asked Questions' : uiLang === 'tr' ? 'Sıkça Sorulan Sorular' : 'الأسئلة الشائعة'}
+              </h2>
+              <p style={{ fontSize: 16, color: '#64748B', maxWidth: 500, margin: '0 auto', lineHeight: 1.72 }}>
+                {uiLang === 'en' ? 'Everything you need to know about our hawala, forex, and SWIFT management platform.' : uiLang === 'tr' ? 'Hawala, döviz ve SWIFT yönetim platformumuz hakkında bilmeniz gereken her şey.' : 'كل ما تحتاج لمعرفته عن منصة إدارة الحوالة والصرف والتحويلات.'}
+              </p>
+            </div>
+          </SectionReveal>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              uiLang === 'en' ? {
+                q: 'What is hawala management software?',
+                a: 'Hawala management software automates and streamlines traditional remittance operations. Safiron tracks transactions in real-time, calculates profits automatically, generates compliance audit logs, and provides multi-branch reporting for hawala offices and currency exchange bureaus.'
+              } : uiLang === 'tr' ? {
+                q: 'Havale yönetim yazılımı nedir?',
+                a: 'Havale yönetim yazılımı geleneksel havale operasyonlarını otomatikleştirir ve kolaylaştırır. Safiron işlemleri gerçek zamanlı olarak takip eder, karları otomatik olarak hesaplar, uyumluluğu denetleme günlüğünü sağlar ve havale ve döviz büroları için çok şubeli raporlama sunar.'
+              } : {
+                q: 'ما هي برامج إدارة الحوالة؟',
+                a: 'تقوم برامج إدارة الحوالة بأتمتة وتبسيط عمليات التحويل التقليدية. يتتبع Safiron المعاملات في الوقت الفعلي، ويحسب الأرباح تلقائياً، ويوفر سجلات تدقيق الامتثال، ويوفر تقارير متعددة الفروع لمكاتب الحوالة وصرافات العملات.'
+              },
+              uiLang === 'en' ? {
+                q: 'Does Safiron support multiple currencies?',
+                a: 'Yes, Safiron supports 100+ currencies with real-time exchange rates powered by ECB and Frankfurter APIs. All transactions are consolidated in USD for comprehensive multi-currency reporting and profit/loss analysis.'
+              } : uiLang === 'tr' ? {
+                q: 'Safiron birden fazla para birimini destekliyor mu?',
+                a: 'Evet, Safiron ECB ve Frankfurter API\'leri tarafından desteklenen gerçek zamanlı döviz kurları ile 100+ para birimini destekler. Tüm işlemler kapsamlı çok para birimli raporlama ve kar/zarar analizi için USD olarak birleştirilir.'
+              } : {
+                q: 'هل يدعم Safiron عملات متعددة؟',
+                a: 'نعم، يدعم Safiron أكثر من 100 عملة مع أسعار صرف حقيقية مدعومة من واجهات برمجة تطبيقات ECB و Frankfurter. يتم توحيد جميع المعاملات بالدولار الأمريكي لإعداد التقارير متعددة العملات الشاملة وتحليل الأرباح والخسائر.'
+              },
+              uiLang === 'en' ? {
+                q: 'How does SWIFT integration work?',
+                a: 'SWIFT integration enables seamless processing of international payments. Safiron connects to SWIFT networks for secure, compliant cross-border transfers. Multi-currency accounts support ISO 20022 standards for global money transfers.'
+              } : uiLang === 'tr' ? {
+                q: 'SWIFT entegrasyonu nasıl çalışıyor?',
+                a: 'SWIFT entegrasyonu uluslararası ödemelerin sorunsuz işlenmesini sağlar. Safiron, güvenli ve uyumlu sınır ötesi transferler için SWIFT ağlarına bağlanır. Çok para birimli hesaplar küresel para transferleri için ISO 20022 standartlarını destekler.'
+              } : {
+                q: 'كيف يعمل تكامل SWIFT؟',
+                a: 'يمكّن تكامل SWIFT المعالجة السلسة للمدفوعات الدولية. يتصل Safiron بشبكات SWIFT للتحويلات الآمنة والامتثال عبر الحدود. تدعم الحسابات متعددة العملات معايير ISO 20022 لتحويلات الأموال العالمية.'
+              },
+              uiLang === 'en' ? {
+                q: 'What compliance features are included?',
+                a: 'Safiron includes comprehensive compliance infrastructure: full audit logs with transaction history, role-based access control, 2FA security, and automated reporting for regulatory compliance. All data is encrypted and supports multi-jurisdiction requirements.'
+              } : uiLang === 'tr' ? {
+                q: 'Hangi uyum özellikleri dahildir?',
+                a: 'Safiron kapsamlı uyum altyapısı içerir: işlem geçmişiyle tam denetim günlüğü, rol tabanlı erişim kontrolü, 2FA güvenliği ve düzenleyici uyum için otomatik raporlama. Tüm veriler şifreli ve çok yargı alanı gereksinimlerini destekler.'
+              } : {
+                q: 'ما هي ميزات الامتثال المضمنة؟',
+                a: 'يتضمن Safiron بنية أساسية شاملة للامتثال: سجلات تدقيق كاملة مع سجل المعاملات، تحكم في الوصول بناءً على الدور، أمان 2FA، والإبلاغ الآلي للامتثال التنظيمي. يتم تشفير جميع البيانات وتدعم متطلبات الولايات القضائية المتعددة.'
+              },
+            ].map((item, i) => (
+              <SectionReveal key={i} delay={i * 0.08}>
+                <details style={{
+                  padding: '20px 24px',
+                  borderRadius: 12,
+                  border: '1px solid #E2E8F0',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}>
+                  <summary style={{
+                    fontWeight: 700,
+                    color: '#0D1F3C',
+                    fontSize: 15,
+                    listStyle: 'none',
+                    userSelect: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{item.q}</h3>
+                    <span style={{ fontSize: 18, marginLeft: 16 }}>▸</span>
+                  </summary>
+                  <p style={{
+                    marginTop: 12,
+                    marginBottom: 0,
+                    color: '#64748B',
+                    lineHeight: 1.72,
+                    fontSize: 14
+                  }}>{item.a}</p>
+                </details>
+              </SectionReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ══ İLETİŞİM ══════════════════════════════════════════════════════════ */}
       <section id="contact" style={{ padding: '100px max(5%, 32px)', background: '#fff' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -1310,7 +1417,8 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   )
 }
 
