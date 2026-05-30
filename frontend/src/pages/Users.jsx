@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi, companiesApi } from '../utils/api'
 import { Card, Table, Th, Td, Btn, Input, Select, C } from '../components/UI'
@@ -93,7 +94,11 @@ export default function Users() {
   const colCount = isSuperAdmin ? 7 : 6
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
       {/* Üst bar */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -303,6 +308,7 @@ export default function Users() {
           </tbody>
         </Table>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }

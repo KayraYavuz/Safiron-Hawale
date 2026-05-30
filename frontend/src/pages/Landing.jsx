@@ -5,6 +5,7 @@ import { authApi, deviceToken } from '../utils/api'
 import { useAuthStore } from '../store'
 import { useLang } from '../hooks/useLang'
 import toast from 'react-hot-toast'
+import { OptimizedImage } from '../components/OptimizedImage'
 
 const NAV_H = 68
 
@@ -388,7 +389,7 @@ function LoginPanel({ open, onClose, syncLang }) {
           {/* Başlık */}
           <div style={{ padding: '24px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img src="/emblem.png" alt="Safiron" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+              <OptimizedImage src="/emblem.png" alt="Safiron" width={40} height={40} loading="eager" style={{ objectFit: 'contain' }} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', letterSpacing: '-0.3px', lineHeight: 1.05 }}>Safiron</div>
                 <div style={{ fontSize: 9, fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.5 }}>Global Solutions</div>
@@ -731,7 +732,7 @@ export default function Landing() {
         }}
       >
         <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 13, textDecoration: 'none' }}>
-          <img src="/emblem.png" alt="Safiron" style={{ width: 48, height: 48, objectFit: 'contain' }} />
+          <OptimizedImage src="/emblem.png" alt="Safiron" width={48} height={48} loading="eager" style={{ objectFit: 'contain' }} />
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, color: '#0D1F3C', letterSpacing: '-0.5px', lineHeight: 1.05 }}>Safiron</div>
             <div style={{ fontSize: 9, fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.4 }}>Global Solutions</div>
@@ -1277,7 +1278,7 @@ export default function Landing() {
           <div className="lp-footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 16 }}>
-                <img src="/emblem.png" alt="Safiron" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+                <OptimizedImage src="/emblem.png" alt="Safiron" width={44} height={44} loading="eager" style={{ objectFit: 'contain' }} />
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', lineHeight: 1.05 }}>Safiron</div>
                   <div style={{ fontSize: 8.5, fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.5 }}>Global Solutions</div>

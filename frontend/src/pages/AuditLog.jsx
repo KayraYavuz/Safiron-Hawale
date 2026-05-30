@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import { auditApi } from '../utils/api'
 import { useAuthStore } from '../store'
@@ -33,7 +34,11 @@ export default function AuditLog() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <Input type="date" label={t.startDate} value={fromDate} onChange={e => setFromDate(e.target.value)} style={{ width: 160 }} />
@@ -87,6 +92,7 @@ export default function AuditLog() {
           </tbody>
         </Table>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }

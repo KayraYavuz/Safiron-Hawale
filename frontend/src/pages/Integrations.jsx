@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { settingsApi } from '../utils/api'
 import { Card, Btn, Input, C } from '../components/UI'
@@ -319,7 +320,11 @@ export default function Integrations() {
   const getSettingFor = (key) => settings.find(s => s.key === key)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 860 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 860 }}>
 
       {/* Page intro */}
       <div style={{
@@ -402,5 +407,6 @@ export default function Integrations() {
         {t.apiKeySecurityNote}
       </div>
     </div>
+    </>
   )
 }

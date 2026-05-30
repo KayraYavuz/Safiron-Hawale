@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '../utils/api'
 import { fmt } from '../utils/format'
@@ -51,7 +52,11 @@ export default function Dashboard() {
   }, [cashMov])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* ── KPI Cards — stagger grid ── */}
       <div
@@ -250,6 +255,7 @@ export default function Dashboard() {
           </Table>
         </Card>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

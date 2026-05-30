@@ -1,4 +1,5 @@
 import { Fragment, useState, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { companiesApi, usersApi } from '../utils/api'
 import { Card, Table, Th, Td, Btn, Input, C } from '../components/UI'
@@ -206,7 +207,11 @@ export default function Companies() {
   const totalUsers    = users.filter(u => u.role !== 'super_admin').length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
@@ -456,6 +461,7 @@ export default function Companies() {
           </tbody>
         </Table>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }

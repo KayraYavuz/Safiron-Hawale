@@ -33,6 +33,31 @@
   --sh-xl: 0 20px 48px rgba(13,27,46,0.15), 0 6px 14px rgba(13,27,46,0.07);
 }
 
+/* ── Font Face Rules with font-display: swap ───────────────────────────────── */
+@font-face {
+  font-family: 'DM Sans';
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-weight: 400;
+  font-display: swap;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
 
@@ -44,6 +69,17 @@ body {
   font-size: 13.5px;
   line-height: 1.55;
   overflow-y: scroll;
+}
+
+/* ── RTL Support for Arabic ────────────────────────────────────────────────── */
+[lang="ar"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[lang="ar"] button,
+[lang="ar"] input {
+  text-align: right;
 }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────────── */

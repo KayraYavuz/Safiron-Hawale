@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountsApi, locationsApi, currenciesApi, reportsApi } from '../utils/api'
 import { fmt } from '../utils/format'
@@ -92,7 +93,11 @@ export default function Accounts() {
   const sortedCurs = useMemo(() => [...curs].sort((a, b) => a.code.localeCompare(b.code)), [curs])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         {isAdmin && (
@@ -274,6 +279,7 @@ export default function Accounts() {
           </Card>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
