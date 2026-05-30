@@ -73,7 +73,7 @@ const COPY = {
     footerDesc: 'Havale, döviz ve para transferi operasyonları için geliştirilmiş profesyonel para hizmetleri yazılımı.',
     footerCols: [
       { title: 'Platform',  links: [['Özellikler', '/features'], ['Fiyatlandırma', '/pricing'], ['Nasıl Çalışır', '#how']] },
-      { title: 'Şirket',    links: [['Hakkımızda', '#about'], ['İletişim', '#contact'], ['Gizlilik', '/gizlilik-politikasi']] },
+      { title: 'Şirket',    links: [['Hakkımızda', '/about'], ['İletişim', '/contact'], ['Gizlilik', '/gizlilik-politikasi']] },
     ],
     rights:     'Tüm hakları saklıdır.',
     privacy:    'Gizlilik Politikası',
@@ -142,7 +142,7 @@ const COPY = {
     footerDesc: 'برنامج احترافي لعمليات الحوالة وصرف العملات والتحويلات المالية.',
     footerCols: [
       { title: 'المنصة',  links: [['المميزات', '/features'], ['الأسعار', '/pricing'], ['كيف يعمل', '#how']] },
-      { title: 'الشركة',  links: [['عن الشركة', '#about'], ['تواصل', '#contact'], ['الخصوصية', '/gizlilik-politikasi']] },
+      { title: 'الشركة',  links: [['عن الشركة', '/about'], ['تواصل', '/contact'], ['الخصوصية', '/gizlilik-politikasi']] },
     ],
     rights:     'جميع الحقوق محفوظة.',
     privacy:    'سياسة الخصوصية',
@@ -211,7 +211,7 @@ const COPY = {
     footerDesc: 'Professional money services software for remittance, FX, and payment transfer operations.',
     footerCols: [
       { title: 'Platform', links: [['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how']] },
-      { title: 'Company',  links: [['About', '#about'], ['Contact', '#contact'], ['Privacy', '/gizlilik-politikasi']] },
+      { title: 'Company',  links: [['About', '/about'], ['Contact', '/contact'], ['Privacy', '/gizlilik-politikasi']] },
     ],
     rights:     'All rights reserved.',
     privacy:    'Privacy Policy',

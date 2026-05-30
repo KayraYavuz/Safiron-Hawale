@@ -13,6 +13,8 @@ import StructuredData, { organizationSchema, softwareApplicationSchema } from '.
 const Landing        = lazy(() => import('./pages/Landing'))
 const Features       = lazy(() => import('./pages/Features'))
 const Pricing        = lazy(() => import('./pages/Pricing'))
+const About          = lazy(() => import('./pages/About'))
+const Contact        = lazy(() => import('./pages/Contact'))
 const Login          = lazy(() => import('./pages/Login'))
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Transactions   = lazy(() => import('./pages/Transactions'))
@@ -90,6 +92,8 @@ export default function App() {
           <Route path="/"               element={<PublicOnly><Landing /></PublicOnly>} />
           <Route path="/features"       element={<Features />} />
           <Route path="/pricing"        element={<Pricing />} />
+          <Route path="/about"          element={<About />} />
+          <Route path="/contact"        element={<Contact />} />
           <Route path="/login"          element={<PublicOnly><Login /></PublicOnly>} />
 
           {/* Korumalı sayfalar */}
