@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs",
+    "build": "vite build && node scripts/sitemap.mjs && node scripts/prerender.mjs",
+    "sitemap": "node scripts/sitemap.mjs",
     "prerender": "node scripts/prerender.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --allowJs --checkJs false 2>/dev/null || true",
