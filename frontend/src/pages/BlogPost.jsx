@@ -4,16 +4,16 @@ import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 import { normalizeLang, langPath } from '../utils/lang'
-import { getPost, SITE } from '../data/blogPosts'
+import { getPost, getRelatedPosts, SITE } from '../data/blogPosts'
 
 const NAV_H = 68
 const GOLD = '#C9A84C'
 const NAVY = '#0D1F3C'
 
 const UI = {
-  tr: { dir: 'ltr', home: 'Ana Sayfa', blog: 'Blog', backToBlog: '← Tüm Yazılar', ctaH2: 'Operasyonunuzu Safiron ile dijitalleştirin', ctaP: 'Demo talep edin veya özellikleri inceleyin.', ctaBtn: 'Demo Talep Et', features: 'Özellikler', loginBtn: 'Giriş Yap', rights: 'Tüm hakları saklıdır.' },
-  ar: { dir: 'rtl', home: 'الرئيسية', blog: 'المدونة', backToBlog: '← جميع المقالات', ctaH2: 'رقمن عملياتك مع Safiron', ctaP: 'اطلب عرضاً تجريبياً أو استعرض المميزات.', ctaBtn: 'اطلب عرضاً تجريبياً', features: 'المميزات', loginBtn: 'تسجيل الدخول', rights: 'جميع الحقوق محفوظة.' },
-  en: { dir: 'ltr', home: 'Home', blog: 'Blog', backToBlog: '← All Articles', ctaH2: 'Digitise your operations with Safiron', ctaP: 'Request a demo or explore the features.', ctaBtn: 'Request a Demo', features: 'Features', loginBtn: 'Sign In', rights: 'All rights reserved.' },
+  tr: { dir: 'ltr', home: 'Ana Sayfa', blog: 'Blog', backToBlog: '← Tüm Yazılar', related: 'İlgili Yazılar', ctaH2: 'Operasyonunuzu Safiron ile dijitalleştirin', ctaP: 'Demo talep edin veya özellikleri inceleyin.', ctaBtn: 'Demo Talep Et', features: 'Özellikler', loginBtn: 'Giriş Yap', rights: 'Tüm hakları saklıdır.' },
+  ar: { dir: 'rtl', home: 'الرئيسية', blog: 'المدونة', backToBlog: '← جميع المقالات', related: 'مقالات ذات صلة', ctaH2: 'رقمن عملياتك مع Safiron', ctaP: 'اطلب عرضاً تجريبياً أو استعرض المميزات.', ctaBtn: 'اطلب عرضاً تجريبياً', features: 'المميزات', loginBtn: 'تسجيل الدخول', rights: 'جميع الحقوق محفوظة.' },
+  en: { dir: 'ltr', home: 'Home', blog: 'Blog', backToBlog: '← All Articles', related: 'Related Articles', ctaH2: 'Digitise your operations with Safiron', ctaP: 'Request a demo or explore the features.', ctaBtn: 'Request a Demo', features: 'Features', loginBtn: 'Sign In', rights: 'All rights reserved.' },
 }
 
 const LOCALE = { tr: 'tr-TR', ar: 'ar-AE', en: 'en-US' }
@@ -41,6 +41,7 @@ export default function BlogPost({ lang }) {
   if (!post) return <Navigate to={langPath(uiLang, 'blog')} replace />
 
   const url = `${SITE}${langPath(uiLang, 'blog')}/${slug}`
+  const related = getRelatedPosts(slug, uiLang, 2)
   const fmtDate = (d) => new Date(d).toLocaleDateString(LOCALE[uiLang], { year: 'numeric', month: 'long', day: 'numeric' })
 
   const seoData = {
@@ -152,6 +153,23 @@ export default function BlogPost({ lang }) {
           <div style={{ marginTop: 48, paddingTop: 28, borderTop: '1px solid #E2E8F0' }}>
             <Link to={langPath(uiLang, 'blog')} style={{ fontSize: 14.5, fontWeight: 700, color: NAVY, textDecoration: 'none' }}>{t.backToBlog}</Link>
           </div>
+
+          {/* Related posts — internal linking */}
+          {related.length > 0 && (
+            <section style={{ marginTop: 48 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: NAVY, letterSpacing: '-0.4px', marginBottom: 18 }}>{t.related}</h2>
+              <div style={{ display: 'grid', gap: 14 }}>
+                {related.map((r) => (
+                  <Link key={r.slug} to={`${langPath(uiLang, 'blog')}/${r.slug}`}
+                    style={{ display: 'block', padding: '18px 20px', borderRadius: 12, border: '1px solid #E2E8F0', textDecoration: 'none', background: '#F8FAFC' }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: '#9a7d2e' }}>{r.category}</span>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: NAVY, margin: '6px 0 4px', lineHeight: 1.35 }}>{r.title}</h3>
+                    <p style={{ fontSize: 13.5, color: '#64748B', lineHeight: 1.6, margin: 0 }}>{r.excerpt}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </article>
 
         {/* CTA */}

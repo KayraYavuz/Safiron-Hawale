@@ -288,4 +288,68 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+
+  <!-- ════ Blog: multi-currency-accounting-for-hawala ════ -->
+  <url>
+    <loc>https://safironpay.com/blog/multi-currency-accounting-for-hawala</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog/multi-currency-accounting-for-hawala</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog/multi-currency-accounting-for-hawala</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/multi-currency-accounting-for-hawala" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/multi-currency-accounting-for-hawala" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ════ Blog: mena-fintech-regulations-2026 ════ -->
+  <url>
+    <loc>https://safironpay.com/blog/mena-fintech-regulations-2026</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog/mena-fintech-regulations-2026</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog/mena-fintech-regulations-2026</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/mena-fintech-regulations-2026" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/mena-fintech-regulations-2026" />
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
