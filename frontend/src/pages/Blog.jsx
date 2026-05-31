@@ -2,9 +2,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
+import StructuredData from '../components/StructuredData'
 import { createSeoMetadata } from '../utils/seo'
 import { normalizeLang, langPath } from '../utils/lang'
-import { getPosts } from '../data/blogPosts'
+import { getPosts, SITE } from '../data/blogPosts'
 
 const NAV_H = 68
 const GOLD = '#C9A84C'
@@ -28,9 +29,31 @@ export default function Blog({ lang }) {
 
   const fmtDate = (d) => new Date(d).toLocaleDateString(LOCALE[uiLang], { year: 'numeric', month: 'long', day: 'numeric' })
 
+  // Blog schema marks /blog as a listing of its posts so crawlers see the hub
+  // as a collection rather than a generic page.
+  const blogSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    'name': seoData.ogTitle || seoData.title,
+    'description': seoData.description,
+    'url': seoData.canonicalUrl,
+    'inLanguage': uiLang,
+    'blogPost': posts.map((post) => ({
+      '@type': 'BlogPosting',
+      'headline': post.title,
+      'description': post.description,
+      'datePublished': post.date,
+      'dateModified': post.date,
+      'image': post.image,
+      'url': `${SITE}${langPath(uiLang, 'blog')}/${post.slug}`,
+      'inLanguage': uiLang,
+    })),
+  }
+
   return (
     <>
       <SEO {...seoData} />
+      <StructuredData schema={blogSchema} />
       <div dir={t.dir} style={{
         fontFamily: isRTL ? "'Segoe UI', Tahoma, Arial, sans-serif" : "'DM Sans', -apple-system, 'Segoe UI', sans-serif",
         color: '#0F172A', background: '#fff', minHeight: '100vh',

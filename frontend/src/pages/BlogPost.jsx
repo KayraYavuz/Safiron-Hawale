@@ -45,7 +45,9 @@ export default function BlogPost({ lang }) {
   const fmtDate = (d) => new Date(d).toLocaleDateString(LOCALE[uiLang], { year: 'numeric', month: 'long', day: 'numeric' })
 
   const seoData = {
-    title: `${post.title} — Safiron Global Solutions`,
+    // Short brand token keeps the <title> nearer the ~60-char SERP limit; the
+    // article headlines are already long. og:title below uses the bare headline.
+    title: `${post.title} — Safiron`,
     description: post.description,
     keywords: post.keywords,
     ogTitle: post.title,
