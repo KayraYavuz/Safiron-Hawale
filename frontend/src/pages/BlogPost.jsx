@@ -96,7 +96,6 @@ export default function BlogPost({ lang }) {
         color: '#0F172A', background: '#fff', minHeight: '100vh',
       }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&display=swap');
           .bp-link { color: #64748B; text-decoration: none; transition: color 0.15s; font-weight: 500; }
           .bp-link:hover { color: ${NAVY}; }
           .bp-crumb a { color: #64748B; text-decoration: none; }

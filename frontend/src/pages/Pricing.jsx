@@ -162,7 +162,6 @@ export default function Pricing({ lang }) {
         color: '#0F172A', background: '#fff', minHeight: '100vh',
       }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&display=swap');
           .pr-link { color: #64748B; text-decoration: none; transition: color 0.15s; font-weight: 500; }
           .pr-link:hover { color: ${NAVY}; }
           .pr-card { transition: transform 0.2s, box-shadow 0.2s; }

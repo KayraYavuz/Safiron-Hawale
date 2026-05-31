@@ -59,7 +59,6 @@ export default function Blog({ lang }) {
         color: '#0F172A', background: '#fff', minHeight: '100vh',
       }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&display=swap');
           .bl-link { color: #64748B; text-decoration: none; transition: color 0.15s; font-weight: 500; }
           .bl-link:hover { color: ${NAVY}; }
           .bl-card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }

@@ -615,7 +615,6 @@ export default function Landing({ lang }) {
       <StructuredData schema={softwareApplicationSchema} />
       <div dir={c.dir} style={{ fontFamily: isRTL ? "'Segoe UI', Tahoma, Arial, sans-serif" : "'DM Sans', -apple-system, 'Segoe UI', sans-serif", color: '#0F172A', lineHeight: 1, overflowX: 'hidden' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&display=swap');
         @keyframes lp-spin { to { transform: rotate(360deg); } }
         @keyframes lp-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.4); } }
         @keyframes lp-float { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-10px); } }
