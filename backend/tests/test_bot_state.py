@@ -60,9 +60,8 @@ class TestCget:
             from app.services.telegram_multi_bot import _cget
             result = _cget("company-1", 12345)
         assert result is not None
-        state, data = result
-        assert state == "S_TXN_TYPE"
-        assert data == {"amount": 1000}
+        assert result["state"] == "S_TXN_TYPE"
+        assert result["data"] == {"amount": 1000}
 
     def test_data_json_parsed(self):
         """data alanı JSON string → dict olarak parse edilmeli."""
@@ -75,9 +74,9 @@ class TestCget:
         session = _make_session_mock(row=row)
         with patch("app.core.database.SessionLocal", return_value=session):
             from app.services.telegram_multi_bot import _cget
-            state, data = _cget("company-1", 99)
-        assert data["currency"] == "SAR"
-        assert data["rate"] == 3.75
+            result = _cget("company-1", 99)
+        assert result["data"]["currency"] == "SAR"
+        assert result["data"]["rate"] == 3.75
 
 
 class TestCset:

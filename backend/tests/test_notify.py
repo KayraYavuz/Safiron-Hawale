@@ -41,54 +41,55 @@ class TestNotifyWrapper:
 
 
 class TestMarkdownEscaping:
-    """Telegram MarkdownV1 kaçış karakteri testleri (transactions.py)."""
+    """transactions._md_escape() — legacy-Markdown kaçış testleri."""
 
     def test_underscore_escaped(self):
-        name = "Ahmed_Hassan"
-        safe = name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
-        assert "\\_" in safe
-        assert "_" not in safe.replace("\\_", "")
+        from app.api.transactions import _md_escape
+        assert _md_escape("Ahmed_Hassan") == "Ahmed\\_Hassan"
 
     def test_asterisk_escaped(self):
-        name = "Ahmed*Bold"
-        safe = name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
-        assert "\\*" in safe
+        from app.api.transactions import _md_escape
+        assert "\\*" in _md_escape("Ahmed*Bold")
 
     def test_backtick_escaped(self):
-        name = "Ahmed`Code"
-        safe = name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
-        assert "\\`" in safe
+        from app.api.transactions import _md_escape
+        assert "\\`" in _md_escape("Ahmed`Code")
+
+    def test_link_brackets_escaped(self):
+        """[ ] ( ) kaçırılmalı — Markdown link injection engellenir."""
+        from app.api.transactions import _md_escape
+        out = _md_escape("[click](http://evil.com)")
+        assert all(seq in out for seq in ("\\[", "\\]", "\\(", "\\)"))
 
     def test_clean_name_unchanged(self):
-        name = "Ahmed Al-Rashidi"
-        safe = name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
-        assert safe == "Ahmed Al-Rashidi"
+        from app.api.transactions import _md_escape
+        assert _md_escape("Ahmed Al-Rashidi") == "Ahmed Al-Rashidi"
 
     def test_all_special_chars(self):
-        name = "test_name*bold`code"
-        safe = name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
-        assert safe == "test\\_name\\*bold\\`code"
+        from app.api.transactions import _md_escape
+        assert _md_escape("test_name*bold`code") == "test\\_name\\*bold\\`code"
 
 
 class TestNotifyCompanyFunction:
     """notify_company() — çalışmayan bot sessizce atlanır."""
 
     def test_no_app_returns_silently(self):
-        """Bot çalışmıyorsa (app None) hata fırlatmamalı."""
+        """Bot çalışmıyorsa (app yok) çökmemeli ve coroutine dispatch edilmemeli."""
         with patch("app.services.telegram_multi_bot._running_apps", {}), \
-             patch("app.services.telegram_multi_bot._running_loops", {}):
+             patch("app.services.telegram_multi_bot.asyncio.run_coroutine_threadsafe") as mock_dispatch:
             from app.services.telegram_multi_bot import notify_company
-            # Çökmemeli
             notify_company("nonexistent-company", "Test mesajı")
+            mock_dispatch.assert_not_called()
 
     def test_dead_loop_returns_silently(self):
-        """Loop çalışmıyorsa (is_running=False) hata fırlatmamalı."""
+        """Event loop çalışmıyorsa çökmemeli ve coroutine dispatch edilmemeli."""
         mock_app = MagicMock()
         mock_loop = MagicMock()
         mock_loop.is_running.return_value = False
 
         with patch("app.services.telegram_multi_bot._running_apps", {"company-123": mock_app}), \
-             patch("app.services.telegram_multi_bot._running_loops", {"company-123": mock_loop}):
+             patch("app.services.telegram_multi_bot._main_loop", mock_loop), \
+             patch("app.services.telegram_multi_bot.asyncio.run_coroutine_threadsafe") as mock_dispatch:
             from app.services.telegram_multi_bot import notify_company
             notify_company("company-123", "Test")
-            # run_coroutine_threadsafe çağrılmamalı
+            mock_dispatch.assert_not_called()
