@@ -15,6 +15,8 @@ const Features       = lazy(() => import('./pages/Features'))
 const Pricing        = lazy(() => import('./pages/Pricing'))
 const About          = lazy(() => import('./pages/About'))
 const Contact        = lazy(() => import('./pages/Contact'))
+const Blog           = lazy(() => import('./pages/Blog'))
+const BlogPost       = lazy(() => import('./pages/BlogPost'))
 const Login          = lazy(() => import('./pages/Login'))
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Transactions   = lazy(() => import('./pages/Transactions'))
@@ -104,6 +106,8 @@ export default function App() {
           <Route path="/pricing"        element={<Pricing />} />
           <Route path="/about"          element={<About />} />
           <Route path="/contact"        element={<Contact />} />
+          <Route path="/blog"           element={<Blog />} />
+          <Route path="/blog/:slug"     element={<BlogPost />} />
 
           {/* Dil önekli SEO route'ları — /tr, /ar */}
           {LANG_PREFIXES.flatMap(lng => [
@@ -111,6 +115,8 @@ export default function App() {
             ...PUBLIC_PAGES.map(([slug, Page]) => (
               <Route key={`${lng}/${slug}`} path={`/${lng}/${slug}`} element={<Page lang={lng} />} />
             )),
+            <Route key={`${lng}/blog`} path={`/${lng}/blog`} element={<Blog lang={lng} />} />,
+            <Route key={`${lng}/blog/slug`} path={`/${lng}/blog/:slug`} element={<BlogPost lang={lng} />} />,
           ])}
 
           <Route path="/login"          element={<PublicOnly><Login /></PublicOnly>} />

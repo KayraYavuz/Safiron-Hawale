@@ -73,7 +73,7 @@ const COPY = {
     days:       [['Pazartesi – Cuma', '09:00 – 18:00'], ['Cumartesi', '10:00 – 14:00'], ['Pazar', '—']],
     footerDesc: 'Havale, döviz ve para transferi operasyonları için geliştirilmiş profesyonel para hizmetleri yazılımı.',
     footerCols: [
-      { title: 'Platform',  links: [['Özellikler', '/features'], ['Fiyatlandırma', '/pricing'], ['Nasıl Çalışır', '#how']] },
+      { title: 'Platform',  links: [['Özellikler', '/features'], ['Fiyatlandırma', '/pricing'], ['Blog', '/blog'], ['Nasıl Çalışır', '#how']] },
       { title: 'Şirket',    links: [['Hakkımızda', '/about'], ['İletişim', '/contact'], ['Gizlilik', '/gizlilik-politikasi']] },
     ],
     rights:     'Tüm hakları saklıdır.',
@@ -142,7 +142,7 @@ const COPY = {
     days:       [['الاثنين – الجمعة', '09:00 – 18:00'], ['السبت', '10:00 – 14:00'], ['الأحد', '—']],
     footerDesc: 'برنامج احترافي لعمليات الحوالة وصرف العملات والتحويلات المالية.',
     footerCols: [
-      { title: 'المنصة',  links: [['المميزات', '/features'], ['الأسعار', '/pricing'], ['كيف يعمل', '#how']] },
+      { title: 'المنصة',  links: [['المميزات', '/features'], ['الأسعار', '/pricing'], ['المدونة', '/blog'], ['كيف يعمل', '#how']] },
       { title: 'الشركة',  links: [['عن الشركة', '/about'], ['تواصل', '/contact'], ['الخصوصية', '/gizlilik-politikasi']] },
     ],
     rights:     'جميع الحقوق محفوظة.',
@@ -211,7 +211,7 @@ const COPY = {
     days:       [['Monday – Friday', '09:00 – 18:00'], ['Saturday', '10:00 – 14:00'], ['Sunday', '—']],
     footerDesc: 'Professional money services software for remittance, FX, and payment transfer operations.',
     footerCols: [
-      { title: 'Platform', links: [['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how']] },
+      { title: 'Platform', links: [['Features', '/features'], ['Pricing', '/pricing'], ['Blog', '/blog'], ['How It Works', '#how']] },
       { title: 'Company',  links: [['About', '/about'], ['Contact', '/contact'], ['Privacy', '/gizlilik-politikasi']] },
     ],
     rights:     'All rights reserved.',
@@ -596,7 +596,7 @@ export default function Landing({ lang }) {
 
   // Language-prefix multilingual route links; leave anchors and legal pages as-is
   const localizeHref = (h) =>
-    ['/features', '/pricing', '/about', '/contact'].includes(h) ? langPath(uiLang, h.slice(1)) : h
+    ['/features', '/pricing', '/about', '/contact', '/blog'].includes(h) ? langPath(uiLang, h.slice(1)) : h
 
   // Get SEO metadata for the landing page
   const seoData = createSeoMetadata('landing', uiLang)

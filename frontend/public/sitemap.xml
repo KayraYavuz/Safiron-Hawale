@@ -160,4 +160,132 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+
+  <!-- ════ Blog hub ════ -->
+  <url>
+    <loc>https://safironpay.com/blog</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog" />
+    <lastmod>2026-05-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ════ Blog: choosing-hawala-management-software ════ -->
+  <url>
+    <loc>https://safironpay.com/blog/choosing-hawala-management-software</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog/choosing-hawala-management-software</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog/choosing-hawala-management-software</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/choosing-hawala-management-software" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/choosing-hawala-management-software" />
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ════ Blog: swift-integration-best-practices ════ -->
+  <url>
+    <loc>https://safironpay.com/blog/swift-integration-best-practices</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog/swift-integration-best-practices</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog/swift-integration-best-practices</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/swift-integration-best-practices" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/swift-integration-best-practices" />
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ════ Blog: telegram-bot-for-hawala-operations ════ -->
+  <url>
+    <loc>https://safironpay.com/blog/telegram-bot-for-hawala-operations</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/tr/blog/telegram-bot-for-hawala-operations</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://safironpay.com/ar/blog/telegram-bot-for-hawala-operations</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="tr" href="https://safironpay.com/tr/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://safironpay.com/ar/blog/telegram-bot-for-hawala-operations" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://safironpay.com/blog/telegram-bot-for-hawala-operations" />
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
