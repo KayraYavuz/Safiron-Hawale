@@ -44,6 +44,15 @@ def _notify(company_id, message: str) -> None:
         pass
 
 
+# Bot legacy "Markdown" parse_mode kullanıyor. Kullanıcı kontrollü metni
+# bir mesaja gömmeden önce bunu çağır: `[` link sözdizimini, `_ * `` ` ise
+# biçimlendirmeyi tetikler/bozar (Markdown injection).
+def _md_escape(text: str) -> str:
+    for ch in ("_", "*", "`", "[", "]", "(", ")"):
+        text = text.replace(ch, "\\" + ch)
+    return text
+
+
 def _require(user: User, *roles: UserRole):
     if user.role not in roles:
         raise HTTPException(403, "Forbidden")
@@ -178,7 +187,7 @@ def create_transaction(
             cp_name = cp_obj.name if cp_obj else "—"
     except Exception:
         pass
-    safe_cp = cp_name.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`")
+    safe_cp = _md_escape(cp_name)
     _notify(
         txn.company_id,
         f"⏳ *Yeni İşlem*\n• No: `{txn.txn_number}`\n• Tür: {txn.txn_type.value}\n• Müşteri: {safe_cp}",
