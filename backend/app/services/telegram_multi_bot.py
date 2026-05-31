@@ -360,6 +360,17 @@ def _get_lang(uid: int) -> str:
 def _set_lang(uid: int, lang: str):
     _user_langs[str(uid)] = lang
 
+
+def _md(text) -> str:
+    """Escape legacy-Markdown specials in a user-controlled value before it is
+    interpolated into a parse_mode="Markdown" message. `[` triggers link
+    syntax; `_ * ``` ` break/inject formatting. Apply to names, codes, and any
+    other user input — never to the template's own markup."""
+    s = "" if text is None else str(text)
+    for ch in ("_", "*", "`", "[", "]", "(", ")"):
+        s = s.replace(ch, "\\" + ch)
+    return s
+
 def _L(uid: int, key: str, **kwargs) -> str:
     """Kullanıcının dilinde metin döndür."""
     lang = _get_lang(uid)
@@ -616,7 +627,7 @@ def make_handlers(company_id, company_name: str):
         if admin_name:
             await update.message.reply_text("👋", reply_markup=ReplyKeyboardRemove())
             await update.message.reply_text(
-                _L(uid, "welcome", company=company_name, name=admin_name),
+                _L(uid, "welcome", company=company_name, name=_md(admin_name)),
                 parse_mode="Markdown",
                 reply_markup=_make_inline_menu(uid),
             )
@@ -769,7 +780,7 @@ def make_handlers(company_id, company_name: str):
 
             admin_name = await asyncio.to_thread(_get_name)
             await query.message.reply_text(
-                _L(uid, "welcome", company=company_name, name=admin_name),
+                _L(uid, "welcome", company=company_name, name=_md(admin_name)),
                 parse_mode="Markdown",
                 reply_markup=_make_inline_menu(uid),
             )
@@ -1055,7 +1066,7 @@ def _build_statement(cp_id, company_id, uid: int, db) -> str:
     )
 
     L      = BOT_L.get(_get_lang(uid), BOT_L["tr"])
-    header = _L(uid, "stmt_header", name=cp.name, balance=completed_usd)
+    header = _L(uid, "stmt_header", name=_md(cp.name), balance=completed_usd)
     lines  = [header]
 
     STATUS = {"completed": "✅", "pending": "⏳", "cancelled": "❌"}
@@ -1131,7 +1142,7 @@ def _conv_handle_text(conv: dict, text: str, uid: int, company_id, db):
             return ("❌ İsim en az 2 karakter olmalı:", _cancel_kb())
         _cset(company_id, uid, S_CP_NAME_AR, {**data, "name": name})
         kb = _kb([[("⏭ Atla", "skip_name_ar"), ("❌ İptal", "cancel")]])
-        return (f"👤 *{name}*\n\nArapça adı (opsiyonel):\n\n_Atla tuşuna basın veya yazın:_", kb)
+        return (f"👤 *{_md(name)}*\n\nArapça adı (opsiyonel):\n\n_Atla tuşuna basın veya yazın:_", kb)
 
     if state == S_CP_NAME_AR:
         name_ar = text.strip()
@@ -1412,7 +1423,7 @@ def _ask_cp_type(name: str, uid: int = 0):
         [(L.get("btn_both",     "🔄 Her İkisi"), "cpt:both"),   (L.get("btn_founder",  "👑 Kurucu"),    "cpt:founder")],
         [(L.get("btn_cancel",   "❌ İptal"), "cancel")],
     ])
-    return (_L(uid, "cp_type", name=name), kb)
+    return (_L(uid, "cp_type", name=_md(name)), kb)
 
 
 def _txn_summary(company_id, uid, data: dict, db):
@@ -1432,7 +1443,7 @@ def _txn_summary(company_id, uid, data: dict, db):
     lines = [
         f"📋 *İşlem Özeti*\n",
         f"• Tür: *{TXN_LABELS.get(txn_type, txn_type)}*",
-        f"• Müşteri: *{cp_name}*",
+        f"• Müşteri: *{_md(cp_name)}*",
     ]
     if is_simple:
         lines.append(f"• Kasa: *{from_acc}*")
@@ -1464,10 +1475,10 @@ def _cp_summary(data: dict):
     """Müşteri oluşturma özeti ve onay."""
     lines = [
         "📋 *Müşteri Özeti*\n",
-        f"• Ad: *{data.get('name','—')}*",
+        f"• Ad: *{_md(data.get('name','—'))}*",
     ]
     if data.get("name_ar"):
-        lines.append(f"• Arapça: *{data['name_ar']}*")
+        lines.append(f"• Arapça: *{_md(data['name_ar'])}*")
     lines.append(f"• Tür: *{data.get('type','—')}*")
     if data.get("country"):
         lines.append(f"• Ülke: *{data['country']}*")
@@ -1635,7 +1646,7 @@ def _do_create_cp(data: dict, company_id, db):
 
     return (
         f"✅ *Müşteri oluşturuldu!*\n\n"
-        f"• Ad: *{cp.name}*\n"
+        f"• Ad: *{_md(cp.name)}*\n"
         f"• Kod: `{cp.code}`\n"
         f"• Bot PIN: `{cp.bot_pin}`\n\n"
         f"_Uygulamada Müşteriler sayfasında görünür._",
@@ -1650,7 +1661,7 @@ def _do_create_cp(data: dict, company_id, db):
 def _customer_cmd(cmd: str, company_id, cp, db) -> str:
     if cmd in ("?", "yardım", "yardim"):
         return (
-            f"👤 *{cp.name}* — Menü\n\n"
+            f"👤 *{_md(cp.name)}* — Menü\n\n"
             "• `bakiye` → Net bakiyeniz\n"
             "• `işlemler` → Son 10 işleminiz\n"
             "• `kur` → Döviz kurları"
@@ -1713,7 +1724,7 @@ def _musteri_baglan(pin: str, uid: int, company_id, db) -> str:
     db.commit()
     return (
         f"✅ *Hesabınıza bağlandınız!*\n\n"
-        f"Hoş geldiniz, *{cp.name}*!\n\n"
+        f"Hoş geldiniz, *{_md(cp.name)}*!\n\n"
         "• `bakiye` → Net bakiyeniz\n"
         "• `işlemler` → Son işlemleriniz\n"
         "• `kur` → Döviz kurları\n\n"
@@ -1766,7 +1777,7 @@ def _admin_pin_bagla(pin: str, uid: int, company_id, db) -> str:
     db.commit()
     return (
         f"✅ *Hesabınıza bağlandınız!*\n\n"
-        f"Hoş geldiniz, *{user.name}*! 👋\n\n"
+        f"Hoş geldiniz, *{_md(user.name)}*! 👋\n\n"
         "📊 `bakiye` · `rapor` · `kur` · `işlemler`\n"
         "ℹ️ Tüm komutlar için `?` yazın."
     )
@@ -1783,7 +1794,7 @@ def _admin_bagla(kod: str, tg_id: str, company_id, db) -> str:
         return f"❌ `{kod}` kodu bulunamadı."
     cp.telegram_id = tg_id.lstrip("+")
     db.commit()
-    return f"✅ *{cp.name}* → Telegram `{tg_id}` bağlandı."
+    return f"✅ *{_md(cp.name)}* → Telegram `{tg_id}` bağlandı."
 
 
 def _admin_bagla_goster(kod: str, company_id, db) -> str:
@@ -1794,8 +1805,8 @@ def _admin_bagla_goster(kod: str, company_id, db) -> str:
     ).first()
     if not cp:
         return f"❌ `{kod}` bulunamadı."
-    return (f"🔗 *{cp.name}*: `{cp.telegram_id}`"
-            if cp.telegram_id else f"⚠️ *{cp.name}* henüz bağlı değil.")
+    return (f"🔗 *{_md(cp.name)}*: `{cp.telegram_id}`"
+            if cp.telegram_id else f"⚠️ *{_md(cp.name)}* henüz bağlı değil.")
 
 
 def _admin_coz(kod: str, company_id, db) -> str:
@@ -1808,7 +1819,7 @@ def _admin_coz(kod: str, company_id, db) -> str:
         return f"❌ `{kod}` bulunamadı."
     cp.telegram_id = None
     db.commit()
-    return f"✅ *{cp.name}* bağlantısı kaldırıldı."
+    return f"✅ *{_md(cp.name)}* bağlantısı kaldırıldı."
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1966,7 +1977,7 @@ def _q_son_islemler(company_id, db, limit: int = 10, uid: int = 0) -> str:
     for t in txns:
         p   = pnl_map.get(t.id)
         usd = f"${Decimal(str(p.usd_amount)):,.2f}" if p and p.usd_amount else "—"
-        cp  = t.counterparty.name if t.counterparty else no_cp
+        cp  = _md(t.counterparty.name) if t.counterparty else no_cp
         dt  = t.created_at.strftime("%d.%m %H:%M") if t.created_at else "—"
         status_icon  = STATUS.get(t.status.value, "•")
         txn_type_lbl = TT.get(t.txn_type.value, t.txn_type.value)
@@ -1994,7 +2005,7 @@ def _q_musteri_listesi(company_id, db) -> str:
         return "📭 Kayıtlı müşteri yok."
     lines = [f"👥 *Müşteriler* ({len(cps)})", ""]
     for cp in cps:
-        lines.append(f"• `{cp.code}` — {cp.name}")
+        lines.append(f"• `{_md(cp.code)}` — {_md(cp.name)}")
     return "\n".join(lines)
 
 
@@ -2026,7 +2037,7 @@ def _q_cp_bakiye(cp, db) -> str:
               .all())
 
     if not txns:
-        return f"📭 *{cp.name}*\n\nTamamlanmış işlem bulunamadı."
+        return f"📭 *{_md(cp.name)}*\n\nTamamlanmış işlem bulunamadı."
 
     FX = {"remittance", "fx", "swift"}
     running = ZERO
@@ -2060,7 +2071,7 @@ def _q_cp_bakiye(cp, db) -> str:
 
     sign = "+" if running > 0 else ""
     return (
-        f"💼 *{cp.name}*\n"
+        f"💼 *{_md(cp.name)}*\n"
         f"📅 {date.today():%d.%m.%Y}\n\n"
         f"*{sign}{running:,.2f} USD*\n"
         f"{durum}\n\n"
@@ -2077,12 +2088,12 @@ def _q_cp_islemler(cp, db, limit: int = 10) -> str:
               .order_by(Transaction.created_at.desc())
               .limit(limit).all())
     if not txns:
-        return f"📭 *{cp.name}*\n\nHenüz işlem kaydı yok."
+        return f"📭 *{_md(cp.name)}*\n\nHenüz işlem kaydı yok."
 
     STATUS = {"completed": "✅", "pending": "⏳", "cancelled": "❌"}
     TYPE_TR = {"remittance": "Havale", "fx": "Döviz", "deposit": "Yatırma",
                "withdrawal": "Çekme", "swift": "SWIFT", "internal_transfer": "Transfer"}
-    lines = [f"📋 *{cp.name}* — Son {limit} İşlem", ""]
+    lines = [f"📋 *{_md(cp.name)}* — Son {limit} İşlem", ""]
     for t in txns:
         p    = t.pnl
         usd  = f"${Decimal(str(p.usd_amount)):,.2f}" if p and p.usd_amount else "—"
