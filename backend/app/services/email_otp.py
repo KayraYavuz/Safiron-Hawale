@@ -137,12 +137,16 @@ def send_demo_request_email(
         return True
 
     try:
-        sender_addr = settings.SMTP_FROM or settings.SMTP_USER
+        configured = settings.SMTP_FROM or settings.SMTP_USER or "info@safironpay.com"
+        domain = configured.split("@")[-1] if "@" in configured else "safironpay.com"
+        # Gönderen, alıcıyla (info@) AYNI olmamalı: Cloudflare Email Routing,
+        # info@'dan info@'ya gelen maili döngü/self-send olarak düşürüyor.
+        sender_addr = f"noreply@{domain}"
         # CRLF'i temizlenmiş başlık değerleri — e-posta başlık enjeksiyonunu önler.
         safe_name, safe_company, safe_email = _hdr(name), _hdr(company), _hdr(email)
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Yeni Demo Talebi — {safe_name}" + (f" ({safe_company})" if safe_company else "")
-        msg["From"]    = f"Safiron Demo <{sender_addr}>"
+        msg["From"]    = f"Safiron Website <{sender_addr}>"
         msg["To"]      = DEMO_RECIPIENT
         msg["Reply-To"] = safe_email
 
