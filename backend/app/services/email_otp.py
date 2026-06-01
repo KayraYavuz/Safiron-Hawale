@@ -104,3 +104,73 @@ def send_otp_email(to_email: str, to_name: str, otp: str) -> bool:
     except Exception as e:
         print(f"[2FA] E-posta gönderilemedi: {e}")
         return False
+
+
+# Demo talepleri buraya düşer (Contact sayfasındaki satış adresi ile aynı).
+DEMO_RECIPIENT = "sales@safironpay.com"
+
+
+def _esc(text: str) -> str:
+    """HTML kaçışı — kullanıcı girdisini e-posta gövdesine güvenle gömmek için."""
+    return (
+        str(text)
+        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def send_demo_request_email(
+    name: str, email: str, company: str, phone: str,
+    preferred_at: str, message: str, lang: str = "en",
+) -> bool:
+    """Bir demo/randevu talebini satış ekibine e-postayla iletir. Kullanıcının
+    e-postası Reply-To olarak ayarlanır, böylece doğrudan yanıtlanabilir."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        # SMTP yoksa konsola yaz (geliştirme / yapılandırılmamış ortam)
+        print(f"[DEMO] {name} <{email}> · {company} · {phone} · {preferred_at} · {message[:120]}")
+        return True
+
+    try:
+        sender_addr = settings.SMTP_FROM or settings.SMTP_USER
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Yeni Demo Talebi — {name}" + (f" ({company})" if company else "")
+        msg["From"]    = f"Safiron Demo <{sender_addr}>"
+        msg["To"]      = DEMO_RECIPIENT
+        msg["Reply-To"] = email
+
+        rows = [
+            ("Ad / Name", name),
+            ("E-posta / Email", email),
+            ("Şirket / Company", company or "—"),
+            ("Telefon / Phone", phone or "—"),
+            ("Tercih edilen zaman / Preferred time", preferred_at or "—"),
+            ("Dil / Language", lang),
+            ("Mesaj / Message", message or "—"),
+        ]
+        rows_html = "".join(
+            f'<tr><td style="padding:6px 12px;color:#64748B;font-size:13px;white-space:nowrap;vertical-align:top">{_esc(k)}</td>'
+            f'<td style="padding:6px 12px;color:#0F172A;font-size:14px;font-weight:600">{_esc(v)}</td></tr>'
+            for k, v in rows
+        )
+        html = f"""
+        <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#F8FAFD;border-radius:16px">
+          <div style="font-size:20px;font-weight:800;color:#0D1F3C;margin-bottom:20px">Safiron <span style="color:#C9A84C">Global Solutions</span></div>
+          <div style="background:#fff;border-radius:12px;padding:24px;border:1px solid #E2E8F0">
+            <p style="font-size:15px;font-weight:700;color:#0D1F3C;margin:0 0 16px">📅 Yeni Demo / Randevu Talebi</p>
+            <table style="width:100%;border-collapse:collapse">{rows_html}</table>
+          </div>
+          <p style="font-size:12px;color:#94A3B8;margin-top:16px">Bu talebi yanıtlamak için doğrudan e-postaya cevap verin — gönderene gider.</p>
+        </div>
+        """
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(sender_addr, [DEMO_RECIPIENT], msg.as_string())
+
+        return True
+
+    except Exception as e:
+        print(f"[DEMO] E-posta gönderilemedi: {e}")
+        return False

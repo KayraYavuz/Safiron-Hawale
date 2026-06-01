@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { OptimizedImage } from '../components/OptimizedImage'
 import SEO from '../components/SEO'
 import StructuredData, { softwareApplicationSchema } from '../components/StructuredData'
+import BookDemoModal from '../components/BookDemoModal'
 import { createSeoMetadata } from '../utils/seo'
 import { normalizeLang, langPath } from '../utils/lang'
 
@@ -21,7 +22,7 @@ const COPY = {
     heroH1a:    'Para Hizmetleri İçin',
     heroH1b:    'Profesyonel Operasyon Platformu',
     heroSub:    'Havale, döviz alım-satım ve SWIFT işlemlerinizi tek ekranda yönetin. Çok şubeli mimari, gerçek zamanlı pozisyon takibi ve yapay zeka destekli finansal analiz.',
-    heroCta:    'Platforma Giriş Yap',
+    heroCta:    'Demo Talep Et',
     heroSec:    'Özellikleri İncele',
     txnLabel:   'Desteklenen İşlem Türleri',
     txnTypes:   ['Havale', 'Döviz Alım-Satım', 'SWIFT', 'Yatırma', 'Çekme', 'Virman'],
@@ -90,7 +91,7 @@ const COPY = {
     heroH1a:    'المنصة الاحترافية',
     heroH1b:    'لخدمات الأموال',
     heroSub:    'أدر عمليات الحوالة وصرف العملات والتحويلات SWIFT في شاشة واحدة. هيكل متعدد الفروع، تتبع المراكز الفورية، وتحليلات مالية بالذكاء الاصطناعي.',
-    heroCta:    'الدخول إلى المنصة',
+    heroCta:    'احجز عرضاً تجريبياً',
     heroSec:    'استعرض المميزات',
     txnLabel:   'أنواع المعاملات المدعومة',
     txnTypes:   ['حوالة', 'صرف عملات', 'سويفت', 'إيداع', 'سحب', 'تحويل داخلي'],
@@ -159,7 +160,7 @@ const COPY = {
     heroH1a:    'Streamline Your Hawala',
     heroH1b:    '& Forex Operations',
     heroSub:    'Multi-tenant platform for real-time position tracking, AI-powered analysis, and SWIFT integration. Manage remittance, FX, and international transfers on a single professional dashboard.',
-    heroCta:    'Start Free Trial',
+    heroCta:    'Book a Demo',
     heroSec:    'Explore Features',
     txnLabel:   'Supported Transaction Types',
     txnTypes:   ['Remittance', 'FX (Forex)', 'SWIFT', 'Deposit', 'Withdrawal', 'Internal Transfer'],
@@ -588,6 +589,7 @@ function SectionReveal({ children, delay = 0, direction = 'up', className = '' }
 /* ── Ana Sayfa ──────────────────────────────────────────────────────────────── */
 export default function Landing({ lang }) {
   const [loginOpen, setLoginOpen] = useState(false)
+  const [demoOpen, setDemoOpen] = useState(false)
   const [scrolled,  setScrolled]  = useState(false)
   const navigate = useNavigate()
   const uiLang = normalizeLang(lang)
@@ -729,6 +731,7 @@ export default function Landing({ lang }) {
       `}</style>
 
       <LoginPanel open={loginOpen} onClose={() => setLoginOpen(false)} syncLang={uiLang} />
+      <BookDemoModal open={demoOpen} onClose={() => setDemoOpen(false)} lang={uiLang} />
 
       {/* ══ NAVBAR ════════════════════════════════════════════════════════════ */}
       <motion.nav
@@ -835,7 +838,7 @@ export default function Landing({ lang }) {
             </motion.p>
 
             <motion.div variants={stagger(0.3)} initial="hidden" animate="visible" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 52 }}>
-              <button onClick={() => setLoginOpen(true)} className="lp-hero-cta" style={{
+              <button onClick={() => setDemoOpen(true)} className="lp-hero-cta" style={{
                 padding: '13px 28px', borderRadius: 10, fontSize: 15, fontWeight: 700,
                 background: 'linear-gradient(135deg, #C9A84C, #E8C56B)',
                 color: '#0D1F3C', border: 'none', cursor: 'pointer',
