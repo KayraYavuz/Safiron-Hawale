@@ -21,7 +21,7 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
-YARDIM = """🤖 *Safiron Hawale Bot*
+YARDIM = """🤖 *Safiron Global Solutions*
 
 📊 *Sorgulama:*
 • `bakiye` → Kasa bakiyeleri

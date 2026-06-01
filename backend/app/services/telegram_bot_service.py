@@ -71,7 +71,7 @@ async def _start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if _is_admin(uid):
         await update.message.reply_text(
-            "👋 *Safiron Hawale — Yönetici Paneli*\n\n"
+            "👋 *Safiron Global Solutions — Yönetici Paneli*\n\n"
             "📊 *Sorgulama:*\n"
             "• `bakiye` → Tüm kasa bakiyeleri\n"
             "• `rapor` → Günlük özet\n"

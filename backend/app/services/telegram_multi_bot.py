@@ -633,7 +633,7 @@ def make_handlers(company_id, company_name: str):
             )
         else:
             await update.message.reply_text(
-                "🔐 *Safiron Hawale*\n\n"
+                "🔐 *Safiron Global Solutions*\n\n"
                 "Hesabınız bağlı değil. Bağlanmak için:\n"
                 "1. Uygulamada *Kullanıcılar* sayfasını açın\n"
                 "2. Pininizi kopyalayın\n"

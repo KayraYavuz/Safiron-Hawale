@@ -75,7 +75,7 @@ def send_otp_email(to_email: str, to_name: str, otp: str) -> bool:
           <div style="background:#fff;border-radius:12px;padding:28px;border:1px solid #E2E8F0">
             <p style="font-size:15px;color:#334155;margin-bottom:8px">Merhaba <strong>{to_name}</strong>,</p>
             <p style="font-size:14px;color:#64748B;margin-bottom:24px">
-              Safiron Havale'ye giriş için doğrulama kodunuz:
+              Safiron Global Solutions'a giriş için doğrulama kodunuz:
             </p>
             <div style="text-align:center;margin:24px 0">
               <span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#0D1F3C;font-family:monospace">{otp}</span>
