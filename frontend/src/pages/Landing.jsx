@@ -755,9 +755,20 @@ export default function Landing({ lang }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 13.5 }}>
           <div className="lp-nav-links" style={{ display: 'flex', gap: 28 }}>
-            {[[c.nav[0], c.nav[1]], [c.nav[2], c.nav[3]], [c.nav[4], c.nav[5]], [c.nav[6], c.nav[7]]].map(([l, h]) => (
-              <a key={l} href={h} className="lp-nav-link">{l}</a>
-            ))}
+            <a href={c.nav[1]} className="lp-nav-link">{c.nav[0]}</a>
+            <a
+              href={langPath(uiLang, 'pricing')}
+              onClick={(e) => { e.preventDefault(); navigate(langPath(uiLang, 'pricing')) }}
+              className="lp-nav-link"
+            >{{ tr: 'Fiyatlandırma', ar: 'الأسعار', en: 'Pricing' }[uiLang]}</a>
+            <a
+              href={langPath(uiLang, 'blog')}
+              onClick={(e) => { e.preventDefault(); navigate(langPath(uiLang, 'blog')) }}
+              className="lp-nav-link"
+            >{{ tr: 'Blog', ar: 'المدونة', en: 'Blog' }[uiLang]}</a>
+            <a href={c.nav[3]} className="lp-nav-link">{c.nav[2]}</a>
+            <a href={c.nav[5]} className="lp-nav-link">{c.nav[4]}</a>
+            <a href={c.nav[7]} className="lp-nav-link">{c.nav[6]}</a>
           </div>
 
           {/* Dil toggle */}
@@ -1329,7 +1340,6 @@ export default function Landing({ lang }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
                   { icon: '✉', lbl: uiLang === 'tr' ? 'E-posta' : 'Email', val: 'info@safironpay.com', sub: c.emailSub, href: 'mailto:info@safironpay.com', border: '#DBEAFE', bg: '#EFF6FF', hc: '#2B6CB0' },
-                  { icon: '✈', lbl: 'Telegram', val: '@safiron_support', sub: c.tgSub2, href: 'https://t.me/safiron_support', border: '#BAE6FD', bg: '#F0F9FF', hc: '#0284C7' },
                 ].map(ct => (
                   <motion.a key={ct.lbl} href={ct.href}
                     whileHover={{ y: -2, boxShadow: `0 4px 20px ${ct.hc}22`, borderColor: ct.hc }}
@@ -1398,7 +1408,7 @@ export default function Landing({ lang }) {
               </div>
               <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.78, maxWidth: 280 }}>{c.footerDesc}</p>
               <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
-                {[{ icon: '✉', href: 'mailto:info@safironpay.com', title: 'Email' }, { icon: '✈', href: 'https://t.me/safiron_support', title: 'Telegram' }].map(s => (
+                {[{ icon: '✉', href: 'mailto:info@safironpay.com', title: 'Email' }].map(s => (
                   <a key={s.title} href={s.href} title={s.title} className="lp-social-btn">{s.icon}</a>
                 ))}
               </div>
