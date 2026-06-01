@@ -119,6 +119,12 @@ def _esc(text: str) -> str:
     )
 
 
+def _hdr(text: str) -> str:
+    """E-posta başlığına gömülecek kullanıcı değerinden CRLF'i temizle —
+    başlık enjeksiyonunu (ör. ekstra Bcc:) engeller."""
+    return str(text).replace("\r", " ").replace("\n", " ").strip()[:200]
+
+
 def send_demo_request_email(
     name: str, email: str, company: str, phone: str,
     preferred_at: str, message: str, lang: str = "en",
@@ -132,11 +138,13 @@ def send_demo_request_email(
 
     try:
         sender_addr = settings.SMTP_FROM or settings.SMTP_USER
+        # CRLF'i temizlenmiş başlık değerleri — e-posta başlık enjeksiyonunu önler.
+        safe_name, safe_company, safe_email = _hdr(name), _hdr(company), _hdr(email)
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Yeni Demo Talebi — {name}" + (f" ({company})" if company else "")
+        msg["Subject"] = f"Yeni Demo Talebi — {safe_name}" + (f" ({safe_company})" if safe_company else "")
         msg["From"]    = f"Safiron Demo <{sender_addr}>"
         msg["To"]      = DEMO_RECIPIENT
-        msg["Reply-To"] = email
+        msg["Reply-To"] = safe_email
 
         rows = [
             ("Ad / Name", name),
