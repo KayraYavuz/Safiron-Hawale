@@ -106,8 +106,8 @@ def send_otp_email(to_email: str, to_name: str, otp: str) -> bool:
         return False
 
 
-# Demo talepleri buraya düşer (Contact sayfasındaki satış adresi ile aynı).
-DEMO_RECIPIENT = "sales@safironpay.com"
+# Demo / randevu talepleri buraya düşer.
+DEMO_RECIPIENT = "info@safironpay.com"
 
 
 def _esc(text: str) -> str:

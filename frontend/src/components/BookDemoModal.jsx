@@ -13,7 +13,7 @@ const T = {
     submit: 'Randevu Talebi Gönder', sending: 'Gönderiliyor…',
     okTitle: 'Talebiniz alındı!', okBody: 'Ekibimiz seçtiğiniz zamanı e-posta ile teyit edecek. Teşekkürler.',
     close: 'Kapat', errName: 'Lütfen adınızı girin.', errEmail: 'Geçerli bir e-posta girin.',
-    errDate: 'Bir gün ve saat seçin.', errSend: 'Gönderilemedi. Lütfen sales@safironpay.com adresine yazın.',
+    errDate: 'Bir gün ve saat seçin.', errSend: 'Gönderilemedi. Lütfen info@safironpay.com adresine yazın.',
     pick: 'Seçin', locale: 'tr-TR',
   },
   ar: {
@@ -23,7 +23,7 @@ const T = {
     submit: 'إرسال طلب الموعد', sending: 'جارٍ الإرسال…',
     okTitle: 'تم استلام طلبك!', okBody: 'سيؤكّد فريقنا الوقت الذي اخترته عبر البريد الإلكتروني. شكراً لك.',
     close: 'إغلاق', errName: 'يرجى إدخال اسمك.', errEmail: 'أدخل بريداً إلكترونياً صحيحاً.',
-    errDate: 'اختر يوماً ووقتاً.', errSend: 'تعذّر الإرسال. يرجى مراسلة sales@safironpay.com.',
+    errDate: 'اختر يوماً ووقتاً.', errSend: 'تعذّر الإرسال. يرجى مراسلة info@safironpay.com.',
     pick: 'اختر', locale: 'ar',
   },
   en: {
@@ -33,7 +33,7 @@ const T = {
     submit: 'Send Booking Request', sending: 'Sending…',
     okTitle: 'Request received!', okBody: 'Our team will confirm your chosen time by email. Thank you.',
     close: 'Close', errName: 'Please enter your name.', errEmail: 'Enter a valid email.',
-    errDate: 'Pick a day and time.', errSend: 'Could not send. Please email sales@safironpay.com.',
+    errDate: 'Pick a day and time.', errSend: 'Could not send. Please email info@safironpay.com.',
     pick: 'Select', locale: 'en-US',
   },
 }

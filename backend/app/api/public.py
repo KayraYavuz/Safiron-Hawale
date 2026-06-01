@@ -42,7 +42,7 @@ class DemoRequest(BaseModel):
 def demo_request(data: DemoRequest, request: Request):
     ip = request.client.host if request.client else "unknown"
     if _rate_limited(ip):
-        raise HTTPException(429, "Too many requests. Please email sales@safironpay.com directly.")
+        raise HTTPException(429, "Too many requests. Please email info@safironpay.com directly.")
 
     ok = send_demo_request_email(
         name=data.name,
@@ -54,5 +54,5 @@ def demo_request(data: DemoRequest, request: Request):
         lang=data.lang,
     )
     if not ok:
-        raise HTTPException(502, "Could not send the request. Please email sales@safironpay.com.")
+        raise HTTPException(502, "Could not send the request. Please email info@safironpay.com.")
     return {"ok": True}
