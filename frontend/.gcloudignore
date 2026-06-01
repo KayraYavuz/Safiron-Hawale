@@ -1,0 +1,11 @@
+# Keep the Cloud Build source upload small. Without this, `gcloud run deploy
+# --source` uploads everything (incl. the ~140MB node_modules) and times out —
+# .dockerignore does NOT apply to the gcloud upload, only to the Docker build.
+# These are recreated inside the image by `npm install` / `npm run build`.
+node_modules/
+dist/
+.git/
+.gitignore
+.env
+.env.local
+*.log
