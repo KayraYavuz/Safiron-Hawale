@@ -157,7 +157,7 @@ const COPY = {
   en: {
     dir:        'ltr',
     badge:      'Money Services Software',
-    heroH1a:    'Streamline Your Hawala',
+    heroH1a:    'Streamline Your Remittance',
     heroH1b:    '& Forex Operations',
     heroSub:    'Multi-tenant platform for real-time position tracking, AI-powered analysis, and SWIFT integration. Manage remittance, FX, and international transfers on a single professional dashboard.',
     heroCta:    'Book a Demo',
