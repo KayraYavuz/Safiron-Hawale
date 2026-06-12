@@ -21,7 +21,7 @@ Two accounting standards are supported and selectable **per company**:
 | Currency | **USD functional + original per line** (uses existing `get_usd_rate`); statements in USD with per-currency drill-down |
 | History | **Backfill all** (idempotent, re-runnable) |
 | Posting | **Approach A** — role-based posting engine + per-company `AccountMapping` |
-| Delivery | **Phased** (4 phases with review gates) |
+| Delivery | **Phased** (5 phases with review gates) |
 
 ## 3. Current system (context)
 
@@ -75,7 +75,7 @@ Constraint: `UniqueConstraint(company_id, role)`.
 |---|---|---|
 | id | GUID PK | |
 | company_id | GUID FK | |
-| entry_number | String(24) | e.g. `JE-2026-000123`, MAX+1 per year (mirror `_next_txn_number`) |
+| entry_number | String(24) | e.g. `JE-2026-000123`, **gap-free** sequential per (company, year) via a `journal_sequences` counter row locked `FOR UPDATE` — auditors require no missing numbers (mirror `_next_txn_number` but contention-safe) |
 | entry_date | Date | |
 | value_date | Date | |
 | source_type | Enum(transaction, settlement, manual, opening, backfill) | |
@@ -108,6 +108,24 @@ Index `(source_type, source_id)` for idempotent backfill/lookups.
 ### 5.6 `Account` (till) link
 Add `gl_account_id = Column(GUID FK → chart_of_accounts, nullable=True)` to `Account`. On first posting, if null, the engine **auto-creates** a postable leaf under the mapped parent for the till's `account_type` (e.g. `100.01 Kasa – İstanbul USD`) and assigns it. Gives a per-till sub-ledger automatically.
 
+### 5.7 `fiscal_periods` (period close — Phase 5)
+| Column | Type | Notes |
+|---|---|---|
+| id | GUID PK | |
+| company_id | GUID FK | |
+| period_start / period_end | Date | usually a month or year |
+| status | Enum(open, closed) | |
+| closed_by | GUID FK → users nullable | |
+| closed_at | DateTime nullable | |
+
+The posting engine refuses to post (or void) into a `closed` period; closing a period optionally posts the year-end profit roll-up to `retained_earnings`. Designed-in now so the journal schema and engine guard exist from the start; the close/reopen UI ships in Phase 5.
+
+### 5.8 Indexes (performance / future scale)
+- `journal_entries`: `(company_id)`, `(source_type, source_id)`, `(entry_date)`, `(status)`.
+- `journal_lines`: `(entry_id)`, `(coa_account_id)`, `(coa_account_id, entry_id)` for ledger drill-down, `(counterparty_id)` for sub-ledger, `(account_id)`.
+- `chart_of_accounts`: `(company_id, code)` unique, `(company_id, parent_id)`, `(company_id, account_type)`.
+Statement queries aggregate `debit_usd/credit_usd` grouped by account — these indexes keep Mizan/Bilanço fast as the journal grows.
+
 ## 6. Posting rules
 
 Triggered on transaction **approval** (`pending → completed`) and on supplier-settlement create. One balanced `journal_entry` per source event.
@@ -126,7 +144,7 @@ Triggered on transaction **approval** (`pending → completed`) and on supplier-
 
 **Currency:** every line stores original `debit`/`credit` + `rate_usd` + `debit_usd`/`credit_usd` from `get_usd_rate`. Engine balances on the **USD** amounts; sub-cent FX rounding differences post to the `rounding` role.
 
-**Void/reversal:** cancelling or deleting a posted transaction creates a mirror entry (debits↔credits swapped), sets original `status=void`, links via `reversed_by_id`. Entries are never hard-deleted (audit-safe).
+**Void/reversal:** cancelling or deleting a posted transaction creates a mirror entry (debits↔credits swapped), sets original `status=void`, links via `reversed_by_id`. Entries are never hard-deleted (audit-safe). Posting and void are **rejected if the target period is closed** (§5.7) — the guard is present from Phase 2 even before the close UI exists.
 
 ## 7. Reports (GL-backed)
 
@@ -184,7 +202,10 @@ Register router in `main.py`. Reuse existing role guards (`admin`, `super_admin`
 2. **Phase 2 — Journal + posting engine:** `journal_entries`/`journal_lines`, `gl_account_id` on Account, role-based engine, hook into approve/settlement/void, `Journal.jsx`. Review gate.
 3. **Phase 3 — Backfill:** idempotent `backfill-gl` over history. Review gate.
 4. **Phase 4 — Statements:** Mizan / Bilanço / Gelir Tablosu / Defter-i Kebir endpoints + `FinancialStatements.jsx`. Review gate.
+5. **Phase 5 — Period close:** `fiscal_periods`, posting-engine lock guard, year-end profit roll-up to `retained_earnings`, close/reopen UI. Review gate.
+
+The `fiscal_periods` table, the gap-free `journal_sequences` counter, and the period-lock guard in the engine are **schema-designed in Phases 1–2** even though their UI lands in Phase 5 — so the ledger is audit-correct from the first posting and never needs a destructive migration later.
 
 ## 14. Non-goals (v1)
 
-Period close/locking, multi-level approval workflow for journals, tax (KDV) sub-ledger automation, depreciation schedules, consolidated multi-company statements, Alembic migration framework. Can be follow-ups.
+Multi-level approval workflow for journals, tax (KDV) sub-ledger automation, depreciation schedules, consolidated multi-company statements, Alembic migration framework. Can be follow-ups.
