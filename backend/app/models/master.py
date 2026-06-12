@@ -16,6 +16,7 @@ class Company(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     telegram_bot_token = Column(String, nullable=True)  # @BotFather'dan alınan token
+    accounting_scheme = Column(String(8), nullable=True)  # "thp" | "intl" | None until initialised
 
 
 class Location(Base):
