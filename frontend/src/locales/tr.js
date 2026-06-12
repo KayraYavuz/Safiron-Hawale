@@ -4,7 +4,13 @@ export default {
   dashboard: 'Ana Sayfa', transactions: 'İşlemler', counterparties: 'Karşı Taraflar',
   accounts: 'Hesaplar', rates: 'Kur Tablosu', reports: 'Raporlar', users: 'Kullanıcılar',
   reconciliation: 'Günlük Mutabakat', audit: 'Denetim Kaydı', logout: 'Çıkış Yap',
-  chartOfAccounts: 'Hesap Planı',
+  chartOfAccounts: 'Hesap Planı', journal: 'Yevmiye Defteri',
+  // Journal (Yevmiye Defteri)
+  jeTitle: 'Yevmiye Defteri', jeManualEntry: 'Manuel Fiş', jeAddLine: 'Satır Ekle',
+  jeDate: 'Tarih', jeMemo: 'Açıklama', jeAccount: 'Hesap', jeDebit: 'Borç', jeCredit: 'Alacak',
+  jeTotal: 'Toplam', jeBalanced: 'Denk', jeNotBalanced: 'Denk Değil',
+  jeSaved: 'Fiş kaydedildi', jeVoid: 'İptal Et', jeVoided: 'İptal', jePosted: 'Kayıtlı',
+  jeVoidConfirm: 'Bu fiş ters kayıtla iptal edilsin mi?', jeEmpty: 'Henüz yevmiye kaydı yok',
   // Chart of Accounts (Hesap Planı)
   coaTitle: 'Hesap Planı', coaSubtitle: 'Tekdüzen / Uluslararası muhasebe hesap planı',
   coaInitTitle: 'Hesap Planını Başlat', coaInitDesc: 'Şirketiniz için bir hesap planı şeması seçin. Bu işlem hesap ağacını ve rol eşleştirmelerini oluşturur.',

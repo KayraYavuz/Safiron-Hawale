@@ -146,4 +146,9 @@ export const accountingApi = {
   deleteAcc:  (id)       => api.delete(`/api/accounting/chart/${id}`),
   mappings:   ()         => api.get('/api/accounting/mappings'),
   setMapping: (data)     => api.put('/api/accounting/mappings', data),
+  journal:          (params) => api.get('/api/accounting/journal', { params }),
+  journalEntry:     (id)     => api.get(`/api/accounting/journal/${id}`),
+  postableAccounts: ()       => api.get('/api/accounting/journal/postable-accounts'),
+  createJournal:    (data)   => api.post('/api/accounting/journal', data),
+  voidJournal:      (id)     => api.post(`/api/accounting/journal/${id}/void`),
 }

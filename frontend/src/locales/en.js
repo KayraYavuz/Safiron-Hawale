@@ -4,7 +4,13 @@ export default {
   dashboard: 'Dashboard', transactions: 'Transactions', counterparties: 'Counterparties',
   accounts: 'Accounts', rates: 'Exchange Rates', reports: 'Reports', users: 'Users',
   reconciliation: 'Daily Reconciliation', audit: 'Audit Log', logout: 'Logout',
-  chartOfAccounts: 'Chart of Accounts',
+  chartOfAccounts: 'Chart of Accounts', journal: 'Journal',
+  // Journal
+  jeTitle: 'Journal', jeManualEntry: 'Manual Entry', jeAddLine: 'Add Line',
+  jeDate: 'Date', jeMemo: 'Memo', jeAccount: 'Account', jeDebit: 'Debit', jeCredit: 'Credit',
+  jeTotal: 'Total', jeBalanced: 'Balanced', jeNotBalanced: 'Not Balanced',
+  jeSaved: 'Entry saved', jeVoid: 'Void', jeVoided: 'Void', jePosted: 'Posted',
+  jeVoidConfirm: 'Reverse this entry with a mirror posting?', jeEmpty: 'No journal entries yet',
   // Chart of Accounts
   coaTitle: 'Chart of Accounts', coaSubtitle: 'Turkish (THP) / International accounting chart',
   coaInitTitle: 'Initialize Chart of Accounts', coaInitDesc: 'Choose an accounting scheme for your company. This creates the account tree and role mappings.',

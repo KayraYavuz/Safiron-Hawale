@@ -4,7 +4,13 @@ export default {
   dashboard: 'الرئيسية', transactions: 'المعاملات', counterparties: 'الأطراف المقابلة',
   accounts: 'الحسابات', rates: 'جدول الأسعار', reports: 'التقارير', users: 'المستخدمون',
   reconciliation: 'المطابقة اليومية', audit: 'سجل التدقيق', logout: 'تسجيل الخروج',
-  chartOfAccounts: 'دليل الحسابات',
+  chartOfAccounts: 'دليل الحسابات', journal: 'دفتر اليومية',
+  // Journal (دفتر اليومية)
+  jeTitle: 'دفتر اليومية', jeManualEntry: 'قيد يدوي', jeAddLine: 'إضافة سطر',
+  jeDate: 'التاريخ', jeMemo: 'البيان', jeAccount: 'الحساب', jeDebit: 'مدين', jeCredit: 'دائن',
+  jeTotal: 'الإجمالي', jeBalanced: 'متوازن', jeNotBalanced: 'غير متوازن',
+  jeSaved: 'تم حفظ القيد', jeVoid: 'إلغاء', jeVoided: 'ملغى', jePosted: 'مرحّل',
+  jeVoidConfirm: 'هل تريد عكس هذا القيد بقيد معاكس؟', jeEmpty: 'لا توجد قيود بعد',
   // Chart of Accounts (دليل الحسابات)
   coaTitle: 'دليل الحسابات', coaSubtitle: 'دليل الحسابات المحاسبي الموحّد (التركي) / الدولي',
   coaInitTitle: 'تهيئة دليل الحسابات', coaInitDesc: 'اختر نظام محاسبة لشركتك. سيؤدي ذلك إلى إنشاء شجرة الحسابات وربط الأدوار.',
