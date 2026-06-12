@@ -320,3 +320,57 @@ class SavedReportOut(BaseModel):
     is_favorite: bool
     class Config:
         from_attributes = True
+
+# ── Chart of Accounts ─────────────────────────────────────────────────────────
+class InitializeChart(BaseModel):
+    scheme: str  # "thp" | "intl"
+
+
+class CoaAccountCreate(BaseModel):
+    code: str
+    name_tr: str
+    name_ar: str = ""
+    name_en: str = ""
+    account_type: str            # asset|liability|equity|revenue|expense
+    thp_class: Optional[int] = None
+    parent_id: Optional[UUID] = None
+    is_postable: bool = True
+    currency_id: Optional[UUID] = None
+
+
+class CoaAccountUpdate(BaseModel):
+    name_tr: Optional[str] = None
+    name_ar: Optional[str] = None
+    name_en: Optional[str] = None
+    is_postable: Optional[bool] = None
+    is_active: Optional[bool] = None
+    parent_id: Optional[UUID] = None
+
+
+class CoaAccountOut(BaseModel):
+    id: UUID
+    code: str
+    name_tr: str
+    name_ar: str
+    name_en: str
+    account_type: str
+    thp_class: Optional[int] = None
+    parent_id: Optional[UUID] = None
+    is_postable: bool
+    currency_id: Optional[UUID] = None
+    scheme: str
+    is_active: bool
+    class Config:
+        from_attributes = True
+
+
+class MappingUpdate(BaseModel):
+    role: str
+    coa_account_id: UUID
+
+
+class MappingOut(BaseModel):
+    role: str
+    coa_account_id: Optional[UUID] = None
+    class Config:
+        from_attributes = True
