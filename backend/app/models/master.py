@@ -68,6 +68,7 @@ class Account(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    gl_account_id = Column(GUID(), ForeignKey("chart_of_accounts.id"), nullable=True)
 
     location = relationship("Location", back_populates="accounts")
     currency = relationship("Currency", back_populates="accounts")

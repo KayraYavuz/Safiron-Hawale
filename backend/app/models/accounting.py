@@ -1,7 +1,8 @@
 import uuid
 import enum
 from sqlalchemy import (
-    Column, String, Boolean, Enum, ForeignKey, DateTime, Integer, UniqueConstraint, Index,
+    Column, String, Boolean, Enum, ForeignKey, DateTime, Integer, Numeric,
+    Date, Text, UniqueConstraint, Index,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -75,3 +76,97 @@ class AccountMapping(Base):
     coa_account_id = Column(GUID(), ForeignKey("chart_of_accounts.id"), nullable=False)
 
     account = relationship("ChartOfAccount")
+
+
+class JournalSourceType(str, enum.Enum):
+    transaction = "transaction"
+    settlement = "settlement"
+    manual = "manual"
+    opening = "opening"
+    backfill = "backfill"
+
+
+class JournalStatus(str, enum.Enum):
+    posted = "posted"
+    void = "void"
+
+
+class FiscalPeriodStatus(str, enum.Enum):
+    open = "open"
+    closed = "closed"
+
+
+class JournalEntry(Base):
+    __tablename__ = "journal_entries"
+    __table_args__ = (
+        UniqueConstraint("company_id", "entry_number", name="uq_je_company_number"),
+        Index("ix_je_company", "company_id"),
+        Index("ix_je_source", "source_type", "source_id"),
+        Index("ix_je_date", "entry_date"),
+        Index("ix_je_status", "status"),
+    )
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    entry_number = Column(String(24), nullable=False)
+    entry_date = Column(Date, nullable=False)
+    value_date = Column(Date, nullable=True)
+    source_type = Column(Enum(JournalSourceType), nullable=False)
+    source_id = Column(GUID(), nullable=True)
+    memo = Column(Text, nullable=True)
+    status = Column(Enum(JournalStatus), default=JournalStatus.posted, nullable=False)
+    reversed_by_id = Column(GUID(), ForeignKey("journal_entries.id"), nullable=True)
+    created_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    lines = relationship("JournalLine", back_populates="entry", cascade="all, delete-orphan")
+
+
+class JournalLine(Base):
+    __tablename__ = "journal_lines"
+    __table_args__ = (
+        Index("ix_jl_entry", "entry_id"),
+        Index("ix_jl_account", "coa_account_id"),
+        Index("ix_jl_account_entry", "coa_account_id", "entry_id"),
+        Index("ix_jl_counterparty", "counterparty_id"),
+        Index("ix_jl_till", "account_id"),
+    )
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    entry_id = Column(GUID(), ForeignKey("journal_entries.id"), nullable=False)
+    coa_account_id = Column(GUID(), ForeignKey("chart_of_accounts.id"), nullable=False)
+    debit = Column(Numeric(18, 4), default=0)
+    credit = Column(Numeric(18, 4), default=0)
+    currency_id = Column(GUID(), ForeignKey("currencies.id"), nullable=True)
+    rate_usd = Column(Numeric(18, 8), default=1)
+    debit_usd = Column(Numeric(18, 4), default=0)
+    credit_usd = Column(Numeric(18, 4), default=0)
+    counterparty_id = Column(GUID(), ForeignKey("counterparties.id"), nullable=True)
+    account_id = Column(GUID(), ForeignKey("accounts.id"), nullable=True)
+
+    entry = relationship("JournalEntry", back_populates="lines")
+    account = relationship("ChartOfAccount")
+
+
+class JournalSequence(Base):
+    """Gap-free per-(company, year) journal numbering counter."""
+    __tablename__ = "journal_sequences"
+    __table_args__ = (
+        UniqueConstraint("company_id", "year", name="uq_jseq_company_year"),
+    )
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    year = Column(Integer, nullable=False)
+    last_value = Column(Integer, default=0, nullable=False)
+
+
+class FiscalPeriod(Base):
+    __tablename__ = "fiscal_periods"
+    __table_args__ = (
+        Index("ix_fp_company", "company_id"),
+    )
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    status = Column(Enum(FiscalPeriodStatus), default=FiscalPeriodStatus.open, nullable=False)
+    closed_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
