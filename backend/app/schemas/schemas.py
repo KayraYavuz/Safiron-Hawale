@@ -374,3 +374,41 @@ class MappingOut(BaseModel):
     coa_account_id: Optional[UUID] = None
     class Config:
         from_attributes = True
+
+# ── Journal ───────────────────────────────────────────────────────────────────
+class JournalLineIn(BaseModel):
+    coa_account_id: UUID
+    debit_usd: Decimal = Decimal("0")
+    credit_usd: Decimal = Decimal("0")
+    counterparty_id: Optional[UUID] = None
+
+
+class ManualJournalCreate(BaseModel):
+    entry_date: date
+    memo: Optional[str] = None
+    lines: List[JournalLineIn]
+
+
+class JournalLineOut(BaseModel):
+    id: UUID
+    coa_account_id: UUID
+    debit: Decimal
+    credit: Decimal
+    debit_usd: Decimal
+    credit_usd: Decimal
+    counterparty_id: Optional[UUID] = None
+    account_id: Optional[UUID] = None
+    class Config:
+        from_attributes = True
+
+
+class JournalEntryOut(BaseModel):
+    id: UUID
+    entry_number: str
+    entry_date: date
+    source_type: str
+    status: str
+    memo: Optional[str] = None
+    lines: List[JournalLineOut] = []
+    class Config:
+        from_attributes = True

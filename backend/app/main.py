@@ -16,6 +16,7 @@ from app.api.settings import router as settings_router
 from app.api.whatsapp import router as whatsapp_router
 from app.api.public import router as public_router
 from app.api.accounting import router as accounting_router
+from app.api.journal import router as journal_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -86,6 +87,7 @@ app.include_router(settings_router)
 app.include_router(whatsapp_router)
 app.include_router(public_router)
 app.include_router(accounting_router)
+app.include_router(journal_router)
 
 @app.get("/")
 def root():
