@@ -137,3 +137,13 @@ export const settingsApi = {
   update: (key, value)  => api.patch(`/api/settings/${key}`, { value }),
   clear:  (key)         => api.delete(`/api/settings/${key}`),
 }
+
+export const accountingApi = {
+  chart:      ()         => api.get('/api/accounting/chart'),
+  initialize: (scheme)   => api.post('/api/accounting/initialize', { scheme }),
+  createAcc:  (data)     => api.post('/api/accounting/chart', data),
+  updateAcc:  (id, data) => api.patch(`/api/accounting/chart/${id}`, data),
+  deleteAcc:  (id)       => api.delete(`/api/accounting/chart/${id}`),
+  mappings:   ()         => api.get('/api/accounting/mappings'),
+  setMapping: (data)     => api.put('/api/accounting/mappings', data),
+}
