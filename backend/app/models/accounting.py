@@ -53,7 +53,9 @@ class ChartOfAccount(Base):
     name_tr = Column(String, nullable=False)
     name_ar = Column(String, nullable=False)
     name_en = Column(String, nullable=False)
-    account_type = Column(Enum(AccountType), nullable=False)
+    # Distinct PG enum type name: master.AccountType (cash/bank/crypto) also maps
+    # to "accounttype" on PostgreSQL — without an explicit name they collide.
+    account_type = Column(Enum(AccountType, name="coa_account_type"), nullable=False)
     thp_class = Column(Integer, nullable=True)
     parent_id = Column(GUID(), ForeignKey("chart_of_accounts.id"), nullable=True)
     is_postable = Column(Boolean, default=True, nullable=False)
