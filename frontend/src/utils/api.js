@@ -155,4 +155,7 @@ export const accountingApi = {
   balanceSheet:     (params) => api.get('/api/accounting/balance-sheet', { params }),
   incomeStatement:  (params) => api.get('/api/accounting/income-statement-gl', { params }),
   generalLedger:    (id, params) => api.get(`/api/accounting/general-ledger/${id}`, { params }),
+  periods:          ()       => api.get('/api/accounting/periods'),
+  closePeriod:      (data)   => api.post('/api/accounting/periods/close', data),
+  reopenPeriod:     (id)     => api.post(`/api/accounting/periods/${id}/reopen`),
 }

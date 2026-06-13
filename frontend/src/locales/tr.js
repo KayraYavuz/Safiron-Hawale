@@ -11,6 +11,9 @@ export default {
   fsRevenue: 'Gelirler', fsExpense: 'Giderler', fsTotal: 'Toplam', fsBalance: 'Bakiye',
   fsDebit: 'Borç', fsCredit: 'Alacak', fsAccount: 'Hesap', fsFrom: 'Başlangıç', fsTo: 'Bitiş',
   fsRunning: 'Yürüyen Bakiye', fsEntryNo: 'Fiş No',
+  fsPeriods: 'Dönemler', fsClosePeriod: 'Dönemi Kapat', fsReopen: 'Yeniden Aç',
+  fsPeriodStart: 'Dönem Başı', fsPeriodEnd: 'Dönem Sonu', fsStatusOpen: 'Açık', fsStatusClosed: 'Kapalı',
+  fsCloseConfirm: 'Bu dönem kapatılsın mı? Kâr/zarar geçmiş yıllar kârına aktarılır.',
   // Journal (Yevmiye Defteri)
   jeTitle: 'Yevmiye Defteri', jeManualEntry: 'Manuel Fiş', jeAddLine: 'Satır Ekle',
   jeDate: 'Tarih', jeMemo: 'Açıklama', jeAccount: 'Hesap', jeDebit: 'Borç', jeCredit: 'Alacak',

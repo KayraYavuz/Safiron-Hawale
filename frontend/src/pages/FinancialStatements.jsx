@@ -1,23 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountingApi } from '../utils/api'
 import { fmt } from '../utils/format'
-import { Card, CardHeader, Table, Th, Td, Btn, Select, TrHover, C } from '../components/UI'
+import { useAuthStore } from '../store'
+import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, C } from '../components/UI'
+import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
 
 const yearStart = () => `${new Date().getFullYear()}-01-01`
 const today = () => new Date().toISOString().slice(0, 10)
 const n = (v) => { const x = Number(v); return isFinite(x) ? x : 0 }
 
-const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger']
+const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger', 'periods']
 
 export default function FinancialStatements() {
   const { t, lang } = useLang()
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  const isAdmin = ['admin', 'super_admin', 'accounting'].includes(user?.role)
   const [tab, setTab] = useState('trialBalance')
   const [start, setStart] = useState(yearStart())
   const [end, setEnd] = useState(today())
   const [glAccount, setGlAccount] = useState('')
+  const [pStart, setPStart] = useState(yearStart())
+  const [pEnd, setPEnd] = useState(`${new Date().getFullYear()}-12-31`)
 
   const nm = (r) => r[`name_${lang}`] || r.name_tr
 
@@ -32,8 +39,25 @@ export default function FinancialStatements() {
     queryFn: () => accountingApi.generalLedger(glAccount, { start, end }).then(r => r.data),
     enabled: tab === 'generalLedger' && !!glAccount,
   })
+  const { data: periods = [] } = useQuery({
+    queryKey: ['periods'], queryFn: () => accountingApi.periods().then(r => r.data), enabled: tab === 'periods',
+  })
 
-  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger }
+  const closeMut = useMutation({
+    mutationFn: () => accountingApi.closePeriod({ period_start: pStart, period_end: pEnd }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['periods'] }); qc.invalidateQueries({ queryKey: ['tb'] })
+      qc.invalidateQueries({ queryKey: ['bs'] }); toast.success(t.coaSaved || 'OK')
+    },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+  const reopenMut = useMutation({
+    mutationFn: accountingApi.reopenPeriod,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['periods'] }); toast.success(t.coaSaved || 'OK') },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+
+  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger, periods: t.fsPeriods }
 
   const dateRange = (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
@@ -144,6 +168,36 @@ export default function FinancialStatements() {
                 </tbody>
               </Table>
             )}
+          </Card>
+        )}
+
+        {tab === 'periods' && (
+          <Card>
+            <CardHeader>{t.fsPeriods}</CardHeader>
+            {isAdmin && (
+              <div style={{ padding: 18, display: 'flex', gap: 12, alignItems: 'flex-end', borderBottom: `1px solid ${C.border}` }}>
+                <Input label={t.fsPeriodStart} type="date" value={pStart} onChange={e => setPStart(e.target.value)} />
+                <Input label={t.fsPeriodEnd} type="date" value={pEnd} onChange={e => setPEnd(e.target.value)} />
+                <Btn onClick={() => window.confirm(t.fsCloseConfirm) && closeMut.mutate()} disabled={closeMut.isPending}>{t.fsClosePeriod}</Btn>
+              </div>
+            )}
+            <Table>
+              <thead><tr><Th>{t.fsPeriodStart}</Th><Th>{t.fsPeriodEnd}</Th><Th>{t.jePosted ? '' : ''}</Th><Th right>·</Th></tr></thead>
+              <tbody>
+                {periods.map(p => (
+                  <TrHover key={p.id}>
+                    <Td>{p.period_start}</Td>
+                    <Td>{p.period_end}</Td>
+                    <Td><Badge type={p.status === 'closed' ? 'cancelled' : 'completed'}>{p.status === 'closed' ? t.fsStatusClosed : t.fsStatusOpen}</Badge></Td>
+                    <Td right>
+                      {isAdmin && p.status === 'closed' && (
+                        <button onClick={() => reopenMut.mutate(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.navy, fontSize: 12 }}>{t.fsReopen}</button>
+                      )}
+                    </Td>
+                  </TrHover>
+                ))}
+              </tbody>
+            </Table>
           </Card>
         )}
       </div>

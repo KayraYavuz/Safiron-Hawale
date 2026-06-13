@@ -11,6 +11,9 @@ export default {
   fsRevenue: 'الإيرادات', fsExpense: 'المصروفات', fsTotal: 'الإجمالي', fsBalance: 'الرصيد',
   fsDebit: 'مدين', fsCredit: 'دائن', fsAccount: 'الحساب', fsFrom: 'من', fsTo: 'إلى',
   fsRunning: 'الرصيد الجاري', fsEntryNo: 'رقم القيد',
+  fsPeriods: 'الفترات', fsClosePeriod: 'إغلاق الفترة', fsReopen: 'إعادة فتح',
+  fsPeriodStart: 'بداية الفترة', fsPeriodEnd: 'نهاية الفترة', fsStatusOpen: 'مفتوحة', fsStatusClosed: 'مغلقة',
+  fsCloseConfirm: 'هل تريد إغلاق هذه الفترة؟ سيتم ترحيل الربح/الخسارة إلى الأرباح المدورة.',
   // Journal (دفتر اليومية)
   jeTitle: 'دفتر اليومية', jeManualEntry: 'قيد يدوي', jeAddLine: 'إضافة سطر',
   jeDate: 'التاريخ', jeMemo: 'البيان', jeAccount: 'الحساب', jeDebit: 'مدين', jeCredit: 'دائن',
