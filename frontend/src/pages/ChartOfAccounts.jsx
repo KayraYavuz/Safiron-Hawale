@@ -13,7 +13,7 @@ const ROLES = [
   'cash', 'bank', 'crypto', 'customer_receivable', 'customer_payable',
   'supplier_receivable', 'supplier_payable', 'fx_profit', 'fx_loss',
   'commission_income', 'retained_earnings', 'opening_balance_equity',
-  'internal_transfer_clearing', 'rounding',
+  'internal_transfer_clearing', 'rounding', 'tax_payable',
 ]
 const BLANK = { code: '', name_tr: '', name_ar: '', name_en: '', account_type: 'asset', parent_id: '', is_postable: true }
 
