@@ -38,6 +38,7 @@ class AccountRole(str, enum.Enum):
     opening_balance_equity = "opening_balance_equity"
     internal_transfer_clearing = "internal_transfer_clearing"
     rounding = "rounding"
+    tax_payable = "tax_payable"   # commission tax (KDV/BSMV) liability
 
 
 class ChartOfAccount(Base):

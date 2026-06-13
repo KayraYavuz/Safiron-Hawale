@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'الفترات', fsClosePeriod: 'إغلاق الفترة', fsReopen: 'إعادة فتح',
   fsPeriodStart: 'بداية الفترة', fsPeriodEnd: 'نهاية الفترة', fsStatusOpen: 'مفتوحة', fsStatusClosed: 'مغلقة',
   fsCloseConfirm: 'هل تريد إغلاق هذه الفترة؟ سيتم ترحيل الربح/الخسارة إلى الأرباح المدورة.',
+  glSummaryTitle: 'ملخص الدفتر', glBalanced: 'الدفتر متوازن', glUnbalanced: 'الدفتر غير متوازن', glEntries: 'عدد القيود',
   // Journal (دفتر اليومية)
   jeTitle: 'دفتر اليومية', jeManualEntry: 'قيد يدوي', jeAddLine: 'إضافة سطر',
   jeDate: 'التاريخ', jeMemo: 'البيان', jeAccount: 'الحساب', jeDebit: 'مدين', jeCredit: 'دائن',
@@ -34,6 +35,8 @@ export default {
   coaRole: 'الدور', coaAccount: 'الحساب', coaSaved: 'تم الحفظ', coaNone: '— اختر —',
   coaAccountCreated: 'تمت إضافة الحساب', coaAccountUpdated: 'تم تحديث الحساب', coaAccountDeleted: 'تم تعطيل الحساب',
   coaDeleteConfirm: 'هل تريد تعطيل الحساب؟',
+  coaTaxTitle: 'ضريبة العمولة (KDV/BSMV)', coaTaxRate: 'نسبة الضريبة',
+  coaTaxHint: 'تُخصَّص هذه النسبة من إيراد العمولة إلى حساب "الضرائب المستحقة" في القيود التلقائية. 0 = معطّل.',
   // Roles (يطابق enum UserRole في الخادم)
   roleSuperAdmin: 'مدير النظام', roleAdmin: 'مدير', roleManager: 'مدير العمليات',
   roleAuditor: 'مدقق', roleBranchManager: 'مدير الفرع',

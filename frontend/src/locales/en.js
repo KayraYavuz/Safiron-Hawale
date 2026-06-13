@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'Periods', fsClosePeriod: 'Close Period', fsReopen: 'Reopen',
   fsPeriodStart: 'Period Start', fsPeriodEnd: 'Period End', fsStatusOpen: 'Open', fsStatusClosed: 'Closed',
   fsCloseConfirm: 'Close this period? Profit/loss rolls into retained earnings.',
+  glSummaryTitle: 'Ledger Summary', glBalanced: 'Ledger Balanced', glUnbalanced: 'Ledger Unbalanced', glEntries: 'Entries',
   // Journal
   jeTitle: 'Journal', jeManualEntry: 'Manual Entry', jeAddLine: 'Add Line',
   jeDate: 'Date', jeMemo: 'Memo', jeAccount: 'Account', jeDebit: 'Debit', jeCredit: 'Credit',
@@ -34,6 +35,8 @@ export default {
   coaRole: 'Role', coaAccount: 'Account', coaSaved: 'Saved', coaNone: '— Select —',
   coaAccountCreated: 'Account added', coaAccountUpdated: 'Account updated', coaAccountDeleted: 'Account deactivated',
   coaDeleteConfirm: 'account will be deactivated?',
+  coaTaxTitle: 'Commission Tax (VAT/BSMV)', coaTaxRate: 'Tax Rate',
+  coaTaxHint: 'This fraction of commission income is split into a "Taxes Payable" account on auto-posted entries. 0 = off. (Financial intermediation is usually VAT-exempt but subject to 5% BSMV in Turkey — enter the correct rate.)',
   // Roles (matches backend UserRole enum)
   roleSuperAdmin: 'System Administrator', roleAdmin: 'Admin', roleManager: 'Operations Manager',
   roleAuditor: 'Auditor', roleBranchManager: 'Branch Manager',

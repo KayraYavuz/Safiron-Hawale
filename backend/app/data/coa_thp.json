@@ -16,6 +16,7 @@
     {"code": "3", "name_tr": "Kısa Vadeli Yabancı Kaynaklar", "name_ar": "الخصوم قصيرة الأجل", "name_en": "Short-Term Liabilities", "account_type": "liability", "thp_class": 3, "is_postable": false, "children": [
       {"code": "320", "name_tr": "Satıcılar", "name_ar": "الموردون", "name_en": "Trade Payables", "account_type": "liability", "thp_class": 3, "is_postable": true},
       {"code": "335", "name_tr": "Müşterilere Borçlar", "name_ar": "ذمم دائنة للعملاء", "name_en": "Customer Payables", "account_type": "liability", "thp_class": 3, "is_postable": true},
+      {"code": "360", "name_tr": "Ödenecek Vergi ve Fonlar", "name_ar": "الضرائب والرسوم المستحقة", "name_en": "Taxes Payable", "account_type": "liability", "thp_class": 3, "is_postable": true},
       {"code": "397", "name_tr": "Sayım ve Tesellüm Fazlaları (Yuvarlama)", "name_ar": "فروقات التقريب", "name_en": "Rounding Differences", "account_type": "liability", "thp_class": 3, "is_postable": true}
     ]},
     {"code": "4", "name_tr": "Uzun Vadeli Yabancı Kaynaklar", "name_ar": "الخصوم طويلة الأجل", "name_en": "Long-Term Liabilities", "account_type": "liability", "thp_class": 4, "is_postable": false, "children": [
@@ -49,6 +50,7 @@
     "retained_earnings": "570",
     "opening_balance_equity": "501",
     "internal_transfer_clearing": "180",
-    "rounding": "397"
+    "rounding": "397",
+    "tax_payable": "360"
   }
 }

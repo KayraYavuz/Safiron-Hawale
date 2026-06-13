@@ -12,6 +12,7 @@
     {"code": "2000", "name_tr": "Yükümlülükler", "name_ar": "الخصوم", "name_en": "Liabilities", "account_type": "liability", "is_postable": false, "children": [
       {"code": "2010", "name_tr": "Tedarikçi Borçları", "name_ar": "ذمم الموردين الدائنة", "name_en": "Supplier Payables", "account_type": "liability", "is_postable": true},
       {"code": "2020", "name_tr": "Müşteri Borçları", "name_ar": "ذمم العملاء الدائنة", "name_en": "Customer Payables", "account_type": "liability", "is_postable": true},
+      {"code": "2100", "name_tr": "Ödenecek Vergiler", "name_ar": "الضرائب المستحقة", "name_en": "Tax Payable", "account_type": "liability", "is_postable": true},
       {"code": "2900", "name_tr": "Yuvarlama Farkları", "name_ar": "فروقات التقريب", "name_en": "Rounding Differences", "account_type": "liability", "is_postable": true}
     ]},
     {"code": "3000", "name_tr": "Özkaynaklar", "name_ar": "حقوق الملكية", "name_en": "Equity", "account_type": "equity", "is_postable": false, "children": [
@@ -43,6 +44,7 @@
     "retained_earnings": "3900",
     "opening_balance_equity": "3020",
     "internal_transfer_clearing": "1800",
-    "rounding": "2900"
+    "rounding": "2900",
+    "tax_payable": "2100"
   }
 }

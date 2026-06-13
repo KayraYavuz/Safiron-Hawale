@@ -61,6 +61,18 @@ export default function ChartOfAccounts() {
     onError: e => toast.error(e.response?.data?.detail || t.error),
   })
 
+  const { data: taxData } = useQuery({
+    queryKey: ['coa-tax-rate'], queryFn: () => accountingApi.taxRate().then(r => r.data),
+    enabled: chart.length > 0,
+  })
+  const [taxPct, setTaxPct] = useState(null)
+  const taxValue = taxPct !== null ? taxPct : (taxData ? String(+(Number(taxData.rate) * 100).toFixed(2)) : '')
+  const taxMut = useMutation({
+    mutationFn: () => accountingApi.setTaxRate((Number(taxValue || 0) / 100).toFixed(4)),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['coa-tax-rate'] }); setTaxPct(null); toast.success(t.coaSaved) },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+
   const nameOf = useCallback((a) => a[`name_${lang}`] || a.name_tr, [lang])
 
   // depth for indentation, derived from parent chain
@@ -195,6 +207,18 @@ export default function ChartOfAccounts() {
               ))}
             </tbody>
           </Table>
+        </Card>
+
+        {/* Commission tax (KDV/BSMV) */}
+        <Card>
+          <CardHeader>{t.coaTaxTitle}</CardHeader>
+          <div style={{ padding: 18, display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <Input label={t.coaTaxRate} value={taxValue} disabled={!isAdmin}
+                   onChange={e => setTaxPct(e.target.value)} placeholder="0" style={{ width: 120 }} />
+            <span style={{ fontSize: 14, paddingBottom: 10 }}>%</span>
+            {isAdmin && <Btn onClick={() => taxMut.mutate()} disabled={taxMut.isPending}>{t.save}</Btn>}
+            <div style={{ flexBasis: '100%', fontSize: 12, color: C.text3 }}>{t.coaTaxHint}</div>
+          </div>
         </Card>
 
         {/* Role mappings */}

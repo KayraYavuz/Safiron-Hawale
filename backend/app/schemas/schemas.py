@@ -20,6 +20,7 @@ class CompanyCreate(BaseModel):
     admin_name: str
     admin_email: EmailStr
     admin_password: str
+    accounting_scheme: str = "thp"   # "thp" | "intl" — auto-initialised on create
 
 class CompanyOut(BaseModel):
     id: UUID

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { accountingApi } from '../utils/api'
+import { accountingApi, downloadBlob } from '../utils/api'
 import { fmt } from '../utils/format'
 import { useAuthStore } from '../store'
 import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, C } from '../components/UI'
@@ -27,6 +27,11 @@ export default function FinancialStatements() {
   const [pEnd, setPEnd] = useState(`${new Date().getFullYear()}-12-31`)
 
   const nm = (r) => r[`name_${lang}`] || r.name_tr
+  const exportCsv = (path, params, filename) =>
+    accountingApi.exportCsv(path, params).then(r => downloadBlob(r, filename)).catch(() => toast.error(t.error))
+  const ExportBtn = ({ path, params, filename }) => (
+    <Btn variant="ghost" size="sm" onClick={() => exportCsv(path, params, filename)}>CSV</Btn>
+  )
 
   const { data: tb } = useQuery({ queryKey: ['tb'], queryFn: () => accountingApi.trialBalance().then(r => r.data) })
   const { data: bs } = useQuery({ queryKey: ['bs'], queryFn: () => accountingApi.balanceSheet().then(r => r.data), enabled: tab === 'balanceSheet' })
@@ -78,7 +83,7 @@ export default function FinancialStatements() {
 
         {tab === 'trialBalance' && (
           <Card>
-            <CardHeader>{t.fsTrialBalance}</CardHeader>
+            <CardHeader action={<ExportBtn path="trial-balance" filename="mizan.csv" />}>{t.fsTrialBalance}</CardHeader>
             <Table>
               <thead><tr><Th>{t.coaCode}</Th><Th>{t.coaName}</Th><Th right>{t.fsDebit}</Th><Th right>{t.fsCredit}</Th><Th right>{t.fsBalance}</Th></tr></thead>
               <tbody>
@@ -103,7 +108,7 @@ export default function FinancialStatements() {
         {tab === 'balanceSheet' && bs && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Card>
-              <CardHeader>{t.fsAssets}</CardHeader>
+              <CardHeader action={<ExportBtn path="balance-sheet" filename="bilanco.csv" />}>{t.fsAssets}</CardHeader>
               <Table>
                 <tbody>
                   {bs.assets.map(r => <TrHover key={r.account_id}><Td mono>{r.code}</Td><Td>{nm(r)}</Td><Td right mono>{fmt(r.balance_usd)}</Td></TrHover>)}
@@ -127,7 +132,7 @@ export default function FinancialStatements() {
 
         {tab === 'incomeStatement' && (
           <Card>
-            <CardHeader>{t.fsIncomeStatement}</CardHeader>
+            <CardHeader action={<ExportBtn path="income-statement-gl" params={{ start, end }} filename="gelir_tablosu.csv" />}>{t.fsIncomeStatement}</CardHeader>
             <div style={{ padding: '12px 18px 0' }}>{dateRange}</div>
             <Table>
               <tbody>

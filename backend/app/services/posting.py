@@ -9,7 +9,7 @@ from decimal import Decimal
 from datetime import date
 from sqlalchemy.orm import Session
 
-from app.models.master import Account, Currency
+from app.models.master import Account, Currency, Company
 from app.models.transaction import Transaction, TransactionLeg, TransactionPnL, TxnType, LegType
 from app.models.accounting import (
     ChartOfAccount, AccountMapping, AccountRole,
@@ -147,8 +147,19 @@ def post_transaction(db: Session, txn: Transaction, source_type=JournalSourceTyp
         fx = _q(pnl.net_pnl_usd) - comm
         if comm != ZERO:
             acc = resolve_role(db, txn.company_id, AccountRole.commission_income)
-            lines.append(_usd_line(acc.id, ZERO, comm, usd_id) if comm > ZERO
-                         else _usd_line(acc.id, -comm, ZERO, usd_id))
+            if comm > ZERO:
+                # Opt-in commission tax (KDV/BSMV): split the commission credit
+                # between commission income and a tax-payable liability. Total
+                # credit is unchanged, so the entry still balances.
+                tax = _commission_tax(db, txn.company_id, comm)
+                if tax > ZERO:
+                    lines.append(_usd_line(acc.id, ZERO, comm - tax, usd_id))
+                    tax_acc = resolve_role(db, txn.company_id, AccountRole.tax_payable)
+                    lines.append(_usd_line(tax_acc.id, ZERO, tax, usd_id))
+                else:
+                    lines.append(_usd_line(acc.id, ZERO, comm, usd_id))
+            else:
+                lines.append(_usd_line(acc.id, -comm, ZERO, usd_id))
         if fx > ZERO:
             acc = resolve_role(db, txn.company_id, AccountRole.fx_profit)
             lines.append(_usd_line(acc.id, ZERO, fx, usd_id))
@@ -175,6 +186,22 @@ def post_transaction(db: Session, txn: Transaction, source_type=JournalSourceTyp
 
     return _persist_entry(db, txn.company_id, txn.txn_date, txn.value_date, source_type,
                           txn.id, f"{txn.txn_type.value} {txn.txn_number}", txn.created_by, lines)
+
+
+def _commission_tax(db: Session, company_id, commission_usd: Decimal) -> Decimal:
+    """Commission tax = commission × company.commission_tax_rate, but only when a
+    rate is set AND a tax_payable account is mapped. Otherwise 0 (no split)."""
+    co = db.query(Company).filter(Company.id == company_id).first()
+    rate = _q(getattr(co, "commission_tax_rate", 0)) if co else ZERO
+    if rate <= ZERO:
+        return ZERO
+    mapped = (db.query(AccountMapping)
+                .filter(AccountMapping.company_id == company_id,
+                        AccountMapping.role == AccountRole.tax_payable)
+                .first())
+    if not mapped:
+        return ZERO
+    return (commission_usd * rate).quantize(Decimal("0.0001"))
 
 
 def _usd_line(coa_account_id, debit_usd, credit_usd, usd_id):

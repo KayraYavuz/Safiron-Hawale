@@ -78,6 +78,13 @@ def run():
         elif 'companies' in tables:
             print("  — companies.accounting_scheme zaten var")
 
+        # ── companies.commission_tax_rate ────────────────────────────────────
+        if 'companies' in tables and not col_exists(insp, 'companies', 'commission_tax_rate'):
+            conn.execute(text("ALTER TABLE companies ADD COLUMN commission_tax_rate NUMERIC(5,4) DEFAULT 0"))
+            print("  ✅ companies.commission_tax_rate eklendi")
+        elif 'companies' in tables:
+            print("  — companies.commission_tax_rate zaten var")
+
         # ── chart_of_accounts + account_mappings (yeni Hesap Planı tabloları) ─
         from app.models.accounting import ChartOfAccount, AccountMapping
         for model in (ChartOfAccount, AccountMapping):
@@ -102,6 +109,26 @@ def run():
                 print(f"  ✅ {model.__tablename__} tablosu oluşturuldu")
             else:
                 print(f"  — {model.__tablename__} zaten var")
+
+    # ── PG enum: accountrole.tax_payable ─────────────────────────────────────
+    # ALTER TYPE ... ADD VALUE cannot run inside the main transaction, so do it
+    # in a separate AUTOCOMMIT connection. Idempotent + Postgres-only. (On a
+    # fresh DB the enum is created with all members, so nothing to do.)
+    if engine.dialect.name == 'postgresql':
+        with engine.connect() as c:
+            c = c.execution_options(isolation_level='AUTOCOMMIT')
+            exists = c.execute(text(
+                "SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid "
+                "WHERE t.typname = 'accountrole' AND e.enumlabel = 'tax_payable'"
+            )).first()
+            type_exists = c.execute(text(
+                "SELECT 1 FROM pg_type WHERE typname = 'accountrole'"
+            )).first()
+            if type_exists and not exists:
+                c.execute(text("ALTER TYPE accountrole ADD VALUE IF NOT EXISTS 'tax_payable'"))
+                print("  ✅ accountrole.tax_payable enum değeri eklendi")
+            elif type_exists:
+                print("  — accountrole.tax_payable zaten var")
 
     print("\n✅ Migration tamamlandı")
 

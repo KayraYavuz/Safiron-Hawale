@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'Dönemler', fsClosePeriod: 'Dönemi Kapat', fsReopen: 'Yeniden Aç',
   fsPeriodStart: 'Dönem Başı', fsPeriodEnd: 'Dönem Sonu', fsStatusOpen: 'Açık', fsStatusClosed: 'Kapalı',
   fsCloseConfirm: 'Bu dönem kapatılsın mı? Kâr/zarar geçmiş yıllar kârına aktarılır.',
+  glSummaryTitle: 'Defter Özeti', glBalanced: 'Defter Dengede', glUnbalanced: 'Defter Dengesiz', glEntries: 'Fiş Sayısı',
   // Journal (Yevmiye Defteri)
   jeTitle: 'Yevmiye Defteri', jeManualEntry: 'Manuel Fiş', jeAddLine: 'Satır Ekle',
   jeDate: 'Tarih', jeMemo: 'Açıklama', jeAccount: 'Hesap', jeDebit: 'Borç', jeCredit: 'Alacak',
@@ -34,6 +35,8 @@ export default {
   coaRole: 'Rol', coaAccount: 'Hesap', coaSaved: 'Kaydedildi', coaNone: '— Seçiniz —',
   coaAccountCreated: 'Hesap eklendi', coaAccountUpdated: 'Hesap güncellendi', coaAccountDeleted: 'Hesap pasife alındı',
   coaDeleteConfirm: 'hesabı pasife alınsın mı?',
+  coaTaxTitle: 'Komisyon Vergisi (KDV/BSMV)', coaTaxRate: 'Vergi Oranı',
+  coaTaxHint: 'Komisyon gelirinin bu oranı, otomatik fişlerde "Ödenecek Vergiler" hesabına ayrılır. 0 = kapalı. (Finansal aracılıkta genelde KDV istisnası + %5 BSMV uygulanır — doğru oranı girin.)',
   // Roles (backend UserRole enum ile birebir)
   roleSuperAdmin: 'Sistem Yöneticisi', roleAdmin: 'Yönetici', roleManager: 'Operasyon Müdürü',
   roleAuditor: 'Denetçi', roleBranchManager: 'Şube Müdürü',
