@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountingApi } from '../utils/api'
 import { useAuthStore } from '../store'
-import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, C } from '../components/UI'
+import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, Info, C } from '../components/UI'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
@@ -142,7 +142,7 @@ export default function ChartOfAccounts() {
       <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{t.coaTitle}</h2>
             <div style={{ fontSize: 12, color: C.text3 }}>{t.coaSubtitle}</div>
           </div>
@@ -152,6 +152,8 @@ export default function ChartOfAccounts() {
             </Btn>
           )}
         </div>
+
+        <Info type="info">{t.coaIntro}</Info>
 
         {isAdmin && showForm && (
           <Card>
@@ -224,13 +226,16 @@ export default function ChartOfAccounts() {
         {/* Role mappings */}
         <Card>
           <CardHeader>{t.coaMappings}</CardHeader>
-          <div style={{ padding: '8px 18px 4px', fontSize: 12, color: C.text3 }}>{t.coaMappingsDesc}</div>
+          <div style={{ padding: '12px 18px 4px', fontSize: 12.5, color: C.text2 }}>{t.coaRolesHelp}</div>
           <Table>
             <thead><tr><Th>{t.coaRole}</Th><Th>{t.coaAccount}</Th></tr></thead>
             <tbody>
               {ROLES.map(role => (
                 <TrHover key={role}>
-                  <Td mono>{role}</Td>
+                  <Td>
+                    <div style={{ fontWeight: 500 }}>{t.coaRoles?.[role] || role}</div>
+                    <div style={{ fontSize: 10.5, color: C.text4, fontFamily: 'var(--mono)' }}>{role}</div>
+                  </Td>
                   <Td>
                     <Select
                       value={mapValue(role)}

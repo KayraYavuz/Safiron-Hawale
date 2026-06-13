@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountingApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { useAuthStore } from '../store'
-import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, C } from '../components/UI'
+import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, Info, C } from '../components/UI'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
@@ -85,6 +85,8 @@ export default function Journal() {
           )}
         </div>
 
+        <Info type="info">{t.jeIntro}</Info>
+
         {isAdmin && showForm && (
           <Card>
             <CardHeader>{t.jeManualEntry}</CardHeader>
@@ -141,7 +143,7 @@ export default function Journal() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{e.entry_number}</span>
                   <span style={{ fontSize: 12, color: C.text3 }}>{e.entry_date}</span>
-                  <Badge type="customer">{e.source_type}</Badge>
+                  <Badge type="customer">{t.jeSourceTypes?.[e.source_type] || e.source_type}</Badge>
                   <Badge type={e.status === 'posted' ? 'completed' : 'cancelled'}>{e.status === 'posted' ? t.jePosted : t.jeVoided}</Badge>
                   {e.memo && <span style={{ fontSize: 12, color: C.text2 }}>· {e.memo}</span>}
                 </div>

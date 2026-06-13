@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountingApi, downloadBlob } from '../utils/api'
 import { fmt } from '../utils/format'
 import { useAuthStore } from '../store'
-import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, C } from '../components/UI'
+import { Card, CardHeader, Table, Th, Td, Btn, Input, Select, TrHover, Badge, Info, C } from '../components/UI'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
 
@@ -75,6 +75,7 @@ export default function FinancialStatements() {
     <>
       <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Info type="info">{t.fsIntro}</Info>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {TABS.map(tk => (
             <Btn key={tk} variant={tab === tk ? 'primary' : 'ghost'} size="sm" onClick={() => setTab(tk)}>{tabLabel[tk]}</Btn>
