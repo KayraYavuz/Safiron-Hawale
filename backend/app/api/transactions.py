@@ -44,6 +44,29 @@ def _notify(company_id, message: str) -> None:
         pass
 
 
+def _post_gl(db, txn) -> None:
+    """Post a completed transaction to the GL. Never breaks the request:
+    if the company has not initialised a chart, or a mapping/period blocks it,
+    posting is skipped silently (operational flow is unaffected)."""
+    try:
+        from app.services.posting import post_transaction, PostingError
+        try:
+            post_transaction(db, txn)
+        except PostingError:
+            pass  # mapping/period not ready → skip posting, keep txn state
+    except Exception:
+        pass
+
+
+def _void_gl(db, source_id) -> None:
+    """Reverse the GL entry for a deleted/cancelled transaction. Non-blocking."""
+    try:
+        from app.services.posting import void_for_source
+        void_for_source(db, source_id)
+    except Exception:
+        pass
+
+
 # Bot legacy "Markdown" parse_mode kullanıyor. Kullanıcı kontrollü metni
 # bir mesaja gömmeden önce bunu çağır: `[` link sözdizimini, `_ * `` ` ise
 # biçimlendirmeyi tetikler/bozar (Markdown injection).
@@ -315,6 +338,7 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
         raise HTTPException(404, "Transaction not found")
     txn.status = TxnStatus.completed
     txn.approved_by = cu.id
+    _post_gl(db, txn)
     audit_log(db, "APPROVE", user_id=cu.id, entity="Transaction", entity_id=txn_id,
               detail={"txn_number": txn.txn_number})
     db.commit()
@@ -335,6 +359,7 @@ def approve_all(db: Session = Depends(get_db), cu: User = Depends(get_current_us
     for txn in pending:
         txn.status = TxnStatus.completed
         txn.approved_by = cu.id
+        _post_gl(db, txn)
         audit_log(db, "APPROVE", user_id=cu.id, entity="Transaction", entity_id=txn.id,
                   detail={"txn_number": txn.txn_number})
     db.commit()
@@ -349,6 +374,7 @@ def delete_transaction(txn_id: UUID, db: Session = Depends(get_db), cu: User = D
     txn = q.first()
     if not txn:
         raise HTTPException(404, "Transaction not found")
+    _void_gl(db, txn.id)
     audit_log(db, "DELETE", user_id=cu.id, entity="Transaction",
               entity_id=txn_id, detail={"txn_number": txn.txn_number})
     db.delete(txn)

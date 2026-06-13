@@ -1,0 +1,54 @@
+{
+  "scheme": "thp",
+  "accounts": [
+    {"code": "1", "name_tr": "Dönen Varlıklar", "name_ar": "الأصول المتداولة", "name_en": "Current Assets", "account_type": "asset", "thp_class": 1, "is_postable": false, "children": [
+      {"code": "100", "name_tr": "Kasa", "name_ar": "الصندوق", "name_en": "Cash", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "101", "name_tr": "Alınan Çekler", "name_ar": "الشيكات المستلمة", "name_en": "Cheques Received", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "102", "name_tr": "Bankalar", "name_ar": "البنوك", "name_en": "Banks", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "108", "name_tr": "Diğer Hazır Değerler (Kripto)", "name_ar": "قيم جاهزة أخرى", "name_en": "Other Liquid Assets (Crypto)", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "120", "name_tr": "Alıcılar", "name_ar": "المدينون", "name_en": "Trade Receivables", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "127", "name_tr": "Diğer Ticari Alacaklar (Tedarikçi)", "name_ar": "ذمم مدينة أخرى", "name_en": "Other Receivables (Supplier)", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "180", "name_tr": "Kur Farkı / Geçiş Hesabı", "name_ar": "حساب فروق العملة", "name_en": "FX Clearing", "account_type": "asset", "thp_class": 1, "is_postable": true}
+    ]},
+    {"code": "2", "name_tr": "Duran Varlıklar", "name_ar": "الأصول الثابتة", "name_en": "Non-Current Assets", "account_type": "asset", "thp_class": 2, "is_postable": false, "children": [
+      {"code": "255", "name_tr": "Demirbaşlar", "name_ar": "الأثاث والمعدات", "name_en": "Fixtures & Equipment", "account_type": "asset", "thp_class": 2, "is_postable": true}
+    ]},
+    {"code": "3", "name_tr": "Kısa Vadeli Yabancı Kaynaklar", "name_ar": "الخصوم قصيرة الأجل", "name_en": "Short-Term Liabilities", "account_type": "liability", "thp_class": 3, "is_postable": false, "children": [
+      {"code": "320", "name_tr": "Satıcılar", "name_ar": "الموردون", "name_en": "Trade Payables", "account_type": "liability", "thp_class": 3, "is_postable": true},
+      {"code": "335", "name_tr": "Müşterilere Borçlar", "name_ar": "ذمم دائنة للعملاء", "name_en": "Customer Payables", "account_type": "liability", "thp_class": 3, "is_postable": true},
+      {"code": "397", "name_tr": "Sayım ve Tesellüm Fazlaları (Yuvarlama)", "name_ar": "فروقات التقريب", "name_en": "Rounding Differences", "account_type": "liability", "thp_class": 3, "is_postable": true}
+    ]},
+    {"code": "4", "name_tr": "Uzun Vadeli Yabancı Kaynaklar", "name_ar": "الخصوم طويلة الأجل", "name_en": "Long-Term Liabilities", "account_type": "liability", "thp_class": 4, "is_postable": false, "children": [
+      {"code": "400", "name_tr": "Banka Kredileri", "name_ar": "القروض البنكية", "name_en": "Bank Loans", "account_type": "liability", "thp_class": 4, "is_postable": true}
+    ]},
+    {"code": "5", "name_tr": "Özkaynaklar", "name_ar": "حقوق الملكية", "name_en": "Equity", "account_type": "equity", "thp_class": 5, "is_postable": false, "children": [
+      {"code": "500", "name_tr": "Sermaye", "name_ar": "رأس المال", "name_en": "Capital", "account_type": "equity", "thp_class": 5, "is_postable": true},
+      {"code": "501", "name_tr": "Açılış / Devir Hesabı", "name_ar": "حساب الافتتاح", "name_en": "Opening Balance Equity", "account_type": "equity", "thp_class": 5, "is_postable": true},
+      {"code": "570", "name_tr": "Geçmiş Yıllar Kârları", "name_ar": "الأرباح المدورة", "name_en": "Retained Earnings", "account_type": "equity", "thp_class": 5, "is_postable": true},
+      {"code": "590", "name_tr": "Dönem Net Kârı", "name_ar": "صافي ربح الفترة", "name_en": "Net Profit for Period", "account_type": "equity", "thp_class": 5, "is_postable": true}
+    ]},
+    {"code": "6", "name_tr": "Gelir Tablosu Hesapları", "name_ar": "حسابات قائمة الدخل", "name_en": "Income Statement Accounts", "account_type": "revenue", "thp_class": 6, "is_postable": false, "children": [
+      {"code": "600", "name_tr": "Yurtiçi Satışlar / Hizmet Gelirleri", "name_ar": "إيرادات الخدمات", "name_en": "Service Revenue", "account_type": "revenue", "thp_class": 6, "is_postable": true},
+      {"code": "601", "name_tr": "Kur / İşlem Kârı", "name_ar": "أرباح الصرف", "name_en": "FX / Trading Profit", "account_type": "revenue", "thp_class": 6, "is_postable": true},
+      {"code": "602", "name_tr": "Komisyon Gelirleri", "name_ar": "إيرادات العمولات", "name_en": "Commission Income", "account_type": "revenue", "thp_class": 6, "is_postable": true},
+      {"code": "656", "name_tr": "Kur / İşlem Zararı", "name_ar": "خسائر الصرف", "name_en": "FX / Trading Loss", "account_type": "expense", "thp_class": 6, "is_postable": true},
+      {"code": "770", "name_tr": "Genel Yönetim Giderleri", "name_ar": "المصاريف الإدارية العامة", "name_en": "General & Admin Expenses", "account_type": "expense", "thp_class": 7, "is_postable": true}
+    ]}
+  ],
+  "default_mappings": {
+    "cash": "100",
+    "bank": "102",
+    "crypto": "108",
+    "customer_receivable": "120",
+    "customer_payable": "335",
+    "supplier_receivable": "127",
+    "supplier_payable": "320",
+    "fx_profit": "601",
+    "fx_loss": "656",
+    "commission_income": "602",
+    "retained_earnings": "570",
+    "opening_balance_equity": "501",
+    "internal_transfer_clearing": "180",
+    "rounding": "397"
+  }
+}

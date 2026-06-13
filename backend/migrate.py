@@ -70,7 +70,39 @@ def run():
             print("  ✅ supplier_settlements tablosu oluşturuldu")
         else:
             print("  — supplier_settlements zaten var")
-    
+
+        # ── companies.accounting_scheme ──────────────────────────────────────
+        if 'companies' in tables and not col_exists(insp, 'companies', 'accounting_scheme'):
+            conn.execute(text("ALTER TABLE companies ADD COLUMN accounting_scheme VARCHAR(8)"))
+            print("  ✅ companies.accounting_scheme eklendi")
+        elif 'companies' in tables:
+            print("  — companies.accounting_scheme zaten var")
+
+        # ── chart_of_accounts + account_mappings (yeni Hesap Planı tabloları) ─
+        from app.models.accounting import ChartOfAccount, AccountMapping
+        for model in (ChartOfAccount, AccountMapping):
+            if model.__tablename__ not in tables:
+                model.__table__.create(bind=conn)
+                print(f"  ✅ {model.__tablename__} tablosu oluşturuldu")
+            else:
+                print(f"  — {model.__tablename__} zaten var")
+
+        # ── accounts.gl_account_id ───────────────────────────────────────────
+        if 'accounts' in tables and not col_exists(insp, 'accounts', 'gl_account_id'):
+            conn.execute(text("ALTER TABLE accounts ADD COLUMN gl_account_id UUID REFERENCES chart_of_accounts(id)"))
+            print("  ✅ accounts.gl_account_id eklendi")
+        elif 'accounts' in tables:
+            print("  — accounts.gl_account_id zaten var")
+
+        # ── journal tabloları (defter) ───────────────────────────────────────
+        from app.models.accounting import JournalEntry, JournalLine, JournalSequence, FiscalPeriod
+        for model in (JournalEntry, JournalLine, JournalSequence, FiscalPeriod):
+            if model.__tablename__ not in tables:
+                model.__table__.create(bind=conn)
+                print(f"  ✅ {model.__tablename__} tablosu oluşturuldu")
+            else:
+                print(f"  — {model.__tablename__} zaten var")
+
     print("\n✅ Migration tamamlandı")
 
 if __name__ == '__main__':

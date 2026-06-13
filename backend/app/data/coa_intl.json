@@ -1,0 +1,48 @@
+{
+  "scheme": "intl",
+  "accounts": [
+    {"code": "1000", "name_tr": "Varlıklar", "name_ar": "الأصول", "name_en": "Assets", "account_type": "asset", "is_postable": false, "children": [
+      {"code": "1010", "name_tr": "Kasa", "name_ar": "الصندوق", "name_en": "Cash on Hand", "account_type": "asset", "is_postable": true},
+      {"code": "1020", "name_tr": "Bankalar", "name_ar": "البنوك", "name_en": "Bank Accounts", "account_type": "asset", "is_postable": true},
+      {"code": "1030", "name_tr": "Kripto Cüzdanları", "name_ar": "محافظ العملات الرقمية", "name_en": "Crypto Wallets", "account_type": "asset", "is_postable": true},
+      {"code": "1200", "name_tr": "Müşteri Alacakları", "name_ar": "ذمم العملاء المدينة", "name_en": "Customer Receivables", "account_type": "asset", "is_postable": true},
+      {"code": "1210", "name_tr": "Tedarikçi Alacakları", "name_ar": "ذمم الموردين المدينة", "name_en": "Supplier Receivables", "account_type": "asset", "is_postable": true},
+      {"code": "1800", "name_tr": "Kur Geçiş Hesabı", "name_ar": "حساب تسوية العملة", "name_en": "FX Clearing", "account_type": "asset", "is_postable": true}
+    ]},
+    {"code": "2000", "name_tr": "Yükümlülükler", "name_ar": "الخصوم", "name_en": "Liabilities", "account_type": "liability", "is_postable": false, "children": [
+      {"code": "2010", "name_tr": "Tedarikçi Borçları", "name_ar": "ذمم الموردين الدائنة", "name_en": "Supplier Payables", "account_type": "liability", "is_postable": true},
+      {"code": "2020", "name_tr": "Müşteri Borçları", "name_ar": "ذمم العملاء الدائنة", "name_en": "Customer Payables", "account_type": "liability", "is_postable": true},
+      {"code": "2900", "name_tr": "Yuvarlama Farkları", "name_ar": "فروقات التقريب", "name_en": "Rounding Differences", "account_type": "liability", "is_postable": true}
+    ]},
+    {"code": "3000", "name_tr": "Özkaynaklar", "name_ar": "حقوق الملكية", "name_en": "Equity", "account_type": "equity", "is_postable": false, "children": [
+      {"code": "3010", "name_tr": "Sermaye", "name_ar": "رأس المال", "name_en": "Capital", "account_type": "equity", "is_postable": true},
+      {"code": "3020", "name_tr": "Açılış Bakiyesi Özkaynağı", "name_ar": "حقوق ملكية الرصيد الافتتاحي", "name_en": "Opening Balance Equity", "account_type": "equity", "is_postable": true},
+      {"code": "3900", "name_tr": "Geçmiş Yıl Kârları", "name_ar": "الأرباح المدورة", "name_en": "Retained Earnings", "account_type": "equity", "is_postable": true}
+    ]},
+    {"code": "4000", "name_tr": "Gelirler", "name_ar": "الإيرادات", "name_en": "Revenue", "account_type": "revenue", "is_postable": false, "children": [
+      {"code": "4010", "name_tr": "İşlem / Kur Kârı", "name_ar": "أرباح الصرف", "name_en": "FX / Trading Profit", "account_type": "revenue", "is_postable": true},
+      {"code": "4020", "name_tr": "Komisyon Gelirleri", "name_ar": "إيرادات العمولات", "name_en": "Commission Income", "account_type": "revenue", "is_postable": true},
+      {"code": "4030", "name_tr": "Hizmet Gelirleri", "name_ar": "إيرادات الخدمات", "name_en": "Service Revenue", "account_type": "revenue", "is_postable": true}
+    ]},
+    {"code": "6000", "name_tr": "Faaliyet Giderleri", "name_ar": "المصاريف التشغيلية", "name_en": "Operating Expenses", "account_type": "expense", "is_postable": false, "children": [
+      {"code": "6010", "name_tr": "İşlem / Kur Zararı", "name_ar": "خسائر الصرف", "name_en": "FX / Trading Loss", "account_type": "expense", "is_postable": true},
+      {"code": "6900", "name_tr": "Genel Giderler", "name_ar": "المصاريف العامة", "name_en": "General Expenses", "account_type": "expense", "is_postable": true}
+    ]}
+  ],
+  "default_mappings": {
+    "cash": "1010",
+    "bank": "1020",
+    "crypto": "1030",
+    "customer_receivable": "1200",
+    "customer_payable": "2020",
+    "supplier_receivable": "1210",
+    "supplier_payable": "2010",
+    "fx_profit": "4010",
+    "fx_loss": "6010",
+    "commission_income": "4020",
+    "retained_earnings": "3900",
+    "opening_balance_equity": "3020",
+    "internal_transfer_clearing": "1800",
+    "rounding": "2900"
+  }
+}

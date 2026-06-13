@@ -22,6 +22,9 @@ const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Transactions   = lazy(() => import('./pages/Transactions'))
 const Counterparties = lazy(() => import('./pages/Counterparties'))
 const Accounts       = lazy(() => import('./pages/Accounts'))
+const ChartOfAccounts = lazy(() => import('./pages/ChartOfAccounts'))
+const Journal        = lazy(() => import('./pages/Journal'))
+const FinancialStatements = lazy(() => import('./pages/FinancialStatements'))
 const Rates          = lazy(() => import('./pages/Rates'))
 const Reports        = lazy(() => import('./pages/Reports'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
@@ -126,6 +129,9 @@ export default function App() {
           <Route path="/transactions"   element={<Protected><Transactions /></Protected>} />
           <Route path="/counterparties" element={<Protected><Counterparties /></Protected>} />
           <Route path="/accounts"       element={<Protected><Accounts /></Protected>} />
+          <Route path="/chart-of-accounts" element={<Protected><ChartOfAccounts /></Protected>} />
+          <Route path="/journal"        element={<Protected><Journal /></Protected>} />
+          <Route path="/financial-statements" element={<Protected><FinancialStatements /></Protected>} />
           <Route path="/rates"          element={<Protected><Rates /></Protected>} />
           <Route path="/reports"        element={<Protected><Reports /></Protected>} />
           <Route path="/reconciliation" element={<Protected><Reconciliation /></Protected>} />

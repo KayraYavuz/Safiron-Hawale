@@ -137,3 +137,25 @@ export const settingsApi = {
   update: (key, value)  => api.patch(`/api/settings/${key}`, { value }),
   clear:  (key)         => api.delete(`/api/settings/${key}`),
 }
+
+export const accountingApi = {
+  chart:      ()         => api.get('/api/accounting/chart'),
+  initialize: (scheme)   => api.post('/api/accounting/initialize', { scheme }),
+  createAcc:  (data)     => api.post('/api/accounting/chart', data),
+  updateAcc:  (id, data) => api.patch(`/api/accounting/chart/${id}`, data),
+  deleteAcc:  (id)       => api.delete(`/api/accounting/chart/${id}`),
+  mappings:   ()         => api.get('/api/accounting/mappings'),
+  setMapping: (data)     => api.put('/api/accounting/mappings', data),
+  journal:          (params) => api.get('/api/accounting/journal', { params }),
+  journalEntry:     (id)     => api.get(`/api/accounting/journal/${id}`),
+  postableAccounts: ()       => api.get('/api/accounting/journal/postable-accounts'),
+  createJournal:    (data)   => api.post('/api/accounting/journal', data),
+  voidJournal:      (id)     => api.post(`/api/accounting/journal/${id}/void`),
+  trialBalance:     (params) => api.get('/api/accounting/trial-balance', { params }),
+  balanceSheet:     (params) => api.get('/api/accounting/balance-sheet', { params }),
+  incomeStatement:  (params) => api.get('/api/accounting/income-statement-gl', { params }),
+  generalLedger:    (id, params) => api.get(`/api/accounting/general-ledger/${id}`, { params }),
+  periods:          ()       => api.get('/api/accounting/periods'),
+  closePeriod:      (data)   => api.post('/api/accounting/periods/close', data),
+  reopenPeriod:     (id)     => api.post(`/api/accounting/periods/${id}/reopen`),
+}
