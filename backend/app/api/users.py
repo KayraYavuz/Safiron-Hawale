@@ -136,9 +136,19 @@ def create_company(data: CompanyCreate, db: Session = Depends(get_db), cu: User 
     )
     db.add(admin)
 
+    # Hesap planını otomatik başlat (varsayılan THP) — başarısız olursa şirket
+    # oluşturmayı engelleme; plan sonradan /accounting/initialize ile kurulabilir.
+    scheme = (data.accounting_scheme or "thp").lower()
+    if scheme in ("thp", "intl"):
+        try:
+            from app.services.accounting_seed import initialize_chart
+            initialize_chart(db, company.id, scheme)
+        except Exception:
+            pass
+
     from app.services.audit import log as audit_log
     audit_log(db, "CREATE_COMPANY", user_id=cu.id, entity="Company", detail={
-        "name": data.name, "code": code, "admin_email": data.admin_email
+        "name": data.name, "code": code, "admin_email": data.admin_email, "scheme": scheme
     })
     db.commit()
     db.refresh(company)
