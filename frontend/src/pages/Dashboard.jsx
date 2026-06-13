@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
-import { reportsApi } from '../utils/api'
+import { reportsApi, accountingApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, StatCard, TrHover, C } from '../components/UI'
 import { Skeleton, SkeletonRow } from '../components/Skeleton'
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const { data: income,  isLoading: incLoading  } = useQuery({ queryKey: ['income'],      queryFn: () => reportsApi.incomeStatement({}).then(r => r.data), staleTime: STALE_2MIN })
   const { data: locPnl,  isLoading: locLoading  } = useQuery({ queryKey: ['locPnl'],      queryFn: () => reportsApi.locationPnl({}).then(r => r.data),     staleTime: STALE_2MIN })
   const { data: cashMov, isLoading: cashLoading } = useQuery({ queryKey: ['cashMovDash'], queryFn: () => reportsApi.cashMovements({}).then(r => r.data),   staleTime: STALE_2MIN })
+  const { data: glSum } = useQuery({ queryKey: ['glSummary'], queryFn: () => accountingApi.glSummary().then(r => r.data), staleTime: STALE_2MIN, retry: false })
 
   // Flatten all account movements, take last 10, memoize
   const recentMoves = useMemo(() => {
@@ -98,6 +99,21 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* ── General Ledger summary ── */}
+      {glSum?.initialised && (
+        <Card>
+          <CardHeader action={<ViewLink to="/financial-statements" label={t.viewAll} />}>{t.glSummaryTitle}</CardHeader>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, padding: '14px 18px', alignItems: 'center' }}>
+            <Badge type={glSum.balanced ? 'completed' : 'cancelled'} dot>
+              {glSum.balanced ? t.glBalanced : t.glUnbalanced}
+            </Badge>
+            <div><div style={{ fontSize: 11, color: C.text3 }}>{t.glEntries}</div><div style={{ fontWeight: 700 }}>{glSum.entry_count}</div></div>
+            <div><div style={{ fontSize: 11, color: C.text3 }}>{t.fsAssets}</div><div style={{ fontWeight: 700, fontFamily: 'var(--mono)' }}>${fmt(glSum.total_assets)}</div></div>
+            <div><div style={{ fontSize: 11, color: C.text3 }}>{t.fsNetIncome}</div><div style={{ fontWeight: 700, fontFamily: 'var(--mono)', color: Number(glSum.net_income) >= 0 ? C.green : C.red }}>${fmt(glSum.net_income)}</div></div>
+          </div>
+        </Card>
+      )}
 
       {/* ── Two-column section ── */}
       <div

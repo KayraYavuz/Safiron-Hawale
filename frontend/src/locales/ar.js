@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'الفترات', fsClosePeriod: 'إغلاق الفترة', fsReopen: 'إعادة فتح',
   fsPeriodStart: 'بداية الفترة', fsPeriodEnd: 'نهاية الفترة', fsStatusOpen: 'مفتوحة', fsStatusClosed: 'مغلقة',
   fsCloseConfirm: 'هل تريد إغلاق هذه الفترة؟ سيتم ترحيل الربح/الخسارة إلى الأرباح المدورة.',
+  glSummaryTitle: 'ملخص الدفتر', glBalanced: 'الدفتر متوازن', glUnbalanced: 'الدفتر غير متوازن', glEntries: 'عدد القيود',
   // Journal (دفتر اليومية)
   jeTitle: 'دفتر اليومية', jeManualEntry: 'قيد يدوي', jeAddLine: 'إضافة سطر',
   jeDate: 'التاريخ', jeMemo: 'البيان', jeAccount: 'الحساب', jeDebit: 'مدين', jeCredit: 'دائن',

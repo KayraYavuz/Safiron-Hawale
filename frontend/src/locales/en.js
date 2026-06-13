@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'Periods', fsClosePeriod: 'Close Period', fsReopen: 'Reopen',
   fsPeriodStart: 'Period Start', fsPeriodEnd: 'Period End', fsStatusOpen: 'Open', fsStatusClosed: 'Closed',
   fsCloseConfirm: 'Close this period? Profit/loss rolls into retained earnings.',
+  glSummaryTitle: 'Ledger Summary', glBalanced: 'Ledger Balanced', glUnbalanced: 'Ledger Unbalanced', glEntries: 'Entries',
   // Journal
   jeTitle: 'Journal', jeManualEntry: 'Manual Entry', jeAddLine: 'Add Line',
   jeDate: 'Date', jeMemo: 'Memo', jeAccount: 'Account', jeDebit: 'Debit', jeCredit: 'Credit',

@@ -14,6 +14,7 @@ export default {
   fsPeriods: 'Dönemler', fsClosePeriod: 'Dönemi Kapat', fsReopen: 'Yeniden Aç',
   fsPeriodStart: 'Dönem Başı', fsPeriodEnd: 'Dönem Sonu', fsStatusOpen: 'Açık', fsStatusClosed: 'Kapalı',
   fsCloseConfirm: 'Bu dönem kapatılsın mı? Kâr/zarar geçmiş yıllar kârına aktarılır.',
+  glSummaryTitle: 'Defter Özeti', glBalanced: 'Defter Dengede', glUnbalanced: 'Defter Dengesiz', glEntries: 'Fiş Sayısı',
   // Journal (Yevmiye Defteri)
   jeTitle: 'Yevmiye Defteri', jeManualEntry: 'Manuel Fiş', jeAddLine: 'Satır Ekle',
   jeDate: 'Tarih', jeMemo: 'Açıklama', jeAccount: 'Hesap', jeDebit: 'Borç', jeCredit: 'Alacak',

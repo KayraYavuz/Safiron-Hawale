@@ -10,9 +10,34 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
+from app.models.accounting import ChartOfAccount, JournalEntry, JournalStatus
 from app.services import statements
 
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
+
+
+@router.get("/gl-summary")
+def gl_summary(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    """Compact dashboard widget data: is the ledger initialised, balanced, and the headline totals."""
+    initialised = db.query(ChartOfAccount).filter(ChartOfAccount.company_id == cu.company_id).first() is not None
+    if not initialised:
+        return {"initialised": False, "balanced": True, "entry_count": 0,
+                "total_debit": 0, "total_credit": 0, "total_assets": 0,
+                "total_liabilities": 0, "total_equity": 0, "net_income": 0}
+    tb = statements.trial_balance(db, cu.company_id)
+    bs = statements.balance_sheet(db, cu.company_id)
+    entry_count = (db.query(JournalEntry)
+                     .filter(JournalEntry.company_id == cu.company_id,
+                             JournalEntry.status == JournalStatus.posted)
+                     .count())
+    return {
+        "initialised": True,
+        "balanced": tb["total_debit"] == tb["total_credit"],
+        "entry_count": entry_count,
+        "total_debit": tb["total_debit"], "total_credit": tb["total_credit"],
+        "total_assets": bs["total_assets"], "total_liabilities": bs["total_liabilities"],
+        "total_equity": bs["total_equity"], "net_income": bs["net_income"],
+    }
 
 
 def _csv(rows, header, filename):
