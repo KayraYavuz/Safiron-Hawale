@@ -35,6 +35,8 @@ export default {
   coaRole: 'Rol', coaAccount: 'Hesap', coaSaved: 'Kaydedildi', coaNone: '— Seçiniz —',
   coaAccountCreated: 'Hesap eklendi', coaAccountUpdated: 'Hesap güncellendi', coaAccountDeleted: 'Hesap pasife alındı',
   coaDeleteConfirm: 'hesabı pasife alınsın mı?',
+  coaTaxTitle: 'Komisyon Vergisi (KDV/BSMV)', coaTaxRate: 'Vergi Oranı',
+  coaTaxHint: 'Komisyon gelirinin bu oranı, otomatik fişlerde "Ödenecek Vergiler" hesabına ayrılır. 0 = kapalı. (Finansal aracılıkta genelde KDV istisnası + %5 BSMV uygulanır — doğru oranı girin.)',
   // Roles (backend UserRole enum ile birebir)
   roleSuperAdmin: 'Sistem Yöneticisi', roleAdmin: 'Yönetici', roleManager: 'Operasyon Müdürü',
   roleAuditor: 'Denetçi', roleBranchManager: 'Şube Müdürü',

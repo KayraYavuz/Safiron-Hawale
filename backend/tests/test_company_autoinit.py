@@ -11,7 +11,7 @@ import app.models  # noqa
 from app.core.security import get_current_user
 from app.models.user import User, UserRole
 from app.models.master import Company
-from app.models.accounting import ChartOfAccount, AccountMapping
+from app.models.accounting import ChartOfAccount, AccountMapping, AccountRole
 from app.api.users import companies_router
 
 
@@ -41,7 +41,7 @@ def test_create_company_auto_inits_chart(client):
     cid = r.json()["id"]
     s = client._s
     assert s.query(ChartOfAccount).filter(ChartOfAccount.company_id == cid).count() > 10
-    assert s.query(AccountMapping).filter(AccountMapping.company_id == cid).count() == 14
+    assert s.query(AccountMapping).filter(AccountMapping.company_id == cid).count() == len(list(AccountRole))
     co = s.query(Company).filter(Company.id == cid).first()
     assert co.accounting_scheme == "thp"
 

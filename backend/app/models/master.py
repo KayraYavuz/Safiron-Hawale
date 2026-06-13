@@ -17,6 +17,7 @@ class Company(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     telegram_bot_token = Column(String, nullable=True)  # @BotFather'dan alınan token
     accounting_scheme = Column(String(8), nullable=True)  # "thp" | "intl" | None until initialised
+    commission_tax_rate = Column(Numeric(5, 4), default=0)  # opt-in KDV/BSMV on commission (0 = off)
 
 
 class Location(Base):

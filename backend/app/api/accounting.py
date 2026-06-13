@@ -9,7 +9,10 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.tenant import apply_company_filter
+from decimal import Decimal
+from pydantic import BaseModel
 from app.models.user import User, UserRole
+from app.models.master import Company
 from app.models.accounting import (
     ChartOfAccount, AccountMapping, AccountType, AccountScheme, AccountRole,
 )
@@ -116,6 +119,29 @@ def delete_account(acc_id: UUID, db: Session = Depends(get_db), cu: User = Depen
     acc.is_active = False
     db.commit()
     return {"ok": True}
+
+
+class TaxRateUpdate(BaseModel):
+    rate: Decimal  # fraction, e.g. 0.05 = 5%
+
+
+@router.get("/tax-rate")
+def get_tax_rate(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    co = db.query(Company).filter(Company.id == cu.company_id).first()
+    return {"rate": str(co.commission_tax_rate or 0) if co else "0"}
+
+
+@router.put("/tax-rate")
+def set_tax_rate(data: TaxRateUpdate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    _require(cu, UserRole.admin, UserRole.super_admin)
+    if data.rate < 0 or data.rate > 1:
+        raise HTTPException(400, "Rate must be a fraction between 0 and 1 (e.g. 0.05 for 5%)")
+    co = db.query(Company).filter(Company.id == cu.company_id).first()
+    if not co:
+        raise HTTPException(404, "Company not found")
+    co.commission_tax_rate = data.rate
+    db.commit()
+    return {"rate": str(co.commission_tax_rate)}
 
 
 @router.get("/mappings", response_model=List[MappingOut])
