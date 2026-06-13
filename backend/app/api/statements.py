@@ -1,7 +1,10 @@
-"""GL-backed financial statement endpoints (read-only)."""
+"""GL-backed financial statement endpoints (read-only). JSON by default, CSV via ?format=csv."""
+import csv
+import io
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.core.database import get_db
@@ -12,22 +15,68 @@ from app.services import statements
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
 
 
+def _csv(rows, header, filename):
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(header)
+    for r in rows:
+        w.writerow(r)
+    return Response(content=buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
 @router.get("/trial-balance")
-def trial_balance(as_of: Optional[date] = None, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    return statements.trial_balance(db, cu.company_id, as_of=as_of)
+def trial_balance(as_of: Optional[date] = None, format: str = "json",
+                  db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = statements.trial_balance(db, cu.company_id, as_of=as_of)
+    if format == "csv":
+        rows = [[r["code"], r["name_tr"], r["account_type"], r["debit_usd"], r["credit_usd"], r["balance_usd"]]
+                for r in data["rows"]]
+        rows.append(["", "TOPLAM", "", data["total_debit"], data["total_credit"], ""])
+        return _csv(rows, ["code", "name", "type", "debit_usd", "credit_usd", "balance_usd"], "mizan.csv")
+    return data
 
 
 @router.get("/balance-sheet")
-def balance_sheet(as_of: Optional[date] = None, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    return statements.balance_sheet(db, cu.company_id, as_of=as_of)
+def balance_sheet(as_of: Optional[date] = None, format: str = "json",
+                  db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = statements.balance_sheet(db, cu.company_id, as_of=as_of)
+    if format == "csv":
+        rows = []
+        for section, key in (("ASSET", "assets"), ("LIABILITY", "liabilities"), ("EQUITY", "equity")):
+            for r in data[key]:
+                rows.append([section, r["code"], r["name_tr"], r["balance_usd"]])
+        rows.append(["", "", "TOTAL ASSETS", data["total_assets"]])
+        rows.append(["", "", "TOTAL LIABILITIES", data["total_liabilities"]])
+        rows.append(["", "", "TOTAL EQUITY", data["total_equity"]])
+        rows.append(["", "", "NET INCOME", data["net_income"]])
+        return _csv(rows, ["section", "code", "name", "balance_usd"], "bilanco.csv")
+    return data
 
 
 @router.get("/income-statement-gl")
-def income_statement_gl(start: date, end: date, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    return statements.income_statement(db, cu.company_id, start, end)
+def income_statement_gl(start: date, end: date, format: str = "json",
+                        db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = statements.income_statement(db, cu.company_id, start, end)
+    if format == "csv":
+        rows = []
+        for r in data["revenue"]:
+            rows.append(["REVENUE", r["code"], r["name_tr"], r["amount_usd"]])
+        for r in data["expense"]:
+            rows.append(["EXPENSE", r["code"], r["name_tr"], r["amount_usd"]])
+        rows.append(["", "", "TOTAL REVENUE", data["total_revenue"]])
+        rows.append(["", "", "TOTAL EXPENSE", data["total_expense"]])
+        rows.append(["", "", "NET", data["net"]])
+        return _csv(rows, ["section", "code", "name", "amount_usd"], "gelir_tablosu.csv")
+    return data
 
 
 @router.get("/general-ledger/{account_id}")
 def general_ledger(account_id: UUID, start: Optional[date] = None, end: Optional[date] = None,
-                   db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    return statements.general_ledger(db, cu.company_id, account_id, start, end)
+                   format: str = "json", db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = statements.general_ledger(db, cu.company_id, account_id, start, end)
+    if format == "csv":
+        rows = [[l["entry_number"], l["entry_date"], l["memo"], l["debit_usd"], l["credit_usd"], l["running_usd"]]
+                for l in data["lines"]]
+        return _csv(rows, ["entry_number", "date", "memo", "debit_usd", "credit_usd", "running_usd"], "defter_kebir.csv")
+    return data

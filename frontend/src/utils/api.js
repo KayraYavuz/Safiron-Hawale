@@ -158,4 +158,18 @@ export const accountingApi = {
   periods:          ()       => api.get('/api/accounting/periods'),
   closePeriod:      (data)   => api.post('/api/accounting/periods/close', data),
   reopenPeriod:     (id)     => api.post(`/api/accounting/periods/${id}/reopen`),
+  glSummary:        ()       => api.get('/api/accounting/gl-summary'),
+  exportCsv:        (path, params) => api.get(`/api/accounting/${path}`, { params: { ...params, format: 'csv' }, responseType: 'blob' }),
+}
+
+// Trigger a browser download from an axios blob response.
+export function downloadBlob(resp, filename) {
+  const url = window.URL.createObjectURL(new Blob([resp.data]))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
 }
