@@ -151,4 +151,8 @@ export const accountingApi = {
   postableAccounts: ()       => api.get('/api/accounting/journal/postable-accounts'),
   createJournal:    (data)   => api.post('/api/accounting/journal', data),
   voidJournal:      (id)     => api.post(`/api/accounting/journal/${id}/void`),
+  trialBalance:     (params) => api.get('/api/accounting/trial-balance', { params }),
+  balanceSheet:     (params) => api.get('/api/accounting/balance-sheet', { params }),
+  incomeStatement:  (params) => api.get('/api/accounting/income-statement-gl', { params }),
+  generalLedger:    (id, params) => api.get(`/api/accounting/general-ledger/${id}`, { params }),
 }

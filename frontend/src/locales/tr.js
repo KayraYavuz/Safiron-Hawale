@@ -4,7 +4,13 @@ export default {
   dashboard: 'Ana Sayfa', transactions: 'İşlemler', counterparties: 'Karşı Taraflar',
   accounts: 'Hesaplar', rates: 'Kur Tablosu', reports: 'Raporlar', users: 'Kullanıcılar',
   reconciliation: 'Günlük Mutabakat', audit: 'Denetim Kaydı', logout: 'Çıkış Yap',
-  chartOfAccounts: 'Hesap Planı', journal: 'Yevmiye Defteri',
+  chartOfAccounts: 'Hesap Planı', journal: 'Yevmiye Defteri', financialStatements: 'Mali Tablolar',
+  // Financial Statements (Mali Tablolar)
+  fsTrialBalance: 'Mizan', fsBalanceSheet: 'Bilanço', fsIncomeStatement: 'Gelir Tablosu', fsGeneralLedger: 'Defter-i Kebir',
+  fsAssets: 'Varlıklar', fsLiabilities: 'Yükümlülükler', fsEquity: 'Özkaynaklar', fsNetIncome: 'Dönem Net Kârı',
+  fsRevenue: 'Gelirler', fsExpense: 'Giderler', fsTotal: 'Toplam', fsBalance: 'Bakiye',
+  fsDebit: 'Borç', fsCredit: 'Alacak', fsAccount: 'Hesap', fsFrom: 'Başlangıç', fsTo: 'Bitiş',
+  fsRunning: 'Yürüyen Bakiye', fsEntryNo: 'Fiş No',
   // Journal (Yevmiye Defteri)
   jeTitle: 'Yevmiye Defteri', jeManualEntry: 'Manuel Fiş', jeAddLine: 'Satır Ekle',
   jeDate: 'Tarih', jeMemo: 'Açıklama', jeAccount: 'Hesap', jeDebit: 'Borç', jeCredit: 'Alacak',

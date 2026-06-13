@@ -4,7 +4,13 @@ export default {
   dashboard: 'Dashboard', transactions: 'Transactions', counterparties: 'Counterparties',
   accounts: 'Accounts', rates: 'Exchange Rates', reports: 'Reports', users: 'Users',
   reconciliation: 'Daily Reconciliation', audit: 'Audit Log', logout: 'Logout',
-  chartOfAccounts: 'Chart of Accounts', journal: 'Journal',
+  chartOfAccounts: 'Chart of Accounts', journal: 'Journal', financialStatements: 'Financial Statements',
+  // Financial Statements
+  fsTrialBalance: 'Trial Balance', fsBalanceSheet: 'Balance Sheet', fsIncomeStatement: 'Income Statement', fsGeneralLedger: 'General Ledger',
+  fsAssets: 'Assets', fsLiabilities: 'Liabilities', fsEquity: 'Equity', fsNetIncome: 'Net Income',
+  fsRevenue: 'Revenue', fsExpense: 'Expenses', fsTotal: 'Total', fsBalance: 'Balance',
+  fsDebit: 'Debit', fsCredit: 'Credit', fsAccount: 'Account', fsFrom: 'From', fsTo: 'To',
+  fsRunning: 'Running Balance', fsEntryNo: 'Entry No',
   // Journal
   jeTitle: 'Journal', jeManualEntry: 'Manual Entry', jeAddLine: 'Add Line',
   jeDate: 'Date', jeMemo: 'Memo', jeAccount: 'Account', jeDebit: 'Debit', jeCredit: 'Credit',

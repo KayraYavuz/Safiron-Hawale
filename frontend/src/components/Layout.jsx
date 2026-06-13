@@ -25,6 +25,7 @@ const BASE_NAV = [
   { path: '/accounts',       key: 'accounts',       icon: 'accounts'       },
   { path: '/chart-of-accounts', key: 'chartOfAccounts', icon: 'briefcase'  },
   { path: '/journal',        key: 'journal',        icon: 'reports'        },
+  { path: '/financial-statements', key: 'financialStatements', icon: 'reports' },
   { path: '/rates',          key: 'rates',          icon: 'rates'          },
   { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'       },
   { path: '/reports',        key: 'reports',        icon: 'reports'        },

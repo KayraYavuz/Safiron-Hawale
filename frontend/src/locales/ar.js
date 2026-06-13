@@ -4,7 +4,13 @@ export default {
   dashboard: 'الرئيسية', transactions: 'المعاملات', counterparties: 'الأطراف المقابلة',
   accounts: 'الحسابات', rates: 'جدول الأسعار', reports: 'التقارير', users: 'المستخدمون',
   reconciliation: 'المطابقة اليومية', audit: 'سجل التدقيق', logout: 'تسجيل الخروج',
-  chartOfAccounts: 'دليل الحسابات', journal: 'دفتر اليومية',
+  chartOfAccounts: 'دليل الحسابات', journal: 'دفتر اليومية', financialStatements: 'القوائم المالية',
+  // Financial Statements (القوائم المالية)
+  fsTrialBalance: 'ميزان المراجعة', fsBalanceSheet: 'الميزانية العمومية', fsIncomeStatement: 'قائمة الدخل', fsGeneralLedger: 'دفتر الأستاذ',
+  fsAssets: 'الأصول', fsLiabilities: 'الخصوم', fsEquity: 'حقوق الملكية', fsNetIncome: 'صافي الدخل',
+  fsRevenue: 'الإيرادات', fsExpense: 'المصروفات', fsTotal: 'الإجمالي', fsBalance: 'الرصيد',
+  fsDebit: 'مدين', fsCredit: 'دائن', fsAccount: 'الحساب', fsFrom: 'من', fsTo: 'إلى',
+  fsRunning: 'الرصيد الجاري', fsEntryNo: 'رقم القيد',
   // Journal (دفتر اليومية)
   jeTitle: 'دفتر اليومية', jeManualEntry: 'قيد يدوي', jeAddLine: 'إضافة سطر',
   jeDate: 'التاريخ', jeMemo: 'البيان', jeAccount: 'الحساب', jeDebit: 'مدين', jeCredit: 'دائن',
