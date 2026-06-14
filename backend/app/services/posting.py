@@ -185,7 +185,8 @@ def post_transaction(db: Session, txn: Transaction, source_type=JournalSourceTyp
         lines.append(line)
 
     return _persist_entry(db, txn.company_id, txn.txn_date, txn.value_date, source_type,
-                          txn.id, f"{txn.txn_type.value} {txn.txn_number}", txn.created_by, lines)
+                          txn.id, f"{txn.txn_type.value} {txn.txn_number}", txn.created_by, lines,
+                          journal_code=journal_for_transaction(db, txn))
 
 
 def _commission_tax(db: Session, company_id, commission_usd: Decimal) -> Decimal:
@@ -210,8 +211,23 @@ def _usd_line(coa_account_id, debit_usd, credit_usd, usd_id):
                 debit_usd=debit_usd, credit_usd=credit_usd)
 
 
+def journal_for_transaction(db: Session, txn) -> str:
+    """Odoo-style journal classification for a transaction's entry."""
+    tt = txn.txn_type.value if hasattr(txn.txn_type, "value") else str(txn.txn_type)
+    if tt in ("remittance", "fx", "swift"):
+        return "SAL"   # operations / sales journal
+    if tt in ("deposit", "withdrawal"):
+        leg = db.query(TransactionLeg).filter(TransactionLeg.transaction_id == txn.id).first()
+        if leg:
+            acc = db.query(Account).filter(Account.id == leg.account_id).first()
+            if acc and acc.account_type.value == "bank":
+                return "BNK"
+        return "CASH"
+    return "MISC"
+
+
 def _persist_entry(db, company_id, entry_date, value_date, source_type, source_id,
-                   memo, created_by, line_dicts):
+                   memo, created_by, line_dicts, journal_code="MISC"):
     dr = sum(_q(l["debit_usd"]) for l in line_dicts)
     cr = sum(_q(l["credit_usd"]) for l in line_dicts)
     if dr != cr:
@@ -220,6 +236,7 @@ def _persist_entry(db, company_id, entry_date, value_date, source_type, source_i
     entry = JournalEntry(
         company_id=company_id,
         entry_number=next_entry_number(db, company_id, year),
+        journal_code=journal_code,
         entry_date=entry_date or date.today(),
         value_date=value_date,
         source_type=source_type, source_id=source_id, memo=memo,
@@ -248,7 +265,8 @@ def void_for_source(db: Session, source_id, created_by=None):
                    counterparty_id=l.counterparty_id, account_id=l.account_id)
               for l in orig_lines]
     rev = _persist_entry(db, entry.company_id, date.today(), None, entry.source_type,
-                         source_id, f"REVERSAL {entry.entry_number}", created_by, mirror)
+                         source_id, f"REVERSAL {entry.entry_number}", created_by, mirror,
+                         journal_code=entry.journal_code or "MISC")
     entry.status = JournalStatus.void
     entry.reversed_by_id = rev.id
     db.flush()

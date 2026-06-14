@@ -30,6 +30,8 @@ export default {
   jeTotal: 'Toplam', jeBalanced: 'Denk', jeNotBalanced: 'Denk Değil',
   jeSaved: 'Fiş kaydedildi', jeVoid: 'İptal Et', jeVoided: 'İptal', jePosted: 'Kayıtlı',
   jeVoidConfirm: 'Bu fiş ters kayıtla iptal edilsin mi?', jeEmpty: 'Henüz yevmiye kaydı yok',
+  jeAllJournals: 'Tüm Defterler', jeJournal: 'Yevmiye',
+  jeJournals: { SAL: 'Satış / İşlem', PUR: 'Alış', CASH: 'Kasa', BNK: 'Banka', MISC: 'Diğer' },
   // Chart of Accounts (Hesap Planı)
   coaTitle: 'Hesap Planı', coaSubtitle: 'Tekdüzen / Uluslararası muhasebe hesap planı',
   coaInitTitle: 'Hesap Planını Başlat', coaInitDesc: 'Şirketiniz için bir hesap planı şeması seçin. Bu işlem hesap ağacını ve rol eşleştirmelerini oluşturur.',

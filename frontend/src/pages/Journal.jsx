@@ -23,8 +23,11 @@ export default function Journal() {
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [lines, setLines] = useState([BLANK_LINE(), BLANK_LINE()])
 
+  const [journalFilter, setJournalFilter] = useState('')
+  const JOURNALS = ['SAL', 'PUR', 'CASH', 'BNK', 'MISC']
   const { data: entries = [] } = useQuery({
-    queryKey: ['journal'], queryFn: () => accountingApi.journal().then(r => r.data),
+    queryKey: ['journal', journalFilter],
+    queryFn: () => accountingApi.journal(journalFilter ? { journal: journalFilter } : {}).then(r => r.data),
   })
   const { data: postable = [] } = useQuery({
     queryKey: ['postable-accounts'], queryFn: () => accountingApi.postableAccounts().then(r => r.data),
@@ -78,11 +81,18 @@ export default function Journal() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{t.jeTitle}</h2>
-          {isAdmin && (
-            <Btn onClick={() => setShowForm(s => !s)}>
-              <Icon name="plus" size={14} color="white" /> {t.jeManualEntry}
-            </Btn>
-          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select value={journalFilter} onChange={e => setJournalFilter(e.target.value)}
+              style={{ padding: '7px 10px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, background: 'white' }}>
+              <option value="">{t.jeAllJournals}</option>
+              {JOURNALS.map(j => <option key={j} value={j}>{t.jeJournals?.[j] || j}</option>)}
+            </select>
+            {isAdmin && (
+              <Btn onClick={() => setShowForm(s => !s)}>
+                <Icon name="plus" size={14} color="white" /> {t.jeManualEntry}
+              </Btn>
+            )}
+          </div>
         </div>
 
         <Info type="info">{t.jeIntro}</Info>
@@ -142,6 +152,7 @@ export default function Journal() {
               <div style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{e.entry_number}</span>
+                  {e.journal_code && <Badge type="manual">{t.jeJournals?.[e.journal_code] || e.journal_code}</Badge>}
                   <span style={{ fontSize: 12, color: C.text3 }}>{e.entry_date}</span>
                   <Badge type="customer">{t.jeSourceTypes?.[e.source_type] || e.source_type}</Badge>
                   <Badge type={e.status === 'posted' ? 'completed' : 'cancelled'}>{e.status === 'posted' ? t.jePosted : t.jeVoided}</Badge>

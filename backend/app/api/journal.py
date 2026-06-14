@@ -33,9 +33,12 @@ def postable_accounts(db: Session = Depends(get_db), cu: User = Depends(get_curr
 
 
 @router.get("", response_model=List[JournalEntryOut])
-def list_journal(limit: int = 100, offset: int = 0, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+def list_journal(limit: int = 100, offset: int = 0, journal: str = None,
+                 db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     q = db.query(JournalEntry).options(joinedload(JournalEntry.lines))
     q = apply_company_filter(q, JournalEntry, cu)
+    if journal:
+        q = q.filter(JournalEntry.journal_code == journal)
     return q.order_by(JournalEntry.created_at.desc()).offset(offset).limit(min(limit, 300)).all()
 
 
@@ -105,7 +108,8 @@ def _reverse_manual(db, entry, created_by):
                    debit_usd=l.credit_usd, credit_usd=l.debit_usd,
                    counterparty_id=l.counterparty_id, account_id=l.account_id) for l in lines]
     rev = _persist_entry(db, entry.company_id, date.today(), None, JournalSourceType.manual,
-                         None, f"REVERSAL {entry.entry_number}", created_by, mirror)
+                         None, f"REVERSAL {entry.entry_number}", created_by, mirror,
+                         journal_code=entry.journal_code or "MISC")
     entry.status = JournalStatus.void
     entry.reversed_by_id = rev.id
     db.flush()

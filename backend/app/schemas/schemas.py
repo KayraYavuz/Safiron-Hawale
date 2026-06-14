@@ -406,6 +406,7 @@ class JournalLineOut(BaseModel):
 class JournalEntryOut(BaseModel):
     id: UUID
     entry_number: str
+    journal_code: Optional[str] = None
     entry_date: date
     source_type: str
     status: str
