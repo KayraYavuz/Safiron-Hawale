@@ -109,6 +109,21 @@ def test_gl_account_lazily_created_and_reused(db):
     assert str(gl1) == str(gl2)
 
 
+def test_journal_code_classification(db):
+    cid, usd, trly, a_usd, a_try = _seed_company(db)
+    rem = _txn(db, cid, TxnType.remittance,
+               [(a_usd, usd, Decimal("1000"), Decimal("1000"), LegType.incoming),
+                (a_try, trly, Decimal("900"), Decimal("900"), LegType.outgoing)],
+               profit_usd=Decimal("100"))
+    assert posting.post_transaction(db, rem).journal_code == "SAL"
+    dep = _txn(db, cid, TxnType.deposit, [(a_usd, usd, Decimal("500"), Decimal("500"), LegType.incoming)])
+    assert posting.post_transaction(db, dep).journal_code == "CASH"  # cash till
+    xfer = _txn(db, cid, TxnType.internal_transfer,
+                [(a_usd, usd, Decimal("100"), Decimal("100"), LegType.outgoing),
+                 (a_usd, usd, Decimal("100"), Decimal("100"), LegType.incoming)])
+    assert posting.post_transaction(db, xfer).journal_code == "MISC"
+
+
 def test_void_creates_mirror(db):
     cid, usd, trly, a_usd, a_try = _seed_company(db)
     t = _txn(db, cid, TxnType.deposit,

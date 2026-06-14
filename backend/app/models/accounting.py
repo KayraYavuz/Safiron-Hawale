@@ -111,6 +111,7 @@ class JournalEntry(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
     entry_number = Column(String(24), nullable=False)
+    journal_code = Column(String(8), nullable=True)  # SAL/PUR/CASH/BNK/MISC (Odoo-style journal)
     entry_date = Column(Date, nullable=False)
     value_date = Column(Date, nullable=True)
     source_type = Column(Enum(JournalSourceType), nullable=False)

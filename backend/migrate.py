@@ -110,6 +110,13 @@ def run():
             else:
                 print(f"  — {model.__tablename__} zaten var")
 
+        # ── journal_entries.journal_code (çoklu yevmiye) ─────────────────────
+        if 'journal_entries' in tables and not col_exists(insp, 'journal_entries', 'journal_code'):
+            conn.execute(text("ALTER TABLE journal_entries ADD COLUMN journal_code VARCHAR(8)"))
+            print("  ✅ journal_entries.journal_code eklendi")
+        elif 'journal_entries' in tables:
+            print("  — journal_entries.journal_code zaten var")
+
     # ── PG enum: accountrole.tax_payable ─────────────────────────────────────
     # ALTER TYPE ... ADD VALUE cannot run inside the main transaction, so do it
     # in a separate AUTOCOMMIT connection. Idempotent + Postgres-only. (On a

@@ -30,6 +30,8 @@ export default {
   jeTotal: 'Total', jeBalanced: 'Balanced', jeNotBalanced: 'Not Balanced',
   jeSaved: 'Entry saved', jeVoid: 'Void', jeVoided: 'Void', jePosted: 'Posted',
   jeVoidConfirm: 'Reverse this entry with a mirror posting?', jeEmpty: 'No journal entries yet',
+  jeAllJournals: 'All Journals', jeJournal: 'Journal',
+  jeJournals: { SAL: 'Sales / Ops', PUR: 'Purchases', CASH: 'Cash', BNK: 'Bank', MISC: 'Misc' },
   // Chart of Accounts
   coaTitle: 'Chart of Accounts', coaSubtitle: 'Turkish (THP) / International accounting chart',
   coaInitTitle: 'Initialize Chart of Accounts', coaInitDesc: 'Choose an accounting scheme for your company. This creates the account tree and role mappings.',

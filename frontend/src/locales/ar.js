@@ -30,6 +30,8 @@ export default {
   jeTotal: 'الإجمالي', jeBalanced: 'متوازن', jeNotBalanced: 'غير متوازن',
   jeSaved: 'تم حفظ القيد', jeVoid: 'إلغاء', jeVoided: 'ملغى', jePosted: 'مرحّل',
   jeVoidConfirm: 'هل تريد عكس هذا القيد بقيد معاكس؟', jeEmpty: 'لا توجد قيود بعد',
+  jeAllJournals: 'كل الدفاتر', jeJournal: 'الدفتر',
+  jeJournals: { SAL: 'مبيعات / عمليات', PUR: 'مشتريات', CASH: 'الصندوق', BNK: 'البنك', MISC: 'متنوع' },
   // Chart of Accounts (دليل الحسابات)
   coaTitle: 'دليل الحسابات', coaSubtitle: 'دليل الحسابات المحاسبي الموحّد (التركي) / الدولي',
   coaInitTitle: 'تهيئة دليل الحسابات', coaInitDesc: 'اختر نظام محاسبة لشركتك. سيؤدي ذلك إلى إنشاء شجرة الحسابات وربط الأدوار.',
