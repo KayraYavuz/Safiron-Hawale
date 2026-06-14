@@ -161,10 +161,10 @@ export default function Journal() {
                       <Td right mono>{num(l.credit_usd) ? fmt(l.credit_usd) : ''}</Td>
                     </TrHover>
                   ))}
-                  <tr>
-                    <Td style={{ fontWeight: 700 }}>{t.jeTotal}</Td>
-                    <Td right mono style={{ fontWeight: 700 }}>{fmt(dr)}</Td>
-                    <Td right mono style={{ fontWeight: 700 }}>{fmt(cr)}</Td>
+                  <tr style={{ borderTop: `2.5px double ${C.text1}` }}>
+                    <Td style={{ fontWeight: 800 }}>{t.jeTotal}</Td>
+                    <Td right mono style={{ fontWeight: 800 }}>{fmt(dr)}</Td>
+                    <Td right mono style={{ fontWeight: 800 }}>{fmt(cr)}</Td>
                   </tr>
                 </tbody>
               </Table>
