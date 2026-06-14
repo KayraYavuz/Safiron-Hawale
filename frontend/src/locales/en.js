@@ -11,6 +11,7 @@ export default {
   fsRevenue: 'Revenue', fsExpense: 'Expenses', fsTotal: 'Total', fsBalance: 'Balance',
   fsDebit: 'Debit', fsCredit: 'Credit', fsAccount: 'Account', fsFrom: 'From', fsTo: 'To',
   fsRunning: 'Running Balance', fsEntryNo: 'Entry No',
+  fsPrint: 'Print / PDF',
   fsUnitUsd: 'Amounts in US Dollars (USD)', fsAsOf: 'As of', fsPeriodLabel: 'Period',
   fsActive: 'ASSETS', fsPassive: 'LIABILITIES & EQUITY',
   fsAssetsTotal: 'TOTAL ASSETS', fsLiabEqTotal: 'TOTAL LIABILITIES & EQUITY', fsGrandTotal: 'GRAND TOTAL',

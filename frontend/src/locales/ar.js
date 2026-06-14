@@ -11,6 +11,7 @@ export default {
   fsRevenue: 'الإيرادات', fsExpense: 'المصروفات', fsTotal: 'الإجمالي', fsBalance: 'الرصيد',
   fsDebit: 'مدين', fsCredit: 'دائن', fsAccount: 'الحساب', fsFrom: 'من', fsTo: 'إلى',
   fsRunning: 'الرصيد الجاري', fsEntryNo: 'رقم القيد',
+  fsPrint: 'طباعة / PDF',
   fsUnitUsd: 'المبالغ بالدولار الأمريكي (USD)', fsAsOf: 'بتاريخ', fsPeriodLabel: 'الفترة',
   fsActive: 'الأصول', fsPassive: 'الخصوم وحقوق الملكية',
   fsAssetsTotal: 'إجمالي الأصول', fsLiabEqTotal: 'إجمالي الخصوم وحقوق الملكية', fsGrandTotal: 'الإجمالي العام',

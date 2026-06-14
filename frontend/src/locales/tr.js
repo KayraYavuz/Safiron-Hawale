@@ -11,6 +11,7 @@ export default {
   fsRevenue: 'Gelirler', fsExpense: 'Giderler', fsTotal: 'Toplam', fsBalance: 'Bakiye',
   fsDebit: 'Borç', fsCredit: 'Alacak', fsAccount: 'Hesap', fsFrom: 'Başlangıç', fsTo: 'Bitiş',
   fsRunning: 'Yürüyen Bakiye', fsEntryNo: 'Fiş No',
+  fsPrint: 'Yazdır / PDF',
   fsUnitUsd: 'Tutarlar: ABD Doları (USD)', fsAsOf: 'Tarih', fsPeriodLabel: 'Dönem',
   fsActive: 'AKTİF (Varlıklar)', fsPassive: 'PASİF (Kaynaklar)',
   fsAssetsTotal: 'AKTİF TOPLAMI', fsLiabEqTotal: 'PASİF TOPLAMI', fsGrandTotal: 'GENEL TOPLAM',
