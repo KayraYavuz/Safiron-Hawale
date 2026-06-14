@@ -12,7 +12,7 @@ const yearStart = () => `${new Date().getFullYear()}-01-01`
 const today = () => new Date().toISOString().slice(0, 10)
 const n = (v) => { const x = Number(v); return isFinite(x) ? x : 0 }
 
-const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger', 'periods']
+const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger', 'partnerLedger', 'aged', 'periods']
 
 // ── Accounting report styling ────────────────────────────────────────────────
 const REPORT_MAX = 900
@@ -50,6 +50,7 @@ export default function FinancialStatements() {
   const [start, setStart] = useState(yearStart())
   const [end, setEnd] = useState(today())
   const [glAccount, setGlAccount] = useState('')
+  const [partner, setPartner] = useState('')
   const [pStart, setPStart] = useState(yearStart())
   const [pEnd, setPEnd] = useState(`${new Date().getFullYear()}-12-31`)
 
@@ -75,6 +76,17 @@ export default function FinancialStatements() {
   const { data: periods = [] } = useQuery({
     queryKey: ['periods'], queryFn: () => accountingApi.periods().then(r => r.data), enabled: tab === 'periods',
   })
+  const { data: partnerList = [] } = useQuery({
+    queryKey: ['partners'], queryFn: () => accountingApi.partners().then(r => r.data), enabled: tab === 'partnerLedger',
+  })
+  const { data: pl } = useQuery({
+    queryKey: ['pl', partner, start, end],
+    queryFn: () => accountingApi.partnerLedger(partner, { start, end }).then(r => r.data),
+    enabled: tab === 'partnerLedger' && !!partner,
+  })
+  const { data: aged } = useQuery({
+    queryKey: ['aged', end], queryFn: () => accountingApi.agedBalance({ as_of: end }).then(r => r.data), enabled: tab === 'aged',
+  })
 
   const closeMut = useMutation({
     mutationFn: () => accountingApi.closePeriod({ period_start: pStart, period_end: pEnd }),
@@ -90,7 +102,7 @@ export default function FinancialStatements() {
     onError: e => toast.error(e.response?.data?.detail || t.error),
   })
 
-  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger, periods: t.fsPeriods }
+  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger, partnerLedger: t.fsPartnerLedger, aged: t.fsAged, periods: t.fsPeriods }
   const periodLine = `${t.fsPeriodLabel}: ${start} — ${end}`
   const balancedChip = tb && (
     <Badge type={n(tb.total_debit) === n(tb.total_credit) ? 'completed' : 'cancelled'} dot>
@@ -120,6 +132,8 @@ export default function FinancialStatements() {
             {tab === 'trialBalance' && <ExportBtn path="trial-balance" filename="mizan.csv" />}
             {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" filename="bilanco.csv" />}
             {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end }} filename="gelir_tablosu.csv" />}
+            {tab === 'partnerLedger' && partner && <ExportBtn path={`partner-ledger/${partner}`} params={{ start, end }} filename="cari_ekstre.csv" />}
+            {tab === 'aged' && <ExportBtn path="aged-balance" params={{ as_of: end }} filename="yaslandirma.csv" />}
             {tab !== 'periods' && <Btn variant="ghost" size="sm" onClick={() => window.print()}>{t.fsPrint}</Btn>}
           </div>
         </div>
@@ -249,6 +263,85 @@ export default function FinancialStatements() {
                 </tbody>
               </RT>
             )}
+          </ReportFrame>
+        )}
+
+        {/* ── CARİ HESAP EKSTRESİ ── */}
+        {tab === 'partnerLedger' && (
+          <ReportFrame title={t.fsPartnerLedger} lines={[partnerList.find(p => p.id === partner)?.name, periodLine, t.fsUnitUsd]}>
+            <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: '12px 18px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Select label={t.fsPartner} value={partner} onChange={e => setPartner(e.target.value)} style={{ minWidth: 280 }}>
+                <option value="">{t.coaNone}</option>
+                {partnerList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </Select>
+              <label style={{ fontSize: 12, color: C.text2 }}>{t.fsFrom}<br /><input type="date" value={start} onChange={e => setStart(e.target.value)} /></label>
+              <label style={{ fontSize: 12, color: C.text2 }}>{t.fsTo}<br /><input type="date" value={end} onChange={e => setEnd(e.target.value)} /></label>
+            </div>
+            {pl && (
+              <RT>
+                <thead><tr>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>{t.jeDate}</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>{t.fsEntryNo}</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>{t.coaCode}</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>{t.jeMemo}</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsDebit}</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsCredit}</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsRunning}</th>
+                </tr></thead>
+                <tbody>
+                  <tr style={subtotalRow}><td style={cTxt} colSpan={6}>{t.fsOpening}</td><td style={cNum}>{money(pl.opening_usd)}</td></tr>
+                  {pl.lines.map((l, i) => (
+                    <tr key={i} style={{ borderBottom: `1px solid ${C.surface3}` }}>
+                      <td style={cTxt}>{l.entry_date}</td>
+                      <td style={cCode}>{l.entry_number}</td>
+                      <td style={cCode}>{l.account_code}</td>
+                      <td style={cTxt}>{l.memo}</td>
+                      <td style={cNum}>{money(l.debit_usd, true)}</td>
+                      <td style={cNum}>{money(l.credit_usd, true)}</td>
+                      <td style={cNum}>{money(l.running_usd)}</td>
+                    </tr>
+                  ))}
+                  <tr style={totalRow}><td style={cTxt} colSpan={6}>{t.fsClosing}</td><td style={cNum}>{money(pl.closing_usd)}</td></tr>
+                </tbody>
+              </RT>
+            )}
+          </ReportFrame>
+        )}
+
+        {/* ── YAŞLANDIRMA ── */}
+        {tab === 'aged' && aged && (
+          <ReportFrame title={t.fsAged} lines={[`${t.fsAsOf}: ${end}`, t.fsUnitUsd]}>
+            <RT>
+              <thead><tr>
+                <th style={{ ...thStyle, textAlign: 'left' }}>{t.fsPartner}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsCurrent}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsD3160}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsD6190}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsD90}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsTotal}</th>
+              </tr></thead>
+              <tbody>
+                {aged.rows.map(r => (
+                  <tr key={r.counterparty_id} style={{ borderBottom: `1px solid ${C.surface3}` }}>
+                    <td style={cTxt}>{r.name}</td>
+                    <td style={cNum}>{money(r.current, true)}</td>
+                    <td style={cNum}>{money(r.d31_60, true)}</td>
+                    <td style={cNum}>{money(r.d61_90, true)}</td>
+                    <td style={cNum}>{money(r.d90_plus, true)}</td>
+                    <td style={{ ...cNum, fontWeight: 700, color: n(r.total) >= 0 ? C.green : C.red }}>{money(r.total)}</td>
+                  </tr>
+                ))}
+                {aged.rows.length === 0 && <tr><td style={{ ...cTxt, textAlign: 'center', color: C.text3 }} colSpan={6}>—</td></tr>}
+                <tr style={totalRow}>
+                  <td style={cTxt}>{t.fsGrandTotal}</td>
+                  <td style={cNum}>{money(aged.current)}</td>
+                  <td style={cNum}>{money(aged.d31_60)}</td>
+                  <td style={cNum}>{money(aged.d61_90)}</td>
+                  <td style={cNum}>{money(aged.d90_plus)}</td>
+                  <td style={cNum}>{money(aged.total)}</td>
+                </tr>
+              </tbody>
+            </RT>
           </ReportFrame>
         )}
 

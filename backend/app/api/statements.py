@@ -10,8 +10,9 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.accounting import ChartOfAccount, JournalEntry, JournalStatus
-from app.services import statements
+from app.models.accounting import ChartOfAccount, JournalEntry, JournalLine, JournalStatus
+from app.models.master import Counterparty
+from app.services import statements, partner_reports
 
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
 
@@ -93,6 +94,42 @@ def income_statement_gl(start: date, end: date, format: str = "json",
         rows.append(["", "", "TOTAL EXPENSE", data["total_expense"]])
         rows.append(["", "", "NET", data["net"]])
         return _csv(rows, ["section", "code", "name", "amount_usd"], "gelir_tablosu.csv")
+    return data
+
+
+@router.get("/partners")
+def partners_with_activity(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    """Counterparties that have GL activity (for the partner-ledger picker)."""
+    ids = [r[0] for r in (db.query(JournalLine.counterparty_id)
+                            .join(JournalEntry, JournalLine.entry_id == JournalEntry.id)
+                            .filter(JournalEntry.company_id == cu.company_id,
+                                    JournalLine.counterparty_id.isnot(None))
+                            .distinct().all())]
+    if not ids:
+        return []
+    cps = db.query(Counterparty).filter(Counterparty.id.in_(ids)).order_by(Counterparty.name).all()
+    return [{"id": str(c.id), "name": c.name, "code": c.code} for c in cps]
+
+
+@router.get("/partner-ledger/{counterparty_id}")
+def partner_ledger(counterparty_id: UUID, start: Optional[date] = None, end: Optional[date] = None,
+                   format: str = "json", db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = partner_reports.partner_ledger(db, cu.company_id, counterparty_id, start, end)
+    if format == "csv":
+        rows = [[l["entry_date"], l["entry_number"], l["account_code"], l["memo"], l["debit_usd"], l["credit_usd"], l["running_usd"]]
+                for l in data["lines"]]
+        return _csv(rows, ["date", "entry", "account", "memo", "debit_usd", "credit_usd", "running_usd"], "cari_ekstre.csv")
+    return data
+
+
+@router.get("/aged-balance")
+def aged_balance(as_of: Optional[date] = None, format: str = "json",
+                 db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = partner_reports.aged_balance(db, cu.company_id, as_of or date.today())
+    if format == "csv":
+        rows = [[r["name"], r["current"], r["d31_60"], r["d61_90"], r["d90_plus"], r["total"]] for r in data["rows"]]
+        rows.append(["TOPLAM", data["current"], data["d31_60"], data["d61_90"], data["d90_plus"], data["total"]])
+        return _csv(rows, ["partner", "current", "31_60", "61_90", "90_plus", "total"], "yaslandirma.csv")
     return data
 
 
