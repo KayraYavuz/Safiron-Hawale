@@ -5,6 +5,7 @@ export default {
   accounts: 'Accounts', rates: 'Exchange Rates', reports: 'Reports', users: 'Users',
   reconciliation: 'Daily Reconciliation', audit: 'Audit Log', logout: 'Logout',
   chartOfAccounts: 'Chart of Accounts', journal: 'Journal', financialStatements: 'Financial Statements',
+  accountingDash: 'Accounting', accountingQuick: 'Quick Access', accountingPending: 'Pending Transactions', accountingNoPending: 'No pending transactions', jeStatus: 'Status',
   // Financial Statements
   fsTrialBalance: 'Trial Balance', fsBalanceSheet: 'Balance Sheet', fsIncomeStatement: 'Income Statement', fsGeneralLedger: 'General Ledger',
   fsAssets: 'Assets', fsLiabilities: 'Liabilities', fsEquity: 'Equity', fsNetIncome: 'Net Income',
