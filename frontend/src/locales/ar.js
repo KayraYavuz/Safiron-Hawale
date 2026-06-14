@@ -6,6 +6,8 @@ export default {
   reconciliation: 'المطابقة اليومية', audit: 'سجل التدقيق', logout: 'تسجيل الخروج',
   chartOfAccounts: 'دليل الحسابات', journal: 'دفتر اليومية', financialStatements: 'القوائم المالية',
   accountingDash: 'المحاسبة', accountingQuick: 'وصول سريع', accountingPending: 'معاملات معلّقة', accountingNoPending: 'لا توجد معاملات معلّقة', jeStatus: 'الحالة',
+  reconTitle: 'تسوية البنك/الصندوق', reconIntro: 'طابق حركات الصندوق/البنك في الدفتر مع الكشف الفعلي: علّم ما تمت تسويته. عندما يصل الرصيد غير المسوّى إلى صفر يكون الحساب مسوّى.',
+  reconAccount: 'الحساب (صندوق/بنك)', reconBook: 'رصيد الدفتر', reconReconciled: 'مسوّى', reconUnreconciled: 'غير مسوّى', reconLines: 'الحركات', reconDone: 'تمت',
   // Financial Statements (القوائم المالية)
   fsTrialBalance: 'ميزان المراجعة', fsBalanceSheet: 'الميزانية العمومية', fsIncomeStatement: 'قائمة الدخل', fsGeneralLedger: 'دفتر الأستاذ',
   fsAssets: 'الأصول', fsLiabilities: 'الخصوم', fsEquity: 'حقوق الملكية', fsNetIncome: 'صافي الدخل',

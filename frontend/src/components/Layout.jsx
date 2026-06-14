@@ -26,6 +26,7 @@ const BASE_NAV = [
   { path: '/accounting',     key: 'accountingDash', icon: 'briefcase'      },
   { path: '/chart-of-accounts', key: 'chartOfAccounts', icon: 'reports'   },
   { path: '/journal',        key: 'journal',        icon: 'reports'        },
+  { path: '/bank-reconciliation', key: 'reconTitle', icon: 'check'        },
   { path: '/financial-statements', key: 'financialStatements', icon: 'reports' },
   { path: '/rates',          key: 'rates',          icon: 'rates'          },
   { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'       },

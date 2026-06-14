@@ -6,6 +6,8 @@ export default {
   reconciliation: 'Günlük Mutabakat', audit: 'Denetim Kaydı', logout: 'Çıkış Yap',
   chartOfAccounts: 'Hesap Planı', journal: 'Yevmiye Defteri', financialStatements: 'Mali Tablolar',
   accountingDash: 'Muhasebe', accountingQuick: 'Hızlı Erişim', accountingPending: 'Bekleyen İşlemler', accountingNoPending: 'Bekleyen işlem yok', jeStatus: 'Durum',
+  reconTitle: 'Banka/Kasa Mutabakatı', reconIntro: 'Defterdeki kasa/banka hareketlerini gerçek ekstreyle eşleştirin: mutabık olanları işaretleyin. Mutabık olmayan bakiye sıfıra inince hesap mutabıktır.',
+  reconAccount: 'Hesap (Kasa/Banka)', reconBook: 'Defter Bakiyesi', reconReconciled: 'Mutabık', reconUnreconciled: 'Mutabık Olmayan', reconLines: 'Hareketler', reconDone: 'Mutabık',
   // Financial Statements (Mali Tablolar)
   fsTrialBalance: 'Mizan', fsBalanceSheet: 'Bilanço', fsIncomeStatement: 'Gelir Tablosu', fsGeneralLedger: 'Defter-i Kebir',
   fsAssets: 'Varlıklar', fsLiabilities: 'Yükümlülükler', fsEquity: 'Özkaynaklar', fsNetIncome: 'Dönem Net Kârı',

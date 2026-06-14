@@ -25,6 +25,7 @@ const Accounts       = lazy(() => import('./pages/Accounts'))
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'))
 const ChartOfAccounts = lazy(() => import('./pages/ChartOfAccounts'))
 const Journal        = lazy(() => import('./pages/Journal'))
+const BankReconciliation = lazy(() => import('./pages/BankReconciliation'))
 const FinancialStatements = lazy(() => import('./pages/FinancialStatements'))
 const Rates          = lazy(() => import('./pages/Rates'))
 const Reports        = lazy(() => import('./pages/Reports'))
@@ -133,6 +134,7 @@ export default function App() {
           <Route path="/accounting"     element={<Protected><AccountingDashboard /></Protected>} />
           <Route path="/chart-of-accounts" element={<Protected><ChartOfAccounts /></Protected>} />
           <Route path="/journal"        element={<Protected><Journal /></Protected>} />
+          <Route path="/bank-reconciliation" element={<Protected><BankReconciliation /></Protected>} />
           <Route path="/financial-statements" element={<Protected><FinancialStatements /></Protected>} />
           <Route path="/rates"          element={<Protected><Rates /></Protected>} />
           <Route path="/reports"        element={<Protected><Reports /></Protected>} />

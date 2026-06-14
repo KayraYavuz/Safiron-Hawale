@@ -145,6 +145,8 @@ class JournalLine(Base):
     credit_usd = Column(Numeric(18, 4), default=0)
     counterparty_id = Column(GUID(), ForeignKey("counterparties.id"), nullable=True)
     account_id = Column(GUID(), ForeignKey("accounts.id"), nullable=True)
+    reconciled = Column(Boolean, default=False, nullable=False)  # bank/cash reconciliation
+    reconciled_at = Column(DateTime(timezone=True), nullable=True)
 
     entry = relationship("JournalEntry", back_populates="lines")
     account = relationship("ChartOfAccount")

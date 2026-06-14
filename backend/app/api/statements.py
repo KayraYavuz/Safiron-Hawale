@@ -3,8 +3,9 @@ import csv
 import io
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.core.database import get_db
@@ -12,7 +13,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.accounting import ChartOfAccount, JournalEntry, JournalLine, JournalStatus
 from app.models.master import Counterparty
-from app.services import statements, partner_reports
+from app.services import statements, partner_reports, reconciliation_gl
 
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
 
@@ -131,6 +132,26 @@ def aged_balance(as_of: Optional[date] = None, format: str = "json",
         rows.append(["TOPLAM", data["current"], data["d31_60"], data["d61_90"], data["d90_plus"], data["total"]])
         return _csv(rows, ["partner", "current", "31_60", "61_90", "90_plus", "total"], "yaslandirma.csv")
     return data
+
+
+@router.get("/reconciliation/{account_id}")
+def reconciliation_view(account_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    return reconciliation_gl.reconcile_view(db, cu.company_id, account_id)
+
+
+class ReconcileToggle(BaseModel):
+    line_id: UUID
+    reconciled: bool
+
+
+@router.post("/reconciliation/toggle")
+def reconciliation_toggle(data: ReconcileToggle, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    try:
+        reconciliation_gl.toggle(db, cu.company_id, data.line_id, data.reconciled)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/general-ledger/{account_id}")

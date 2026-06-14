@@ -117,6 +117,19 @@ def run():
         elif 'journal_entries' in tables:
             print("  — journal_entries.journal_code zaten var")
 
+        # ── journal_lines reconciliation (banka/kasa mutabakatı) ─────────────
+        if 'journal_lines' in tables:
+            if not col_exists(insp, 'journal_lines', 'reconciled'):
+                conn.execute(text("ALTER TABLE journal_lines ADD COLUMN reconciled BOOLEAN DEFAULT FALSE"))
+                print("  ✅ journal_lines.reconciled eklendi")
+            else:
+                print("  — journal_lines.reconciled zaten var")
+            if not col_exists(insp, 'journal_lines', 'reconciled_at'):
+                conn.execute(text("ALTER TABLE journal_lines ADD COLUMN reconciled_at TIMESTAMPTZ"))
+                print("  ✅ journal_lines.reconciled_at eklendi")
+            else:
+                print("  — journal_lines.reconciled_at zaten var")
+
     # ── PG enum: accountrole.tax_payable ─────────────────────────────────────
     # ALTER TYPE ... ADD VALUE cannot run inside the main transaction, so do it
     # in a separate AUTOCOMMIT connection. Idempotent + Postgres-only. (On a
