@@ -182,33 +182,45 @@ export default function ChartOfAccounts() {
         )}
 
         <Card>
-          <Table>
-            <thead>
-              <tr>
-                <Th>{t.coaCode}</Th><Th>{t.coaName}</Th><Th>{t.coaType}</Th><Th>{t.coaPostable}</Th>{isAdmin && <Th right>·</Th>}
-              </tr>
-            </thead>
-            <tbody>
-              {ordered.map(a => (
-                <TrHover key={a.id}>
-                  <Td mono>{a.code}</Td>
-                  <Td>
-                    <span style={{ paddingInlineStart: (depthMap[a.id] || 0) * 18, fontWeight: a.is_postable ? 400 : 600 }}>{nameOf(a)}</span>
-                  </Td>
-                  <Td>{typeLabel(a.account_type)}</Td>
-                  <Td><Badge type={a.is_postable ? 'completed' : 'manual'}>{a.is_postable ? t.coaLeaf : t.coaHeader}</Badge></Td>
-                  {isAdmin && (
-                    <Td right>
-                      <span style={{ display: 'inline-flex', gap: 8 }}>
-                        <button onClick={() => startEdit(a)} style={{ background: 'none', border: 'none', cursor: 'pointer' }} title={t.edit}><Icon name="edit" size={14} color={C.navy} /></button>
-                        <button onClick={() => window.confirm(`"${nameOf(a)}" ${t.coaDeleteConfirm}`) && delMut.mutate(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }} title={t.delete}><Icon name="trash" size={14} color={C.red} /></button>
-                      </span>
-                    </Td>
-                  )}
-                </TrHover>
-              ))}
-            </tbody>
-          </Table>
+          <div style={{ padding: '14px 18px 10px', borderBottom: `1px solid ${C.border}`, textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.text1 }}>{t.coaTitle}</div>
+            <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>
+              {chart[0]?.scheme === 'intl' ? t.coaSchemeIntl : t.coaSchemeThp}
+            </div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font)' }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: '8px 14px', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.text3, borderBottom: `2px solid ${C.text1}`, textAlign: 'left', width: 110 }}>{t.coaCode}</th>
+                  <th style={{ padding: '8px 14px', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.text3, borderBottom: `2px solid ${C.text1}`, textAlign: 'left' }}>{t.coaName}</th>
+                  <th style={{ padding: '8px 14px', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.text3, borderBottom: `2px solid ${C.text1}`, textAlign: 'left' }}>{t.coaType}</th>
+                  {isAdmin && <th className="no-print" style={{ borderBottom: `2px solid ${C.text1}`, width: 70 }} />}
+                </tr>
+              </thead>
+              <tbody>
+                {ordered.map(a => {
+                  const header = !a.is_postable
+                  const depth = depthMap[a.id] || 0
+                  return (
+                    <tr key={a.id} style={{ borderBottom: `1px solid ${C.surface3}`, background: header ? C.surface3 : 'transparent' }}>
+                      <td style={{ padding: '6px 14px', fontFamily: 'var(--mono)', fontSize: 12.5, color: header ? C.text1 : C.text2, fontWeight: header ? 700 : 400 }}>{a.code}</td>
+                      <td style={{ padding: '6px 14px', fontSize: 13 }}>
+                        <span style={{ paddingInlineStart: depth * 20, fontWeight: header ? 700 : 400, textTransform: header ? 'uppercase' : 'none', letterSpacing: header ? '0.02em' : 0, fontSize: header ? 12 : 13 }}>{nameOf(a)}</span>
+                      </td>
+                      <td style={{ padding: '6px 14px', fontSize: 11.5, color: C.text3 }}>{typeLabel(a.account_type)}</td>
+                      {isAdmin && (
+                        <td className="no-print" style={{ padding: '6px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button onClick={() => startEdit(a)} style={{ background: 'none', border: 'none', cursor: 'pointer' }} title={t.edit}><Icon name="edit" size={14} color={C.navy} /></button>
+                          <button onClick={() => window.confirm(`"${nameOf(a)}" ${t.coaDeleteConfirm}`) && delMut.mutate(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', marginInlineStart: 8 }} title={t.delete}><Icon name="trash" size={14} color={C.red} /></button>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </Card>
 
         {/* Commission tax (KDV/BSMV) */}

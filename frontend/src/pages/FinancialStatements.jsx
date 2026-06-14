@@ -99,7 +99,7 @@ export default function FinancialStatements() {
   )
 
   const dateRange = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', padding: '12px 18px', justifyContent: 'center' }}>
+    <div className="no-print" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', padding: '12px 18px', justifyContent: 'center' }}>
       <label style={{ fontSize: 12, color: C.text2 }}>{t.fsFrom}<br /><input type="date" value={start} onChange={e => setStart(e.target.value)} /></label>
       <label style={{ fontSize: 12, color: C.text2 }}>{t.fsTo}<br /><input type="date" value={end} onChange={e => setEnd(e.target.value)} /></label>
     </div>
@@ -109,16 +109,19 @@ export default function FinancialStatements() {
     <>
       <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Info type="info">{t.fsIntro}</Info>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="no-print"><Info type="info">{t.fsIntro}</Info></div>
+        <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {TABS.map(tk => (
               <Btn key={tk} variant={tab === tk ? 'primary' : 'ghost'} size="sm" onClick={() => setTab(tk)}>{tabLabel[tk]}</Btn>
             ))}
           </div>
-          {tab === 'trialBalance' && <ExportBtn path="trial-balance" filename="mizan.csv" />}
-          {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" filename="bilanco.csv" />}
-          {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end }} filename="gelir_tablosu.csv" />}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {tab === 'trialBalance' && <ExportBtn path="trial-balance" filename="mizan.csv" />}
+            {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" filename="bilanco.csv" />}
+            {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end }} filename="gelir_tablosu.csv" />}
+            {tab !== 'periods' && <Btn variant="ghost" size="sm" onClick={() => window.print()}>{t.fsPrint}</Btn>}
+          </div>
         </div>
 
         {/* ── MİZAN ── */}
@@ -213,7 +216,7 @@ export default function FinancialStatements() {
         {/* ── DEFTER-İ KEBİR ── */}
         {tab === 'generalLedger' && (
           <ReportFrame title={t.fsGeneralLedger} lines={[periodLine, t.fsUnitUsd]}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: '12px 18px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="no-print" style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: '12px 18px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <Select label={t.fsAccount} value={glAccount} onChange={e => setGlAccount(e.target.value)} style={{ minWidth: 320 }}>
                 <option value="">{t.coaNone}</option>
                 {(tb?.rows || []).map(r => <option key={r.account_id} value={r.account_id}>{r.code} · {nm(r)}</option>)}
