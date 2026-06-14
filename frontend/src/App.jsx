@@ -22,6 +22,7 @@ const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Transactions   = lazy(() => import('./pages/Transactions'))
 const Counterparties = lazy(() => import('./pages/Counterparties'))
 const Accounts       = lazy(() => import('./pages/Accounts'))
+const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'))
 const ChartOfAccounts = lazy(() => import('./pages/ChartOfAccounts'))
 const Journal        = lazy(() => import('./pages/Journal'))
 const FinancialStatements = lazy(() => import('./pages/FinancialStatements'))
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/transactions"   element={<Protected><Transactions /></Protected>} />
           <Route path="/counterparties" element={<Protected><Counterparties /></Protected>} />
           <Route path="/accounts"       element={<Protected><Accounts /></Protected>} />
+          <Route path="/accounting"     element={<Protected><AccountingDashboard /></Protected>} />
           <Route path="/chart-of-accounts" element={<Protected><ChartOfAccounts /></Protected>} />
           <Route path="/journal"        element={<Protected><Journal /></Protected>} />
           <Route path="/financial-statements" element={<Protected><FinancialStatements /></Protected>} />

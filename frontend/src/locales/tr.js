@@ -5,6 +5,7 @@ export default {
   accounts: 'Hesaplar', rates: 'Kur Tablosu', reports: 'Raporlar', users: 'Kullanıcılar',
   reconciliation: 'Günlük Mutabakat', audit: 'Denetim Kaydı', logout: 'Çıkış Yap',
   chartOfAccounts: 'Hesap Planı', journal: 'Yevmiye Defteri', financialStatements: 'Mali Tablolar',
+  accountingDash: 'Muhasebe', accountingQuick: 'Hızlı Erişim', accountingPending: 'Bekleyen İşlemler', accountingNoPending: 'Bekleyen işlem yok', jeStatus: 'Durum',
   // Financial Statements (Mali Tablolar)
   fsTrialBalance: 'Mizan', fsBalanceSheet: 'Bilanço', fsIncomeStatement: 'Gelir Tablosu', fsGeneralLedger: 'Defter-i Kebir',
   fsAssets: 'Varlıklar', fsLiabilities: 'Yükümlülükler', fsEquity: 'Özkaynaklar', fsNetIncome: 'Dönem Net Kârı',

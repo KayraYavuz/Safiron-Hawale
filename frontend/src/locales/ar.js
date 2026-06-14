@@ -5,6 +5,7 @@ export default {
   accounts: 'الحسابات', rates: 'جدول الأسعار', reports: 'التقارير', users: 'المستخدمون',
   reconciliation: 'المطابقة اليومية', audit: 'سجل التدقيق', logout: 'تسجيل الخروج',
   chartOfAccounts: 'دليل الحسابات', journal: 'دفتر اليومية', financialStatements: 'القوائم المالية',
+  accountingDash: 'المحاسبة', accountingQuick: 'وصول سريع', accountingPending: 'معاملات معلّقة', accountingNoPending: 'لا توجد معاملات معلّقة', jeStatus: 'الحالة',
   // Financial Statements (القوائم المالية)
   fsTrialBalance: 'ميزان المراجعة', fsBalanceSheet: 'الميزانية العمومية', fsIncomeStatement: 'قائمة الدخل', fsGeneralLedger: 'دفتر الأستاذ',
   fsAssets: 'الأصول', fsLiabilities: 'الخصوم', fsEquity: 'حقوق الملكية', fsNetIncome: 'صافي الدخل',
