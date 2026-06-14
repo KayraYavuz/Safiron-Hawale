@@ -10,6 +10,16 @@ export function fmtUSD(value) {
   return `$${fmt(value)}`
 }
 
+// Accounting style: thousands separated, 2 decimals, negatives in parentheses,
+// zero shown as an em-dash. e.g. 1234.5 → "1,234.50", -1234.5 → "(1,234.50)", 0 → "—"
+export function acct(value, { dashZero = true } = {}) {
+  const n = parseFloat(value ?? 0)
+  if (!isFinite(n)) return dashZero ? '—' : '0.00'
+  if (n === 0) return dashZero ? '—' : '0.00'
+  const s = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return n < 0 ? `(${s})` : s
+}
+
 // "1,234,567.89" → "1234567.89"
 export function stripCommas(str) {
   return String(str ?? '').replace(/,/g, '')
