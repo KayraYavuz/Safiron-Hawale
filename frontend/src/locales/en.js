@@ -6,6 +6,8 @@ export default {
   reconciliation: 'Daily Reconciliation', audit: 'Audit Log', logout: 'Logout',
   chartOfAccounts: 'Chart of Accounts', journal: 'Journal', financialStatements: 'Financial Statements',
   accountingDash: 'Accounting', accountingQuick: 'Quick Access', accountingPending: 'Pending Transactions', accountingNoPending: 'No pending transactions', jeStatus: 'Status',
+  reconTitle: 'Bank/Cash Reconciliation', reconIntro: 'Match ledger cash/bank movements to the real statement: tick the ones that cleared. When the unreconciled balance reaches zero the account is reconciled.',
+  reconAccount: 'Account (Cash/Bank)', reconBook: 'Book Balance', reconReconciled: 'Reconciled', reconUnreconciled: 'Unreconciled', reconLines: 'Movements', reconDone: 'Cleared',
   // Financial Statements
   fsTrialBalance: 'Trial Balance', fsBalanceSheet: 'Balance Sheet', fsIncomeStatement: 'Income Statement', fsGeneralLedger: 'General Ledger',
   fsAssets: 'Assets', fsLiabilities: 'Liabilities', fsEquity: 'Equity', fsNetIncome: 'Net Income',
