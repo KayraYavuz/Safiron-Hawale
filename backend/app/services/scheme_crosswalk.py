@@ -89,13 +89,15 @@ def reverse_roles(db, company_id) -> dict:
     for aid in parent_of:
         if aid in resolved:
             continue
-        chain, cur = [], aid
-        while cur is not None and cur not in direct:
+        chain, seen, cur = [], set(), aid
+        while cur is not None and cur not in direct and cur not in seen:
+            seen.add(cur)
             chain.append(cur)
             cur = parent_of.get(cur)
         if cur in direct:                      # found a role-mapped ancestor
             for node in chain:
                 resolved[node] = direct[cur]
+        # cur is None (reached root) or a cycle → leave unresolved → UNMAPPED bucket
     return resolved
 
 

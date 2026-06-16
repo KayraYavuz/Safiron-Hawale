@@ -86,6 +86,21 @@ def test_reverse_roles_resolves_child_tills_to_parent_role(db):
     assert rev[str(child.id)] == "cash"  # leaf inherits the parent's role
 
 
+def test_reverse_roles_survives_a_parent_cycle(db):
+    """A corrupt parent_id cycle must terminate (no hang) and leave the nodes
+    unresolved (they fall to the UNMAPPED bucket downstream)."""
+    cid = uuid.uuid4()
+    db.add(Company(id=cid, name="Co", code="CO"))
+    a_id, b_id = uuid.uuid4(), uuid.uuid4()
+    a = ChartOfAccount(id=a_id, company_id=cid, code="A", name_tr="A", name_ar="A", name_en="A",
+                       account_type=AccountType.asset, is_postable=True, scheme=AccountScheme.thp, parent_id=b_id)
+    b = ChartOfAccount(id=b_id, company_id=cid, code="B", name_tr="B", name_ar="B", name_en="B",
+                       account_type=AccountType.asset, is_postable=True, scheme=AccountScheme.thp, parent_id=a_id)
+    db.add_all([a, b]); db.commit()
+    rev = cw.reverse_roles(db, cid)  # must not hang
+    assert str(a_id) not in rev and str(b_id) not in rev
+
+
 def test_remap_pivots_on_role_into_target_scheme(db):
     cid, cash_id, comm_id = _company_with_mappings(db)
     rev = cw.reverse_roles(db, cid)
