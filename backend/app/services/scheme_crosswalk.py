@@ -14,7 +14,7 @@ import os
 import json
 from decimal import Decimal
 
-from app.models.accounting import AccountMapping, AccountType
+from app.models.accounting import AccountMapping, AccountType, ChartOfAccount
 
 ZERO = Decimal("0")
 _DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -74,9 +74,29 @@ class _TargetAccount:
 
 
 def reverse_roles(db, company_id) -> dict:
-    """{coa_account_id (str): role} from the company's account_mappings rows."""
-    rows = db.query(AccountMapping).filter(AccountMapping.company_id == company_id).all()
-    return {str(m.coa_account_id): m.role.value for m in rows}
+    """{coa_account_id (str): role} for the company.
+
+    Roles come from account_mappings, which point at the *parent* cash/bank/etc.
+    account. Real postings hit per-till leaf accounts (e.g. 100.01) created under
+    that parent, so we resolve every account to a role by walking up parent_id to
+    the nearest role-mapped ancestor — a sub-till of Kasa is still `cash`."""
+    direct = {str(m.coa_account_id): m.role.value
+              for m in db.query(AccountMapping).filter(AccountMapping.company_id == company_id).all()}
+    parent_of = {str(a.id): (str(a.parent_id) if a.parent_id else None)
+                 for a in db.query(ChartOfAccount.id, ChartOfAccount.parent_id)
+                            .filter(ChartOfAccount.company_id == company_id).all()}
+    resolved = dict(direct)
+    for aid in parent_of:
+        if aid in resolved:
+            continue
+        chain, cur = [], aid
+        while cur is not None and cur not in direct:
+            chain.append(cur)
+            cur = parent_of.get(cur)
+        if cur in direct:                      # found a role-mapped ancestor
+            for node in chain:
+                resolved[node] = direct[cur]
+    return resolved
 
 
 def remap(agg: dict, reverse: dict, target_index: dict):

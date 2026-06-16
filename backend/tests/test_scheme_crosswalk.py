@@ -67,6 +67,25 @@ def test_reverse_roles_inverts_account_mappings(db):
     assert rev[comm_id] == "commission_income"
 
 
+def test_reverse_roles_resolves_child_tills_to_parent_role(db):
+    """Real postings hit per-till leaf accounts (100.01) under the role-mapped
+    parent (100/cash); the leaf must inherit the parent's role."""
+    cid = uuid.uuid4()
+    db.add(Company(id=cid, name="Co", code="CO"))
+    parent = ChartOfAccount(id=uuid.uuid4(), company_id=cid, code="100", name_tr="Kasa", name_ar="x",
+                            name_en="Cash", account_type=AccountType.asset, is_postable=False, scheme=AccountScheme.thp)
+    db.add(parent); db.flush()
+    child = ChartOfAccount(id=uuid.uuid4(), company_id=cid, code="100.01", name_tr="Till", name_ar="x",
+                           name_en="Till", account_type=AccountType.asset, is_postable=True,
+                           scheme=AccountScheme.thp, parent_id=parent.id)
+    db.add(child)
+    db.add(AccountMapping(id=uuid.uuid4(), company_id=cid, role=AccountRole.cash, coa_account_id=parent.id))
+    db.commit()
+    rev = cw.reverse_roles(db, cid)
+    assert rev[str(parent.id)] == "cash"
+    assert rev[str(child.id)] == "cash"  # leaf inherits the parent's role
+
+
 def test_remap_pivots_on_role_into_target_scheme(db):
     cid, cash_id, comm_id = _company_with_mappings(db)
     rev = cw.reverse_roles(db, cid)
