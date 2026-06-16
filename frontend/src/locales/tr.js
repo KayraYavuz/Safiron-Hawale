@@ -10,6 +10,7 @@ export default {
   reconAccount: 'Hesap (Kasa/Banka)', reconBook: 'Defter Bakiyesi', reconReconciled: 'Mutabık', reconUnreconciled: 'Mutabık Olmayan', reconLines: 'Hareketler', reconDone: 'Mutabık',
   // Financial Statements (Mali Tablolar)
   fsTrialBalance: 'Mizan', fsBalanceSheet: 'Bilanço', fsIncomeStatement: 'Gelir Tablosu', fsGeneralLedger: 'Defter-i Kebir',
+  fsSchemeThp: 'THP', fsSchemeIntl: 'UFRS', fsSchemeHint: 'Hesap planı: Türk Tekdüzen (THP) veya uluslararası (UFRS/IFRS)',
   fsAssets: 'Varlıklar', fsLiabilities: 'Yükümlülükler', fsEquity: 'Özkaynaklar', fsNetIncome: 'Dönem Net Kârı',
   fsRevenue: 'Gelirler', fsExpense: 'Giderler', fsTotal: 'Toplam', fsBalance: 'Bakiye',
   fsDebit: 'Borç', fsCredit: 'Alacak', fsAccount: 'Hesap', fsFrom: 'Başlangıç', fsTo: 'Bitiş',

@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.models.accounting import (
     ChartOfAccount, JournalEntry, JournalLine, JournalStatus, AccountType,
 )
+from app.models.master import Company
+from app.services import scheme_crosswalk
 
 ZERO = Decimal("0")
 _DEBIT_NORMAL = (AccountType.asset, AccountType.expense)
@@ -44,9 +46,23 @@ def _accounts(db: Session, company_id):
             .filter(ChartOfAccount.company_id == company_id).all()}
 
 
-def trial_balance(db: Session, company_id, as_of: date = None) -> dict:
-    agg = _agg(db, company_id, end=as_of)
+def _source(db: Session, company_id, target_scheme=None, *, start: date = None, end: date = None):
+    """Return (agg, accs) for a company. When target_scheme differs from the company's
+    own scheme, the aggregation is crosswalked onto the target chart via the role pivot
+    (see scheme_crosswalk); otherwise the company's native accounts are used."""
+    agg = _agg(db, company_id, start=start, end=end)
     accs = _accounts(db, company_id)
+    if target_scheme:
+        own = db.query(Company.accounting_scheme).filter(Company.id == company_id).scalar()
+        if target_scheme != own:
+            rev = scheme_crosswalk.reverse_roles(db, company_id)
+            idx = scheme_crosswalk.scheme_index(target_scheme)
+            agg, accs = scheme_crosswalk.remap(agg, rev, idx)
+    return agg, accs
+
+
+def trial_balance(db: Session, company_id, as_of: date = None, target_scheme=None) -> dict:
+    agg, accs = _source(db, company_id, target_scheme, end=as_of)
     rows = []
     total_dr = total_cr = ZERO
     for aid, (dr, cr) in agg.items():
@@ -66,9 +82,8 @@ def trial_balance(db: Session, company_id, as_of: date = None) -> dict:
     return {"rows": rows, "total_debit": total_dr, "total_credit": total_cr}
 
 
-def income_statement(db: Session, company_id, start: date, end: date) -> dict:
-    agg = _agg(db, company_id, start=start, end=end)
-    accs = _accounts(db, company_id)
+def income_statement(db: Session, company_id, start: date, end: date, target_scheme=None) -> dict:
+    agg, accs = _source(db, company_id, target_scheme, start=start, end=end)
     revenue, expense = [], []
     total_rev = total_exp = ZERO
     for aid, (dr, cr) in agg.items():
@@ -92,9 +107,8 @@ def income_statement(db: Session, company_id, start: date, end: date) -> dict:
             "net": total_rev - total_exp}
 
 
-def balance_sheet(db: Session, company_id, as_of: date = None) -> dict:
-    agg = _agg(db, company_id, end=as_of)
-    accs = _accounts(db, company_id)
+def balance_sheet(db: Session, company_id, as_of: date = None, target_scheme=None) -> dict:
+    agg, accs = _source(db, company_id, target_scheme, end=as_of)
     groups = {"asset": [], "liability": [], "equity": []}
     totals = {"asset": ZERO, "liability": ZERO, "equity": ZERO}
     net_income = ZERO

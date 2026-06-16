@@ -10,6 +10,7 @@ export default {
   reconAccount: 'الحساب (صندوق/بنك)', reconBook: 'رصيد الدفتر', reconReconciled: 'مسوّى', reconUnreconciled: 'غير مسوّى', reconLines: 'الحركات', reconDone: 'تمت',
   // Financial Statements (القوائم المالية)
   fsTrialBalance: 'ميزان المراجعة', fsBalanceSheet: 'الميزانية العمومية', fsIncomeStatement: 'قائمة الدخل', fsGeneralLedger: 'دفتر الأستاذ',
+  fsSchemeThp: 'THP', fsSchemeIntl: 'IFRS', fsSchemeHint: 'دليل الحسابات: التركي الموحد (THP) أو الدولي (IFRS)',
   fsAssets: 'الأصول', fsLiabilities: 'الخصوم', fsEquity: 'حقوق الملكية', fsNetIncome: 'صافي الدخل',
   fsRevenue: 'الإيرادات', fsExpense: 'المصروفات', fsTotal: 'الإجمالي', fsBalance: 'الرصيد',
   fsDebit: 'مدين', fsCredit: 'دائن', fsAccount: 'الحساب', fsFrom: 'من', fsTo: 'إلى',

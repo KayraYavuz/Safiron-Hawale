@@ -47,6 +47,7 @@ export default function FinancialStatements() {
   const { user } = useAuthStore()
   const isAdmin = ['admin', 'super_admin', 'accounting'].includes(user?.role)
   const [tab, setTab] = useState('trialBalance')
+  const [scheme, setScheme] = useState('thp')   // THP | intl — dual-scheme statement view
   const [start, setStart] = useState(yearStart())
   const [end, setEnd] = useState(today())
   const [glAccount, setGlAccount] = useState('')
@@ -62,10 +63,10 @@ export default function FinancialStatements() {
     <Btn variant="ghost" size="sm" onClick={() => exportCsv(path, params, filename)}>CSV</Btn>
   )
 
-  const { data: tb } = useQuery({ queryKey: ['tb'], queryFn: () => accountingApi.trialBalance().then(r => r.data) })
-  const { data: bs } = useQuery({ queryKey: ['bs'], queryFn: () => accountingApi.balanceSheet().then(r => r.data), enabled: tab === 'balanceSheet' })
+  const { data: tb } = useQuery({ queryKey: ['tb', scheme], queryFn: () => accountingApi.trialBalance({ scheme }).then(r => r.data) })
+  const { data: bs } = useQuery({ queryKey: ['bs', scheme], queryFn: () => accountingApi.balanceSheet({ scheme }).then(r => r.data), enabled: tab === 'balanceSheet' })
   const { data: inc } = useQuery({
-    queryKey: ['inc', start, end], queryFn: () => accountingApi.incomeStatement({ start, end }).then(r => r.data),
+    queryKey: ['inc', start, end, scheme], queryFn: () => accountingApi.incomeStatement({ start, end, scheme }).then(r => r.data),
     enabled: tab === 'incomeStatement',
   })
   const { data: gl } = useQuery({
@@ -128,10 +129,16 @@ export default function FinancialStatements() {
               <Btn key={tk} variant={tab === tk ? 'primary' : 'ghost'} size="sm" onClick={() => setTab(tk)}>{tabLabel[tk]}</Btn>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {tab === 'trialBalance' && <ExportBtn path="trial-balance" filename="mizan.csv" />}
-            {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" filename="bilanco.csv" />}
-            {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end }} filename="gelir_tablosu.csv" />}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {['trialBalance', 'balanceSheet', 'incomeStatement'].includes(tab) && (
+              <div className="no-print" style={{ display: 'flex', gap: 4, marginRight: 4 }} title={t.fsSchemeHint}>
+                <Btn variant={scheme === 'thp' ? 'primary' : 'ghost'} size="sm" onClick={() => setScheme('thp')}>{t.fsSchemeThp}</Btn>
+                <Btn variant={scheme === 'intl' ? 'primary' : 'ghost'} size="sm" onClick={() => setScheme('intl')}>{t.fsSchemeIntl}</Btn>
+              </div>
+            )}
+            {tab === 'trialBalance' && <ExportBtn path="trial-balance" params={{ scheme }} filename="mizan.csv" />}
+            {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" params={{ scheme }} filename="bilanco.csv" />}
+            {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end, scheme }} filename="gelir_tablosu.csv" />}
             {tab === 'partnerLedger' && partner && <ExportBtn path={`partner-ledger/${partner}`} params={{ start, end }} filename="cari_ekstre.csv" />}
             {tab === 'aged' && <ExportBtn path="aged-balance" params={{ as_of: end }} filename="yaslandirma.csv" />}
             {tab !== 'periods' && <Btn variant="ghost" size="sm" onClick={() => window.print()}>{t.fsPrint}</Btn>}

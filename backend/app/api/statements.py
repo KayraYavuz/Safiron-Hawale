@@ -42,6 +42,15 @@ def gl_summary(db: Session = Depends(get_db), cu: User = Depends(get_current_use
     }
 
 
+_VALID_SCHEMES = {"thp", "intl"}
+
+
+def _check_scheme(scheme):
+    if scheme is not None and scheme not in _VALID_SCHEMES:
+        raise HTTPException(400, f"invalid scheme: {scheme} (expected thp|intl)")
+    return scheme
+
+
 def _csv(rows, header, filename):
     buf = io.StringIO()
     w = csv.writer(buf)
@@ -53,9 +62,10 @@ def _csv(rows, header, filename):
 
 
 @router.get("/trial-balance")
-def trial_balance(as_of: Optional[date] = None, format: str = "json",
+def trial_balance(as_of: Optional[date] = None, format: str = "json", scheme: Optional[str] = None,
                   db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    data = statements.trial_balance(db, cu.company_id, as_of=as_of)
+    _check_scheme(scheme)
+    data = statements.trial_balance(db, cu.company_id, as_of=as_of, target_scheme=scheme)
     if format == "csv":
         rows = [[r["code"], r["name_tr"], r["account_type"], r["debit_usd"], r["credit_usd"], r["balance_usd"]]
                 for r in data["rows"]]
@@ -65,9 +75,10 @@ def trial_balance(as_of: Optional[date] = None, format: str = "json",
 
 
 @router.get("/balance-sheet")
-def balance_sheet(as_of: Optional[date] = None, format: str = "json",
+def balance_sheet(as_of: Optional[date] = None, format: str = "json", scheme: Optional[str] = None,
                   db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    data = statements.balance_sheet(db, cu.company_id, as_of=as_of)
+    _check_scheme(scheme)
+    data = statements.balance_sheet(db, cu.company_id, as_of=as_of, target_scheme=scheme)
     if format == "csv":
         rows = []
         for section, key in (("ASSET", "assets"), ("LIABILITY", "liabilities"), ("EQUITY", "equity")):
@@ -82,9 +93,10 @@ def balance_sheet(as_of: Optional[date] = None, format: str = "json",
 
 
 @router.get("/income-statement-gl")
-def income_statement_gl(start: date, end: date, format: str = "json",
+def income_statement_gl(start: date, end: date, format: str = "json", scheme: Optional[str] = None,
                         db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
-    data = statements.income_statement(db, cu.company_id, start, end)
+    _check_scheme(scheme)
+    data = statements.income_statement(db, cu.company_id, start, end, target_scheme=scheme)
     if format == "csv":
         rows = []
         for r in data["revenue"]:

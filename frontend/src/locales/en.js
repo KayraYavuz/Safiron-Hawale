@@ -10,6 +10,7 @@ export default {
   reconAccount: 'Account (Cash/Bank)', reconBook: 'Book Balance', reconReconciled: 'Reconciled', reconUnreconciled: 'Unreconciled', reconLines: 'Movements', reconDone: 'Cleared',
   // Financial Statements
   fsTrialBalance: 'Trial Balance', fsBalanceSheet: 'Balance Sheet', fsIncomeStatement: 'Income Statement', fsGeneralLedger: 'General Ledger',
+  fsSchemeThp: 'THP', fsSchemeIntl: 'IFRS', fsSchemeHint: 'Chart of accounts: Turkish Uniform (THP) or international (IFRS)',
   fsAssets: 'Assets', fsLiabilities: 'Liabilities', fsEquity: 'Equity', fsNetIncome: 'Net Income',
   fsRevenue: 'Revenue', fsExpense: 'Expenses', fsTotal: 'Total', fsBalance: 'Balance',
   fsDebit: 'Debit', fsCredit: 'Credit', fsAccount: 'Account', fsFrom: 'From', fsTo: 'To',
