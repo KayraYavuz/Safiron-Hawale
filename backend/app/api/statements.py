@@ -13,7 +13,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.accounting import ChartOfAccount, JournalEntry, JournalLine, JournalStatus
 from app.models.master import Counterparty
-from app.services import statements, partner_reports, reconciliation_gl
+from app.services import statements, partner_reports, reconciliation_gl, fx_position
 
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
 
@@ -107,6 +107,22 @@ def income_statement_gl(start: date, end: date, format: str = "json", scheme: Op
         rows.append(["", "", "TOTAL EXPENSE", data["total_expense"]])
         rows.append(["", "", "NET", data["net"]])
         return _csv(rows, ["section", "code", "name", "amount_usd"], "gelir_tablosu.csv")
+    return data
+
+
+@router.get("/fx-position")
+def fx_position_report(as_of: Optional[date] = None, format: str = "json",
+                       db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    data = fx_position.fx_position(db, cu.company_id, as_of=as_of)
+    if format == "csv":
+        rows = [[r["currency"], r["net_position"], r["booked_usd"],
+                 r["current_usd"] if r["current_usd"] is not None else "",
+                 r["unrealized_fx"] if r["unrealized_fx"] is not None else "", r["side"]]
+                for r in data["rows"]]
+        rows.append(["TOPLAM", "", data["total_booked_usd"], data["total_current_usd"],
+                     data["total_unrealized_fx"], ""])
+        return _csv(rows, ["currency", "net_position", "booked_usd", "current_usd", "unrealized_fx", "side"],
+                    "doviz_pozisyon.csv")
     return data
 
 

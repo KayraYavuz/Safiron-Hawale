@@ -162,6 +162,7 @@ export const accountingApi = {
   partners:         ()       => api.get('/api/accounting/partners'),
   partnerLedger:    (id, params) => api.get(`/api/accounting/partner-ledger/${id}`, { params }),
   agedBalance:      (params) => api.get('/api/accounting/aged-balance', { params }),
+  fxPosition:       (params) => api.get('/api/accounting/fx-position', { params }),
   periods:          ()       => api.get('/api/accounting/periods'),
   closePeriod:      (data)   => api.post('/api/accounting/periods/close', data),
   reopenPeriod:     (id)     => api.post(`/api/accounting/periods/${id}/reopen`),

@@ -12,7 +12,7 @@ const yearStart = () => `${new Date().getFullYear()}-01-01`
 const today = () => new Date().toISOString().slice(0, 10)
 const n = (v) => { const x = Number(v); return isFinite(x) ? x : 0 }
 
-const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger', 'partnerLedger', 'aged', 'periods']
+const TABS = ['trialBalance', 'balanceSheet', 'incomeStatement', 'generalLedger', 'partnerLedger', 'aged', 'fxPosition', 'periods']
 
 // ── Accounting report styling ────────────────────────────────────────────────
 const REPORT_MAX = 900
@@ -88,6 +88,9 @@ export default function FinancialStatements() {
   const { data: aged } = useQuery({
     queryKey: ['aged', end], queryFn: () => accountingApi.agedBalance({ as_of: end }).then(r => r.data), enabled: tab === 'aged',
   })
+  const { data: fx } = useQuery({
+    queryKey: ['fx', end], queryFn: () => accountingApi.fxPosition({ as_of: end }).then(r => r.data), enabled: tab === 'fxPosition',
+  })
 
   const closeMut = useMutation({
     mutationFn: () => accountingApi.closePeriod({ period_start: pStart, period_end: pEnd }),
@@ -103,7 +106,7 @@ export default function FinancialStatements() {
     onError: e => toast.error(e.response?.data?.detail || t.error),
   })
 
-  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger, partnerLedger: t.fsPartnerLedger, aged: t.fsAged, periods: t.fsPeriods }
+  const tabLabel = { trialBalance: t.fsTrialBalance, balanceSheet: t.fsBalanceSheet, incomeStatement: t.fsIncomeStatement, generalLedger: t.fsGeneralLedger, partnerLedger: t.fsPartnerLedger, aged: t.fsAged, fxPosition: t.fsFxPosition, periods: t.fsPeriods }
   const periodLine = `${t.fsPeriodLabel}: ${start} — ${end}`
   const balancedChip = tb && (
     <Badge type={n(tb.total_debit) === n(tb.total_credit) ? 'completed' : 'cancelled'} dot>
@@ -141,6 +144,7 @@ export default function FinancialStatements() {
             {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end, scheme }} filename="gelir_tablosu.csv" />}
             {tab === 'partnerLedger' && partner && <ExportBtn path={`partner-ledger/${partner}`} params={{ start, end }} filename="cari_ekstre.csv" />}
             {tab === 'aged' && <ExportBtn path="aged-balance" params={{ as_of: end }} filename="yaslandirma.csv" />}
+            {tab === 'fxPosition' && <ExportBtn path="fx-position" params={{ as_of: end }} filename="doviz_pozisyon.csv" />}
             {tab !== 'periods' && <Btn variant="ghost" size="sm" onClick={() => window.print()}>{t.fsPrint}</Btn>}
           </div>
         </div>
@@ -346,6 +350,47 @@ export default function FinancialStatements() {
                   <td style={cNum}>{money(aged.d61_90)}</td>
                   <td style={cNum}>{money(aged.d90_plus)}</td>
                   <td style={cNum}>{money(aged.total)}</td>
+                </tr>
+              </tbody>
+            </RT>
+          </ReportFrame>
+        )}
+
+        {/* ── DÖVİZ POZİSYONU ── */}
+        {tab === 'fxPosition' && fx && (
+          <ReportFrame title={t.fsFxPosition} lines={[`${t.fsAsOf}: ${end}`, t.fsUnitUsd]}>
+            <RT>
+              <thead><tr>
+                <th style={{ ...thStyle, textAlign: 'left' }}>{t.coaName /* currency */}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsNetPosition}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsBookedUsd}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsCurrentUsd}</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>{t.fsUnrealizedFx}</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>{t.fsSide}</th>
+              </tr></thead>
+              <tbody>
+                {fx.rows.map(r => (
+                  <tr key={r.currency} style={{ borderBottom: `1px solid ${C.surface3}` }}>
+                    <td style={{ ...cTxt, fontWeight: 700 }}>{r.currency}</td>
+                    <td style={cNum}>{acct(r.net_position, { dashZero: false })}</td>
+                    <td style={cNum}>{money(r.booked_usd)}</td>
+                    <td style={cNum}>{r.has_rate ? money(r.current_usd) : <span style={{ color: C.text3 }}>{t.fsNoRate}</span>}</td>
+                    <td style={{ ...cNum, fontWeight: 600, color: !r.has_rate ? C.text3 : n(r.unrealized_fx) >= 0 ? C.green : C.red }}>
+                      {r.has_rate ? money(r.unrealized_fx) : '—'}
+                    </td>
+                    <td style={{ ...cNum, textAlign: 'center' }}>
+                      <Badge type={r.side === 'long' ? 'completed' : 'cancelled'} dot>{r.side === 'long' ? t.fsLong : t.fsShort}</Badge>
+                    </td>
+                  </tr>
+                ))}
+                {fx.rows.length === 0 && <tr><td style={{ ...cTxt, textAlign: 'center', color: C.text3 }} colSpan={6}>—</td></tr>}
+                <tr style={totalRow}>
+                  <td style={cTxt}>{t.fsGrandTotal}</td>
+                  <td style={cNum} />
+                  <td style={cNum}>{money(fx.total_booked_usd)}</td>
+                  <td style={cNum}>{money(fx.total_current_usd)}</td>
+                  <td style={{ ...cNum, fontWeight: 700, color: n(fx.total_unrealized_fx) >= 0 ? C.green : C.red }}>{money(fx.total_unrealized_fx)}</td>
+                  <td style={cNum} />
                 </tr>
               </tbody>
             </RT>

@@ -17,6 +17,8 @@ export default {
   fsRunning: 'Running Balance', fsEntryNo: 'Entry No',
   fsPrint: 'Print / PDF',
   fsPartnerLedger: 'Partner Ledger', fsAged: 'Aged Balance', fsPartner: 'Partner',
+  fsFxPosition: 'FX Position', fsNetPosition: 'Net Position', fsBookedUsd: 'Booked USD', fsCurrentUsd: 'Current USD',
+  fsUnrealizedFx: 'Unrealized FX P&L', fsSide: 'Side', fsLong: 'Long', fsShort: 'Short', fsNoRate: 'no rate',
   fsOpening: 'Opening', fsClosing: 'Closing Balance',
   fsCurrent: 'Current (0-30)', fsD3160: '31-60 d', fsD6190: '61-90 d', fsD90: '90+ d',
   fsReceivable: 'Receivable (+)', fsPayable: 'Payable (−)',
