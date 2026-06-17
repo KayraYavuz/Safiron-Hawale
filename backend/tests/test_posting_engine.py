@@ -65,6 +65,21 @@ def _assert_balanced(db, entry):
     assert len(lines) >= 2
 
 
+def test_till_line_rate_usd_derived_from_amounts(db):
+    """rate_usd on a till line must reflect the real rate (amount/amount_usd),
+    not whatever the source leg carried (often a default 1.0)."""
+    cid, usd, trly, a_usd, a_try = _seed_company(db)
+    t = _txn(db, cid, TxnType.remittance,
+             [(a_usd, usd, Decimal("1000"), Decimal("1000"), LegType.incoming),
+              (a_try, trly, Decimal("34000"), Decimal("1000"), LegType.outgoing)])
+    entry = posting.post_transaction(db, t)
+    lines = db.query(JournalLine).filter(JournalLine.entry_id == entry.id).all()
+    try_line = next(l for l in lines if str(l.currency_id) == str(trly.id))
+    assert Decimal(str(try_line.rate_usd)) == Decimal("34")   # 34000 / 1000, not the leg's 1.0
+    usd_line = next(l for l in lines if str(l.currency_id) == str(usd.id) and l.account_id == a_usd.id)
+    assert Decimal(str(usd_line.rate_usd)) == Decimal("1")    # USD till stays 1:1
+
+
 def test_internal_transfer_balances(db):
     cid, usd, trly, a_usd, a_try = _seed_company(db)
     t = _txn(db, cid, TxnType.internal_transfer,

@@ -29,6 +29,13 @@ def _q(v) -> Decimal:
     return Decimal(str(v or 0))
 
 
+def _rate(amount, amount_usd) -> Decimal:
+    """Real rate_per_usd for a line, derived from the amounts (the source leg's
+    rate_usd is unreliable). USD value = amount / rate_per_usd, so rate = amount/usd."""
+    a, u = _q(amount), _q(amount_usd)
+    return (a / u) if u else Decimal("1")
+
+
 def resolve_role(db: Session, company_id, role: AccountRole) -> ChartOfAccount:
     m = (db.query(AccountMapping)
            .filter(AccountMapping.company_id == company_id, AccountMapping.role == role)
@@ -130,13 +137,14 @@ def post_transaction(db: Session, txn: Transaction, source_type=JournalSourceTyp
         acc = db.query(Account).filter(Account.id == leg.account_id).first()
         gl_id = get_or_create_gl_for_till(db, acc)
         amt_usd = _q(leg.amount_usd)
+        rate = _rate(leg.amount, leg.amount_usd)
         if leg.leg_type == LegType.incoming:
             lines.append(dict(coa_account_id=gl_id, debit=_q(leg.amount), credit=ZERO,
-                              currency_id=leg.currency_id, rate_usd=_q(leg.rate_usd),
+                              currency_id=leg.currency_id, rate_usd=rate,
                               debit_usd=amt_usd, credit_usd=ZERO, account_id=acc.id))
         else:
             lines.append(dict(coa_account_id=gl_id, debit=ZERO, credit=_q(leg.amount),
-                              currency_id=leg.currency_id, rate_usd=_q(leg.rate_usd),
+                              currency_id=leg.currency_id, rate_usd=rate,
                               debit_usd=ZERO, credit_usd=amt_usd, account_id=acc.id))
 
     simple = txn.txn_type in (TxnType.deposit, TxnType.withdrawal, TxnType.internal_transfer)
