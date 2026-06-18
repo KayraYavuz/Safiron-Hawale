@@ -232,6 +232,32 @@ export function Icon({ name, size = 16, color = 'currentColor', style = {} }) {
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     ),
+    banknote: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+        <rect x="1" y="6" width="22" height="13" rx="2"/>
+        <circle cx="12" cy="12.5" r="2.5"/>
+        <path d="M5 12.5h2M17 12.5h2"/>
+      </svg>
+    ),
+    bitcoin: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9 8.5h4a2.5 2.5 0 0 1 0 5H9"/>
+        <path d="M9 13.5h4.5a2.5 2.5 0 0 1 0 5H9"/>
+        <line x1="11" y1="6.5" x2="11" y2="8.5"/>
+        <line x1="13" y1="6.5" x2="13" y2="8.5"/>
+        <line x1="11" y1="18.5" x2="11" y2="20.5"/>
+        <line x1="13" y1="18.5" x2="13" y2="20.5"/>
+      </svg>
+    ),
+    exchange: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+        <path d="M7 16l-4-4 4-4"/>
+        <path d="M3 12h14a4 4 0 0 0 0-8h-1"/>
+        <path d="M17 8l4 4-4 4"/>
+        <path d="M21 12H7a4 4 0 0 0 0 8h1"/>
+      </svg>
+    ),
   }
   return icons[name] || null
 }

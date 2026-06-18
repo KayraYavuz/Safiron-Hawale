@@ -143,7 +143,7 @@ export default function FinancialStatements() {
             {tab === 'balanceSheet' && <ExportBtn path="balance-sheet" params={{ scheme }} filename="bilanco.csv" />}
             {tab === 'incomeStatement' && <ExportBtn path="income-statement-gl" params={{ start, end, scheme }} filename="gelir_tablosu.csv" />}
             {tab === 'partnerLedger' && partner && <ExportBtn path={`partner-ledger/${partner}`} params={{ start, end }} filename="cari_ekstre.csv" />}
-            {tab === 'aged' && <ExportBtn path="aged-balance" params={{ as_of: end }} filename="yaslandirma.csv" />}
+            {tab === 'aged' && <ExportBtn path="aged-balance" params={{ as_of: end }} filename="alacak_vade_analizi.csv" />}
             {tab === 'fxPosition' && <ExportBtn path="fx-position" params={{ as_of: end }} filename="doviz_pozisyon.csv" />}
             {tab !== 'periods' && <Btn variant="ghost" size="sm" onClick={() => window.print()}>{t.fsPrint}</Btn>}
           </div>

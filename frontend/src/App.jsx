@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './store'
+import queryClient from './queryClient'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { PageSpinner } from './components/Skeleton'
@@ -73,6 +74,7 @@ function Protected({ children }) {
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
+        queryClient.clear()
         logout()
         toast(t.sessionTimeout, { icon: '⏰' })
       }, 30 * 60 * 1000)

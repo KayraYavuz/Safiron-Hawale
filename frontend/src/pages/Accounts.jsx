@@ -174,9 +174,10 @@ export default function Accounts() {
                 <option value="cash">{t.cash}</option>
                 <option value="bank">{t.bank}</option>
                 <option value="crypto">{t.crypto}</option>
+                <option value="itimad">{t.itimad}</option>
               </Select>
               <Input label={t.accountName} value={accForm.name} onChange={e => setAccForm(x => ({ ...x, name: e.target.value }))}
-                placeholder={accForm.account_type === 'cash' ? 'Ana Kasa' : accForm.account_type === 'bank' ? 'Garanti USD' : 'Binance USDT'} />
+                placeholder={accForm.account_type === 'cash' ? 'Ana Kasa' : accForm.account_type === 'bank' ? 'Garanti USD' : accForm.account_type === 'itimad' ? 'İstanbul Ofisi' : 'Binance USDT'} />
             </div>
             {accForm.account_type === 'bank' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
@@ -188,6 +189,12 @@ export default function Accounts() {
             {accForm.account_type === 'crypto' && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
                 <Input label={t.walletAddress} value={accForm.wallet_address} onChange={e => setAccForm(x => ({ ...x, wallet_address: e.target.value }))} placeholder="0x1234..." style={{ fontFamily: 'var(--mono)' }} />
+              </div>
+            )}
+            {accForm.account_type === 'itimad' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+                <Input label={t.itimadAgentName} value={accForm.bank_name}      onChange={e => setAccForm(x => ({ ...x, bank_name: e.target.value }))} placeholder="Ahmed Al-Rashid" />
+                <Input label={t.itimadAccountCode} value={accForm.account_number} onChange={e => setAccForm(x => ({ ...x, account_number: e.target.value }))} placeholder="ITM-001" />
               </div>
             )}
             <div style={{ marginTop: 14 }}>
@@ -255,7 +262,7 @@ export default function Accounts() {
                           const balUsd = parseFloat(p?.balance_usd ?? 0)
                           return (
                             <tr key={acc.id}>
-                              <Td>{ACC_ICONS[acc.account_type]}</Td>
+                              <Td><Icon name={ACC_ICONS[acc.account_type]} size={16} color={{ cash: '#0EA472', bank: '#2563EB', crypto: '#C97B06', itimad: '#6B46C1' }[acc.account_type] || C.text3} /></Td>
                               <Td><span style={{ fontWeight: 600, color: C.navy }}>{acc.currency?.code}</span></Td>
                               <Td style={{ fontWeight: 500 }}>{acc.name}</Td>
                               <Td style={{ fontSize: 12, color: C.text3 }}>{acc.bank_name || acc.wallet_address || '—'}</Td>

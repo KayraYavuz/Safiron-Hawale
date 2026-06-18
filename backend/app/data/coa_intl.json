@@ -5,6 +5,7 @@
       {"code": "1010", "name_tr": "Kasa", "name_ar": "الصندوق", "name_en": "Cash on Hand", "account_type": "asset", "is_postable": true},
       {"code": "1020", "name_tr": "Bankalar", "name_ar": "البنوك", "name_en": "Bank Accounts", "account_type": "asset", "is_postable": true},
       {"code": "1030", "name_tr": "Kripto Cüzdanları", "name_ar": "محافظ العملات الرقمية", "name_en": "Crypto Wallets", "account_type": "asset", "is_postable": true},
+      {"code": "1040", "name_tr": "İtimad Hesapları", "name_ar": "حسابات الائتمان", "name_en": "Trust/Correspondent Accounts", "account_type": "asset", "is_postable": true},
       {"code": "1200", "name_tr": "Müşteri Alacakları", "name_ar": "ذمم العملاء المدينة", "name_en": "Customer Receivables", "account_type": "asset", "is_postable": true},
       {"code": "1210", "name_tr": "Tedarikçi Alacakları", "name_ar": "ذمم الموردين المدينة", "name_en": "Supplier Receivables", "account_type": "asset", "is_postable": true},
       {"code": "1800", "name_tr": "Kur Geçiş Hesabı", "name_ar": "حساب تسوية العملة", "name_en": "FX Clearing", "account_type": "asset", "is_postable": true}
@@ -45,6 +46,7 @@
     "opening_balance_equity": "3020",
     "internal_transfer_clearing": "1800",
     "rounding": "2900",
-    "tax_payable": "2100"
+    "tax_payable": "2100",
+    "itimad": "1040"
   }
 }

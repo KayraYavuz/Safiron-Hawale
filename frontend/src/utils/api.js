@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '../store'
+import queryClient from '../queryClient'
 
 const api = axios.create({ 
   baseURL: import.meta.env.VITE_API_URL || (window.location.protocol + '//' + window.location.hostname + ':8000')
@@ -17,8 +18,8 @@ api.interceptors.response.use(
     // Login endpoint'inden gelen 401 normaldir (yanlış şifre) — yönlendirme yapma
     const isLoginEndpoint = err.config?.url?.includes('/auth/login') || err.config?.url?.includes('/auth/verify-otp')
     if (err.response?.status === 401 && !isLoginEndpoint) {
+      queryClient.clear()
       useAuthStore.getState().logout()
-      // Login artık Landing sayfasındaki panel üzerinden yapılıyor
       window.location.href = '/'
     }
     return Promise.reject(err)

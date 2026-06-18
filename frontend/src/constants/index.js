@@ -52,7 +52,7 @@ export function getCpTypeLabel(t) {
 }
 
 // ── Account type icons ────────────────────────────────────────────────────────
-export const ACC_ICONS = { cash: '💵', bank: '🏦', crypto: '₿' }
+export const ACC_ICONS = { cash: 'banknote', bank: 'accounts', crypto: 'bitcoin', itimad: 'exchange' }
 
 // ── Role info — backend UserRole enum ile tam eşleşme ─────────────────────────
 export function getRoleInfo(t) {

@@ -52,6 +52,7 @@ class AccountType(str, enum.Enum):
     cash = "cash"
     bank = "bank"
     crypto = "crypto"
+    itimad = "itimad"
 
 
 class Account(Base):

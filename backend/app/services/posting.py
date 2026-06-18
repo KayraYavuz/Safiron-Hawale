@@ -18,7 +18,7 @@ from app.models.accounting import (
 )
 
 ZERO = Decimal("0")
-_TILL_ROLE = {"cash": AccountRole.cash, "bank": AccountRole.bank, "crypto": AccountRole.crypto}
+_TILL_ROLE = {"cash": AccountRole.cash, "bank": AccountRole.bank, "crypto": AccountRole.crypto, "itimad": AccountRole.itimad}
 
 
 class PostingError(Exception):

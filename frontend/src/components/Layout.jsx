@@ -4,6 +4,7 @@ import { useLang } from '../hooks/useLang'
 import { useAuthStore } from '../store'
 import { Icon } from './Icons'
 import { getRoleInfo } from '../constants'
+import queryClient from '../queryClient'
 
 // ── Design tokens (match CSS variables) ──────────────────────────────────────
 const S = {
@@ -71,7 +72,7 @@ function Layout({ children }) {
 
   const ROLE_INFO  = getRoleInfo(t)
   const pageLabel  = t[nav.find(i => i.path === location.pathname)?.key] || ''
-  const handleLogout = () => { logout(); navigate('/') }
+  const handleLogout = () => { queryClient.clear(); logout(); navigate('/') }
   const initials   = (user?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   const roleLabel  = ROLE_INFO[role]?.label || role
 

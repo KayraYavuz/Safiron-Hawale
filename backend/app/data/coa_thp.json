@@ -5,6 +5,7 @@
       {"code": "100", "name_tr": "Kasa", "name_ar": "الصندوق", "name_en": "Cash", "account_type": "asset", "thp_class": 1, "is_postable": true},
       {"code": "101", "name_tr": "Alınan Çekler", "name_ar": "الشيكات المستلمة", "name_en": "Cheques Received", "account_type": "asset", "thp_class": 1, "is_postable": true},
       {"code": "102", "name_tr": "Bankalar", "name_ar": "البنوك", "name_en": "Banks", "account_type": "asset", "thp_class": 1, "is_postable": true},
+      {"code": "103", "name_tr": "İtimad Hesapları", "name_ar": "حسابات الائتمان", "name_en": "Trust/Correspondent Accounts", "account_type": "asset", "thp_class": 1, "is_postable": true},
       {"code": "108", "name_tr": "Diğer Hazır Değerler (Kripto)", "name_ar": "قيم جاهزة أخرى", "name_en": "Other Liquid Assets (Crypto)", "account_type": "asset", "thp_class": 1, "is_postable": true},
       {"code": "120", "name_tr": "Alıcılar", "name_ar": "المدينون", "name_en": "Trade Receivables", "account_type": "asset", "thp_class": 1, "is_postable": true},
       {"code": "127", "name_tr": "Diğer Ticari Alacaklar (Tedarikçi)", "name_ar": "ذمم مدينة أخرى", "name_en": "Other Receivables (Supplier)", "account_type": "asset", "thp_class": 1, "is_postable": true},
@@ -51,6 +52,7 @@
     "opening_balance_equity": "501",
     "internal_transfer_clearing": "180",
     "rounding": "397",
-    "tax_payable": "360"
+    "tax_payable": "360",
+    "itimad": "103"
   }
 }

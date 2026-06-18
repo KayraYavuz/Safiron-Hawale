@@ -39,6 +39,7 @@ class AccountRole(str, enum.Enum):
     internal_transfer_clearing = "internal_transfer_clearing"
     rounding = "rounding"
     tax_payable = "tax_payable"   # commission tax (KDV/BSMV) liability
+    itimad = "itimad"             # inter-agent trust/correspondent account
 
 
 class ChartOfAccount(Base):
