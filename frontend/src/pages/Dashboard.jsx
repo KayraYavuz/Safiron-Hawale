@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
-import { reportsApi, accountingApi } from '../utils/api'
+import { reportsApi, accountingApi, transactionsApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Card, CardHeader, Table, Th, Td, Badge, StatCard, TrHover, C } from '../components/UI'
 import { Skeleton, SkeletonRow } from '../components/Skeleton'
@@ -36,6 +36,22 @@ export default function Dashboard() {
   const { data: locPnl,  isLoading: locLoading  } = useQuery({ queryKey: ['locPnl'],      queryFn: () => reportsApi.locationPnl({}).then(r => r.data),     staleTime: STALE_2MIN })
   const { data: cashMov, isLoading: cashLoading } = useQuery({ queryKey: ['cashMovDash'], queryFn: () => reportsApi.cashMovements({}).then(r => r.data),   staleTime: STALE_2MIN })
   const { data: glSum } = useQuery({ queryKey: ['glSummary'], queryFn: () => accountingApi.glSummary().then(r => r.data), staleTime: STALE_2MIN, retry: false })
+  const { data: txns = [] } = useQuery({ queryKey: ['transactions'], queryFn: () => transactionsApi.list({}).then(r => r.data), staleTime: STALE_30S })
+
+  const pendingCount = useMemo(() => txns.filter(t => t.status === 'pending').length, [txns])
+
+  // Consolidated cash position per currency — the morning glance
+  const byCurrency = useMemo(() => {
+    if (!pos?.accounts) return []
+    const m = {}
+    pos.accounts.forEach(a => {
+      const c = a.currency_code || 'USD'
+      const e = m[c] || (m[c] = { code: c, native: 0, usd: 0 })
+      e.native += parseFloat(a.balance) || 0
+      e.usd    += parseFloat(a.balance_usd) || 0
+    })
+    return Object.values(m).sort((a, b) => Math.abs(b.usd) - Math.abs(a.usd))
+  }, [pos])
 
   // Flatten all account movements, take last 10, memoize
   const recentMoves = useMemo(() => {
@@ -99,6 +115,56 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* ── Pending approvals nudge ── */}
+      {pendingCount > 0 && (
+        <Link
+          to="/transactions?status=pending"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none',
+            padding: '12px 18px', borderRadius: 10,
+            background: C.accentBg ?? C.greenBg, border: `1px solid ${C.accent ?? C.green}33`,
+            animation: 'fadeUp 0.3s ease both',
+          }}
+        >
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 26, height: 26, borderRadius: 7, background: C.navy, color: 'white',
+            fontWeight: 700, fontSize: 13,
+          }}>{pendingCount}</span>
+          <span style={{ flex: 1, fontSize: 13.5, color: C.text1, fontWeight: 500 }}>
+            {pendingCount} {t.pendingApprovalsMsg}
+          </span>
+          <span style={{ fontSize: 12.5, color: C.navy, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {t.reviewNow} <Icon name="arrowRight" size={13} color={C.navy} />
+          </span>
+        </Link>
+      )}
+
+      {/* ── Currency position — consolidated by currency ── */}
+      {!posLoading && byCurrency.length > 0 && (
+        <Card>
+          <CardHeader action={<ViewLink to="/accounts" label={t.accountsLink} />}>
+            {t.currencyPosition}
+          </CardHeader>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: 1, background: C.border,
+          }}>
+            {byCurrency.map(c => (
+              <div key={c.code} style={{ background: 'white', padding: '12px 16px' }}>
+                <div style={{ fontSize: 11, color: C.text3, fontWeight: 600, letterSpacing: '0.03em' }}>{c.code}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontWeight: 600, fontSize: 15, color: c.native >= 0 ? C.text1 : C.red }}>
+                  {fmt(c.native)}
+                </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11.5, color: c.usd >= 0 ? C.green : C.red }}>
+                  {c.usd >= 0 ? '+' : ''}${fmt(c.usd, 0)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* ── General Ledger summary ── */}
       {glSum?.initialised && (

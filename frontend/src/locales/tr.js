@@ -388,4 +388,7 @@ export default {
   settleTitle: 'Mutabakat', settleAmount: 'Tutar (USD)', settleTill: 'Kasa / Banka',
   settleFullHint: 'Boş bırakırsan tüm bakiye kapanır', settleConfirm: 'Mutabakatı Onayla',
   settleDone: 'Mutabakat kaydedildi', settleNet: 'Net bakiye',
+  // Dashboard — morning screen
+  currencyPosition: 'Döviz Pozisyonu', currencyPositionSub: 'Tüm kasalarda anlık net',
+  pendingApprovalsMsg: 'işlem onay bekliyor', reviewNow: 'İncele',
 }

@@ -388,4 +388,7 @@ export default {
   settleTitle: 'تسوية', settleAmount: 'المبلغ (دولار)', settleTill: 'الصندوق / البنك',
   settleFullHint: 'اتركه فارغاً لتسوية كامل الرصيد', settleConfirm: 'تأكيد التسوية',
   settleDone: 'تم تسجيل التسوية', settleNet: 'الرصيد الصافي',
+  // Dashboard — morning screen
+  currencyPosition: 'مركز العملات', currencyPositionSub: 'الصافي الفوري في كل الصناديق',
+  pendingApprovalsMsg: 'معاملة بانتظار الموافقة', reviewNow: 'مراجعة',
 }

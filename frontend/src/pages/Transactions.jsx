@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, counterpartiesApi, accountsApi } from '../utils/api'
 import { fmt } from '../utils/format'
@@ -19,8 +19,9 @@ export default function Transactions() {
   const STATUS_LABEL   = getStatusLabel(t)
   const { user } = useAuthStore()
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
   const [showForm,    setShowForm]    = useState(false)
-  const [filterStatus, setStatus]    = useState('')
+  const [filterStatus, setStatus]    = useState(searchParams.get('status') ?? '')
   const [filterType,   setType]      = useState('')
   const [settleTxn,    setSettleTxn] = useState(null)
 

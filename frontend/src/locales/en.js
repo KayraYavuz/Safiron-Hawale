@@ -388,4 +388,7 @@ export default {
   settleTitle: 'Settlement', settleAmount: 'Amount (USD)', settleTill: 'Till / Bank',
   settleFullHint: 'Leave empty to settle the full balance', settleConfirm: 'Confirm Settlement',
   settleDone: 'Settlement posted', settleNet: 'Net balance',
+  // Dashboard — morning screen
+  currencyPosition: 'Currency Position', currencyPositionSub: 'Live net across all tills',
+  pendingApprovalsMsg: 'transactions awaiting approval', reviewNow: 'Review',
 }
