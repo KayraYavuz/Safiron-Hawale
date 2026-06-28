@@ -381,4 +381,11 @@ export default {
   searchNameCode: 'Search by name or code...', notFound: 'Not found',
   selectLocation: '— select location —', selectSafe: '— select safe —',
   cpCustomer: 'Customer', cpSupplier: 'Supplier', cpBoth: 'Both', cpFounder: 'Partner',
+  // Correspondent netting & settlement
+  nettingTitle: 'Correspondent Positions', nettingSubtitle: 'Net balances — settle in one click',
+  nettingReceivable: 'Receivable', nettingPayable: 'Payable', nettingSettle: 'Settle',
+  nettingNone: 'No open correspondent balances', nettingTotalRecv: 'Total Receivable', nettingTotalPay: 'Total Payable',
+  settleTitle: 'Settlement', settleAmount: 'Amount (USD)', settleTill: 'Till / Bank',
+  settleFullHint: 'Leave empty to settle the full balance', settleConfirm: 'Confirm Settlement',
+  settleDone: 'Settlement posted', settleNet: 'Net balance',
 }

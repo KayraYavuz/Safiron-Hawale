@@ -381,4 +381,11 @@ export default {
   searchNameCode: 'بحث بالاسم أو الرمز...', notFound: 'لا يوجد',
   selectLocation: '— اختر الموقع —', selectSafe: '— اختر الصندوق —',
   cpCustomer: 'عميل', cpSupplier: 'مورد', cpBoth: 'كلاهما', cpFounder: 'شريك',
+  // Correspondent netting & settlement
+  nettingTitle: 'مراكز المراسلين', nettingSubtitle: 'الأرصدة الصافية — تسوية بنقرة واحدة',
+  nettingReceivable: 'مستحق لنا', nettingPayable: 'مستحق علينا', nettingSettle: 'تسوية',
+  nettingNone: 'لا توجد أرصدة مراسلين مفتوحة', nettingTotalRecv: 'إجمالي المستحق لنا', nettingTotalPay: 'إجمالي المستحق علينا',
+  settleTitle: 'تسوية', settleAmount: 'المبلغ (دولار)', settleTill: 'الصندوق / البنك',
+  settleFullHint: 'اتركه فارغاً لتسوية كامل الرصيد', settleConfirm: 'تأكيد التسوية',
+  settleDone: 'تم تسجيل التسوية', settleNet: 'الرصيد الصافي',
 }

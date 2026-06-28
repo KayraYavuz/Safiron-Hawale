@@ -381,4 +381,11 @@ export default {
   searchNameCode: 'İsim veya kod ara...', notFound: 'Bulunamadı',
   selectLocation: '— lokasyon seç —', selectSafe: '— kasa seç —',
   cpCustomer: 'Müşteri', cpSupplier: 'Tedarikçi', cpBoth: 'Her ikisi', cpFounder: 'Ortak',
+  // Correspondent netting & settlement
+  nettingTitle: 'Muhabir Pozisyonları', nettingSubtitle: 'Net bakiyeler — tek tıkla mutabakat',
+  nettingReceivable: 'Alacak', nettingPayable: 'Borç', nettingSettle: 'Mutabık Ol',
+  nettingNone: 'Açık muhabir bakiyesi yok', nettingTotalRecv: 'Toplam Alacak', nettingTotalPay: 'Toplam Borç',
+  settleTitle: 'Mutabakat', settleAmount: 'Tutar (USD)', settleTill: 'Kasa / Banka',
+  settleFullHint: 'Boş bırakırsan tüm bakiye kapanır', settleConfirm: 'Mutabakatı Onayla',
+  settleDone: 'Mutabakat kaydedildi', settleNet: 'Net bakiye',
 }
