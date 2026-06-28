@@ -168,6 +168,30 @@ class TestCaseC:
         r = self._calc()
         assert r["direction"] == "EGP → SAR"
 
+    def test_profit_is_not_cross_currency_garbage(self):
+        """Tek kur çiftiyle cross-currency spread kârı türetilemez → profit 0.
+
+        Regresyon: eski kod iki farklı para birimini (EGP − SAR) çıkarıp
+        100$'lık işlemde ~1200$ sahte kâr üretiyordu. Kâr 0 olmalı."""
+        r = self._calc(customer_rate="3.75", supplier_rate="52.00", usd_amount="100")
+        assert r["profit"] == D("0")
+        assert r["profit_usd"] == D("0")
+        assert r["net_pnl_usd"] == D("0")
+
+    def test_commission_only_in_net_pnl(self):
+        """Cross-currency'de net P&L yalnızca komisyondan oluşur."""
+        r = calculate_pnl(
+            source_currency="EGP", dest_currency="SAR",
+            usd_amount=D("1000"), customer_rate=D("3.75"),
+            supplier_rate=D("52.00"), commission_usd=D("8"),
+        )
+        assert r["net_pnl_usd"] == D("8.0000")
+
+    def test_supplier_settlement_currency_is_source(self):
+        """Cross-currency'de tedarikçi maliyeti kaynak (EGP) cinsindendir."""
+        r = self._calc()
+        assert r["supplier_settlement_currency"] == "EGP"
+
 
 # ─── Same-currency ────────────────────────────────────────────────────────────
 

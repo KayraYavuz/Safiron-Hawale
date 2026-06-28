@@ -161,6 +161,10 @@ def create_transaction(
         acc = db.query(Account).filter(Account.id == leg.account_id).first()
         if not acc:
             raise HTTPException(404, f"Account not found: {leg.account_id}")
+        # Tenant guard: hesap, işlemi oluşturan kullanıcının şirketine ait olmalı.
+        # super_admin dışındaki kullanıcılar başka şirketin hesabına işlem yazamaz.
+        if cu.role != UserRole.super_admin and str(acc.company_id) != str(cu.company_id):
+            raise HTTPException(403, "Account belongs to another company")
         if str(acc.currency_id) != str(leg.currency_id):
             raise HTTPException(400, f"Account '{acc.name}' only supports {acc.currency.code} transactions")
 

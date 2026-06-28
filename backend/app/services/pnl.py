@@ -129,6 +129,7 @@ def calculate_pnl(
         # kâr için: customerRate > supplierRate
 
         profit_currency         = source_currency
+        ss_cur                  = source_currency
         customer_pays           = usd_amount * customer_rate
         customer_receives       = usd_amount  # USD
         supplier_settlement     = usd_amount * supplier_rate
@@ -149,6 +150,7 @@ def calculate_pnl(
         # kâr için: supplierRate > customerRate
 
         profit_currency         = dest_currency
+        ss_cur                  = dest_currency
         customer_pays           = usd_amount  # USD
         customer_receives       = usd_amount * customer_rate
         supplier_settlement     = usd_amount * supplier_rate
@@ -168,15 +170,21 @@ def calculate_pnl(
         # customerPays(source)   = usdAmount × supplierRate  (source kuru)
         # customerReceives(dest) = usdAmount × customerRate  (dest kuru)
         # profit(USD)            = fark USD cinsinden
-        # Bu karmaşık senaryo için şimdilik Case B mantığını uygula
+        # Müşteri source (EGP) veriyor, dest (SAR) alıyor. Girdi modelinde her
+        # para birimi için TEK kur var (customer_rate=dest, supplier_rate=source),
+        # bu yüzden USD-pivot'ta alış ve satış aynı usd_amount'a dayanır →
+        # spread kârı bu girdiden TÜRETİLEMEZ. Kârı 0 kabul ediyoruz; yalnızca
+        # komisyon net P&L'e yansır. Doğru cross-currency kârı için her bacak
+        # ayrı (müşteri + tedarikçi) kur ile modellenmelidir.
+        # NOT: Önceki kod iki farklı para birimindeki tutarları (EGP − SAR)
+        # çıkarıp anlamsız, devasa sahte kâr üretiyordu — düzeltildi.
         profit_currency         = dest_currency
-        customer_pays           = usd_amount * supplier_rate   # source currency ödüyor
-        customer_receives       = usd_amount * customer_rate   # dest currency alıyor
-        supplier_settlement     = usd_amount * supplier_rate
-        profit                  = (usd_amount * supplier_rate) - (usd_amount * customer_rate)
-
-        ref_rate = customer_rate if customer_rate > 0 else Decimal("1")
-        profit_usd = (profit / ref_rate) if ref_rate else Decimal("0")
+        ss_cur                  = source_currency
+        customer_pays           = usd_amount * supplier_rate   # source (EGP) tutarı
+        customer_receives       = usd_amount * customer_rate   # dest (SAR) tutarı
+        supplier_settlement     = customer_pays                # source-side maliyet (EGP)
+        profit                  = Decimal("0")
+        profit_usd              = Decimal("0")
 
     net_pnl_usd = profit_usd + commission_usd
 
@@ -192,7 +200,7 @@ def calculate_pnl(
         "customer_receives":            customer_receives.quantize(Decimal("0.0001")),
         "customer_receives_currency":   dest_currency,
         "supplier_settlement":          supplier_settlement.quantize(Decimal("0.0001")),
-        "supplier_settlement_currency": source_currency if dest_currency == "USD" else dest_currency,
+        "supplier_settlement_currency": ss_cur,
         "profit":                       profit.quantize(Decimal("0.0001")),
         "profit_currency":              profit_currency,
         "profit_usd":                   profit_usd.quantize(Decimal("0.0001")),

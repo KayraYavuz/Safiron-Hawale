@@ -64,11 +64,12 @@ def test_list_mappings_after_init(client):
 
 def test_create_custom_account(client):
     client.post("/api/accounting/initialize", json={"scheme": "thp"})
+    # 199 is free in the seed (103/108 are now reserved by the default chart)
     r = client.post("/api/accounting/chart", json={
-        "code": "103", "name_tr": "Verilen Çekler", "account_type": "asset", "is_postable": True
+        "code": "199", "name_tr": "Diğer Dönen Varlıklar", "account_type": "asset", "is_postable": True
     })
     assert r.status_code == 200
-    assert r.json()["code"] == "103"
+    assert r.json()["code"] == "199"
 
 
 def test_mapping_rejects_non_postable(client):
