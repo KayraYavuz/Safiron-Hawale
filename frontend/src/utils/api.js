@@ -74,6 +74,12 @@ export const counterpartiesApi = {
   regeneratePin: (id)       => api.post(`/api/counterparties/${id}/regenerate-pin`),
 }
 
+export const marginsApi = {
+  list:   ()       => api.get('/api/margins'),
+  upsert: (data)   => api.put('/api/margins', data),
+  remove: (code)   => api.delete(`/api/margins/${code}`),
+}
+
 export const ratesApi = {
   list: (params) => api.get('/api/exchange-rates', { params }),
   create: (data) => api.post('/api/exchange-rates', data),

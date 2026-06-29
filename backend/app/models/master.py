@@ -50,6 +50,20 @@ class Currency(Base):
     accounts = relationship("Account", back_populates="currency")
 
 
+class CurrencyMargin(Base):
+    """Per-company default markup % applied to the market rate to suggest a
+    customer rate during transaction entry (0.01 = 1%)."""
+    __tablename__ = "currency_margin"
+    __table_args__ = (
+        UniqueConstraint("company_id", "currency_code", name="uq_margin_company_currency"),
+    )
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True, index=True)
+    currency_code = Column(String(5), nullable=False)
+    margin_pct = Column(Numeric(6, 4), default=0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class AccountType(str, enum.Enum):
     cash = "cash"
     bank = "bank"

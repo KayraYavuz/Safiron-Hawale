@@ -403,4 +403,7 @@ export default {
   receipt: 'إيصال', receiptTitle: 'إيصال المعاملة', print: 'طباعة',
   receiptGiven: 'المدفوع', receiptReceived: 'المستلم', receiptIssued: 'صادر عن',
   receiptThanks: 'شكراً لتعاملكم معنا.',
+  // Currency margins
+  currencyMargins: 'هوامش العملات', marginPct: 'الهامش (%)', applyMargin: 'تطبيق الهامش',
+  addMargin: 'إضافة هامش', noMargins: 'لا توجد هوامش', marginHint: 'هامش الربح الافتراضي المطبق على سعر السوق',
 }

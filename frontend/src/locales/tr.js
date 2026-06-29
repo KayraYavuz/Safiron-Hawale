@@ -403,4 +403,7 @@ export default {
   receipt: 'Makbuz', receiptTitle: 'İşlem Makbuzu', print: 'Yazdır',
   receiptGiven: 'Verilen', receiptReceived: 'Alınan', receiptIssued: 'Düzenleyen',
   receiptThanks: 'Bizi tercih ettiğiniz için teşekkür ederiz.',
+  // Currency margins
+  currencyMargins: 'Kur Marjları', marginPct: 'Marj (%)', applyMargin: 'Marj uygula',
+  addMargin: 'Marj Ekle', noMargins: 'Marj tanımlı değil', marginHint: 'Piyasa kuruna uygulanan varsayılan kâr marjı',
 }
