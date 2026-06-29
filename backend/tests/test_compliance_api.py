@@ -122,6 +122,34 @@ def test_watchlist_admin_only(env):
     assert r.status_code == 403
 
 
+def test_send_receipt_503_when_unconfigured(env):
+    client = env
+    txn = _create_large_txn(client)
+    r = client.post(f"/api/transactions/{txn['id']}/send-receipt", json={"phone": "+905551112233"})
+    assert r.status_code == 503  # WhatsApp not configured in tests
+
+
+def test_send_receipt_success_monkeypatched(env, monkeypatch):
+    client = env
+    sent = {}
+    def fake_send(to, text):
+        sent["to"], sent["text"] = to, text
+        return True
+    monkeypatch.setattr("app.services.whatsapp_client.send_message", fake_send)
+    txn = _create_large_txn(client)
+    r = client.post(f"/api/transactions/{txn['id']}/send-receipt", json={"phone": "+905551112233"})
+    assert r.status_code == 200, r.text
+    assert sent["to"] == "+905551112233"
+    assert txn["id"] not in sent["text"]  # uses txn_number, not raw id
+    assert "İşlem Makbuzu" in sent["text"]
+
+
+def test_send_receipt_unknown_txn_404(env):
+    client = env
+    r = client.post(f"/api/transactions/{uuid.uuid4()}/send-receipt", json={"phone": "+90555"})
+    assert r.status_code == 404
+
+
 def test_clear_flag_endpoint(env):
     client = env
     txn = _create_large_txn(client)

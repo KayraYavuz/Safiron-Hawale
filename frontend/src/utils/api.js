@@ -92,6 +92,7 @@ export const transactionsApi = {
   approve:    (id)     => api.patch(`/api/transactions/${id}/approve`),
   approveAll: ()       => api.post('/api/transactions/approve-all'),
   delete:     (id)     => api.delete(`/api/transactions/${id}`),
+  sendReceipt:(id, phone) => api.post(`/api/transactions/${id}/send-receipt`, { phone }),
 }
 
 export const reportsApi = {

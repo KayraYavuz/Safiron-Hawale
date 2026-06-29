@@ -406,4 +406,6 @@ export default {
   // Currency margins
   currencyMargins: 'Kur Marjları', marginPct: 'Marj (%)', applyMargin: 'Marj uygula',
   addMargin: 'Marj Ekle', noMargins: 'Marj tanımlı değil', marginHint: 'Piyasa kuruna uygulanan varsayılan kâr marjı',
+  // WhatsApp receipt
+  sendWhatsapp: "WhatsApp'tan Gönder", phoneNumber: 'Telefon (+90…)', receiptSent: 'Makbuz gönderildi',
 }

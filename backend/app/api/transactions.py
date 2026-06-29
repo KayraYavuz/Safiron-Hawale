@@ -10,6 +10,7 @@ Kur:        1 USD = X {currency}  (daima, ters format yok)
 Kâr:        pnl.calculate_pnl() — source/dest/usd_amount/customer_rate/supplier_rate ile
 """
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from uuid import UUID
@@ -415,6 +416,68 @@ def approve_all(db: Session = Depends(get_db), cu: User = Depends(get_current_us
         approved += 1
     db.commit()
     return {"approved": approved, "skipped": skipped}
+
+
+def _receipt_text(db: Session, txn: Transaction) -> str:
+    """Plain-text customer receipt (Turkish, operational language)."""
+    from app.models.master import Counterparty, Company
+    co = db.query(Company).filter(Company.id == txn.company_id).first()
+    legs = db.query(TransactionLeg).options(
+        joinedload(TransactionLeg.account).joinedload(Account.currency)
+    ).filter(TransactionLeg.transaction_id == txn.id).all()
+    cp = None
+    if txn.counterparty_id:
+        cp = db.query(Counterparty).filter(Counterparty.id == txn.counterparty_id).first()
+
+    def _amt(legs_, sign):
+        out = []
+        for l in legs_:
+            code = l.account.currency.code if l.account and l.account.currency else ""
+            out.append(f"{sign}{l.amount} {code}")
+        return ", ".join(out) or "—"
+
+    outs = [l for l in legs if l.leg_type == LegType.outgoing]
+    ins  = [l for l in legs if l.leg_type == LegType.incoming]
+    lines = [
+        f"*{co.name if co else 'Safiron'}* — İşlem Makbuzu",
+        "————————————",
+        f"No: {txn.txn_number}",
+        f"Tarih: {txn.txn_date}",
+        f"Müşteri: {cp.name if cp else '—'}",
+        f"Verilen: {_amt(outs, '-')}",
+        f"Alınan: {_amt(ins, '+')}",
+        f"Durum: {txn.status.value}",
+        "————————————",
+        "Bizi tercih ettiğiniz için teşekkür ederiz.",
+    ]
+    return "\n".join(lines)
+
+
+class SendReceiptRequest(BaseModel):
+    phone: str
+
+
+@router.post("/{txn_id}/send-receipt")
+def send_receipt(txn_id: UUID, data: SendReceiptRequest, db: Session = Depends(get_db),
+                 cu: User = Depends(get_current_user)):
+    """Send a transaction receipt to a phone number over WhatsApp."""
+    _require(cu, UserRole.admin, UserRole.super_admin, UserRole.accounting,
+             UserRole.manager, UserRole.branch_manager, UserRole.data_entry)
+    q = apply_company_filter(db.query(Transaction).filter(Transaction.id == txn_id), Transaction, cu)
+    txn = q.first()
+    if not txn:
+        raise HTTPException(404, "Transaction not found")
+    phone = (data.phone or "").strip()
+    if not phone:
+        raise HTTPException(400, "Phone number required")
+    from app.services.whatsapp_client import send_message
+    ok = send_message(phone, _receipt_text(db, txn))
+    if not ok:
+        raise HTTPException(503, "WhatsApp gönderimi başarısız (yapılandırma veya ağ)")
+    audit_log(db, "RECEIPT_SENT", user_id=cu.id, entity="Transaction", entity_id=txn_id,
+              detail={"txn_number": txn.txn_number, "to": phone})
+    db.commit()
+    return {"ok": True}
 
 
 @router.delete("/{txn_id}")
