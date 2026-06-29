@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.accounting import JournalEntry, JournalLine, JournalStatus
+from app.core.timeutil import utcnow
 
 ZERO = Decimal("0")
 
@@ -54,6 +55,6 @@ def toggle(db: Session, company_id, line_id, value: bool):
     if not line:
         raise ValueError("Line not found")
     line.reconciled = bool(value)
-    line.reconciled_at = datetime.utcnow() if value else None
+    line.reconciled_at = utcnow() if value else None
     db.flush()
     return line

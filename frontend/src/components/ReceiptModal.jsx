@@ -5,11 +5,14 @@
  * yalnızca iframe içeriğini yazdırır (sayfanın geri kalanını değil). Tüm veri
  * mevcut transaction nesnesinden gelir — ek backend çağrısı yok.
  */
-import { useRef } from 'react'
-import { Modal, Btn, C } from './UI'
+import { useRef, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Modal, Btn, Input, C } from './UI'
 import { fmt } from '../utils/format'
+import { transactionsApi } from '../utils/api'
 import { useLang } from '../hooks/useLang'
 import { useAuthStore } from '../store'
+import toast from 'react-hot-toast'
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -69,6 +72,7 @@ export default function ReceiptModal({ txn, onClose }) {
   const { t, lang } = useLang()
   const { user } = useAuthStore()
   const iframeRef = useRef(null)
+  const [phone, setPhone] = useState(txn.counterparty?.phone || '')
   const html = buildHtml(txn, user?.company_name, t, lang)
 
   const handlePrint = () => {
@@ -76,12 +80,23 @@ export default function ReceiptModal({ txn, onClose }) {
     if (w) { w.focus(); w.print() }
   }
 
+  const sendMut = useMutation({
+    mutationFn: () => transactionsApi.sendReceipt(txn.id, phone),
+    onSuccess: () => toast.success(t.receiptSent),
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+
   return (
     <Modal
       title={`${t.receipt} — ${txn.txn_number}`}
       onClose={onClose}
       footer={
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <Input label={t.phoneNumber} value={phone} onChange={e => setPhone(e.target.value)}
+                 placeholder="+90…" style={{ maxWidth: 160 }} />
+          <Btn variant="ghost" onClick={() => sendMut.mutate()} disabled={!phone.trim() || sendMut.isPending}>
+            {sendMut.isPending ? '…' : t.sendWhatsapp}
+          </Btn>
           <Btn variant="ghost" onClick={onClose}>{t.cancel}</Btn>
           <Btn onClick={handlePrint}>{t.print}</Btn>
         </div>

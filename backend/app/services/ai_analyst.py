@@ -1,5 +1,6 @@
 from groq import Groq
 from app.core.config import settings
+from app.core.timeutil import utcnow
 from sqlalchemy.orm import Session
 from app.models.transaction import Transaction
 from datetime import datetime, timedelta
@@ -7,7 +8,7 @@ import json
 
 def get_financial_summary(db: Session, company_id: str = None):
     """30 günlük anonimleştirilmiş finansal özeti hazırlar. Güvenlik için company_id zorunludur (super_admin hariç)."""
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = utcnow() - timedelta(days=30)
     
     # Temel filtreleme
     q = db.query(Transaction).filter(

@@ -406,4 +406,6 @@ export default {
   // Currency margins
   currencyMargins: 'هوامش العملات', marginPct: 'الهامش (%)', applyMargin: 'تطبيق الهامش',
   addMargin: 'إضافة هامش', noMargins: 'لا توجد هوامش', marginHint: 'هامش الربح الافتراضي المطبق على سعر السوق',
+  // WhatsApp receipt
+  sendWhatsapp: 'إرسال عبر واتساب', phoneNumber: 'الهاتف (+90…)', receiptSent: 'تم إرسال الإيصال',
 }

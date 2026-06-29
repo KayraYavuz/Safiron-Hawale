@@ -15,6 +15,7 @@ from app.models.accounting import (
 )
 from app.services.posting import _persist_entry, resolve_role, _usd_currency_id
 from app.services.statements import _agg
+from app.core.timeutil import utcnow
 
 ZERO = Decimal("0")
 
@@ -80,7 +81,7 @@ def close_period(db: Session, company_id, start: date, end: date, user_id=None) 
                        f"CLOSING {start}..{end}", user_id, lines)
 
     period = FiscalPeriod(company_id=company_id, period_start=start, period_end=end,
-                          status=FiscalPeriodStatus.closed, closed_by=user_id, closed_at=datetime.utcnow())
+                          status=FiscalPeriodStatus.closed, closed_by=user_id, closed_at=utcnow())
     db.add(period)
     db.flush()
     return period

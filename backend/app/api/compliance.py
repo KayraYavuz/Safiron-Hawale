@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.timeutil import utcnow
 from app.core.security import get_current_user
 from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
@@ -117,7 +118,7 @@ def clear_flag(flag_id: UUID, data: ClearRequest, db: Session = Depends(get_db),
         raise HTTPException(404, "Flag not found")
     f.status = ComplianceStatus.cleared
     f.cleared_by = cu.id
-    f.cleared_at = datetime.utcnow()
+    f.cleared_at = utcnow()
     audit_log(db, "COMPLIANCE_CLEAR", user_id=cu.id, entity="ComplianceFlag",
               entity_id=flag_id, detail={"note": data.note, "rule": f.rule.value})
     db.commit()
