@@ -124,6 +124,7 @@ export const companiesApi = {
   create: (data) => api.post('/api/companies', data),
   toggle: (id)   => api.patch(`/api/companies/${id}/toggle`),
   updateTelegramBot: (id, token) => api.patch(`/api/companies/${id}/telegram-bot`, { token }),
+  updateWhatsapp: (id, data) => api.patch(`/api/companies/${id}/whatsapp`, data),
 }
 
 export const supplierSettlementApi = {

@@ -21,14 +21,16 @@ def _cfg():
     return settings
 
 
-def send_message(to: str, text: str) -> bool:
+def send_message(to: str, text: str, phone_id: str = None, token: str = None) -> bool:
     """
     Kısa mesaj gönder (≤4096 karakter).
+    phone_id/token verilirse o şirketin numarasından gönderilir; verilmezse
+    global config'e düşer (geriye dönük uyumlu).
     Returns True on success.
     """
     cfg = _cfg()
-    token    = getattr(cfg, "WHATSAPP_TOKEN", None)
-    phone_id = getattr(cfg, "WHATSAPP_PHONE_ID", None)
+    token    = token    or getattr(cfg, "WHATSAPP_TOKEN", None)
+    phone_id = phone_id or getattr(cfg, "WHATSAPP_PHONE_ID", None)
 
     if not token or not phone_id:
         logger.error("WhatsApp: WHATSAPP_TOKEN veya WHATSAPP_PHONE_ID eksik")

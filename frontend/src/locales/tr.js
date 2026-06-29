@@ -408,4 +408,5 @@ export default {
   addMargin: 'Marj Ekle', noMargins: 'Marj tanımlı değil', marginHint: 'Piyasa kuruna uygulanan varsayılan kâr marjı',
   // WhatsApp receipt
   sendWhatsapp: "WhatsApp'tan Gönder", phoneNumber: 'Telefon (+90…)', receiptSent: 'Makbuz gönderildi',
+  whatsappNumberTitle: 'WhatsApp Numarası', whatsappPhoneIdPlaceholder: 'Phone Number ID (Meta)',
 }

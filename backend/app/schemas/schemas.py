@@ -28,6 +28,7 @@ class CompanyOut(BaseModel):
     code: str
     is_active: bool = True
     telegram_bot_token: Optional[str] = None
+    whatsapp_phone_id: Optional[str] = None
     created_at: Optional[datetime] = None
     class Config:
         from_attributes = True
