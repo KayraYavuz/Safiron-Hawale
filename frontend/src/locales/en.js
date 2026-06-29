@@ -408,4 +408,5 @@ export default {
   addMargin: 'Add Margin', noMargins: 'No margins defined', marginHint: 'Default profit margin applied to the market rate',
   // WhatsApp receipt
   sendWhatsapp: 'Send via WhatsApp', phoneNumber: 'Phone (+90…)', receiptSent: 'Receipt sent',
+  whatsappNumberTitle: 'WhatsApp Number', whatsappPhoneIdPlaceholder: 'Phone Number ID (Meta)',
 }

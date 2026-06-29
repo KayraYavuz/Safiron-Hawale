@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.whatsapp_client import is_allowed_number, send_message
 from app.services.whatsapp_bot import handle_message
+from app.models.master import Company
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
@@ -91,7 +92,10 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     except Exception:
         raise HTTPException(400, "Invalid JSON")
 
-    # ── Mesaj çıkar ───────────────────────────────────────────────────────
+    # ── Mesaj çıkar + şirketi çöz (mesajı alan numaradan) ──────────────────
+    company_id = None
+    reply_phone = None
+    reply_token = None
     try:
         entry   = data.get("entry", [{}])[0]
         changes = entry.get("changes", [{}])[0]
@@ -105,6 +109,19 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         if not messages:
             return {"status": "ok"}
 
+        # Mesajı ALAN WhatsApp numarasından şirketi çöz (multi-tenant)
+        wa_phone_id = value.get("metadata", {}).get("phone_number_id", "")
+        company = (db.query(Company).filter(Company.whatsapp_phone_id == wa_phone_id).first()
+                   if wa_phone_id else None)
+        if company:
+            company_id  = company.id
+            reply_phone = company.whatsapp_phone_id
+            reply_token = company.whatsapp_token
+        elif wa_phone_id:
+            # Tanınmayan numara — bu deployment'a kayıtlı değil, sessiz çık
+            logger.warning(f"WhatsApp: tanınmayan phone_number_id {wa_phone_id}")
+            return {"status": "ok"}
+
         msg    = messages[0]
         sender = msg.get("from", "")                # "905551234567"
         mtype  = msg.get("type", "")
@@ -112,7 +129,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
 
         # Sadece metin mesajlarını işle
         if mtype != "text" or not text:
-            send_message(sender, "ℹ️ Sadece metin mesajları desteklenir. Yardım: `?`")
+            send_message(sender, "ℹ️ Sadece metin mesajları desteklenir. Yardım: `?`",
+                         phone_id=reply_phone, token=reply_token)
             return {"status": "ok"}
 
     except Exception as exc:
@@ -122,18 +140,19 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     # ── Yetki kontrolü ────────────────────────────────────────────────────
     if not is_allowed_number(sender):
         logger.warning(f"WhatsApp: izinsiz numara {sender}")
-        send_message(sender, "🚫 Bu numaradan erişim yetkiniz bulunmamaktadır.")
+        send_message(sender, "🚫 Bu numaradan erişim yetkiniz bulunmamaktadır.",
+                     phone_id=reply_phone, token=reply_token)
         return {"status": "ok"}
 
     # ── Bot yanıtı ────────────────────────────────────────────────────────
     logger.info(f"WhatsApp mesaj: {sender} → {text[:50]!r}")
     try:
-        reply = handle_message(sender, text, db)
+        reply = handle_message(sender, text, db, company_id=company_id)
     except Exception as exc:
         logger.exception(f"Bot hatası: {exc}")
         reply = "❌ Sunucu hatası. Lütfen tekrar deneyin."
 
-    send_message(sender, reply)
+    send_message(sender, reply, phone_id=reply_phone, token=reply_token)
     return {"status": "ok"}
 
 

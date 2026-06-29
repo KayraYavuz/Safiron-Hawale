@@ -191,6 +191,32 @@ def set_telegram_bot(
     return {"ok": True, "status": "token_cleared"}
 
 
+class WhatsAppUpdate(BaseModel):
+    phone_id: Optional[str] = None  # WhatsApp Business Phone Number ID
+    token: Optional[str] = None     # şirkete özel token (boşsa global kullanılır)
+
+
+@companies_router.patch("/{company_id}/whatsapp")
+def set_whatsapp(
+    company_id: UUID,
+    data: WhatsAppUpdate,
+    db: Session = Depends(get_db),
+    cu: User = Depends(get_current_user),
+):
+    """Şirkete WhatsApp Business numarasını (phone_number_id) ata.
+    Admin kendi şirketini, super_admin hepsini güncelleyebilir."""
+    if cu.role == UserRole.super_admin or (cu.role == UserRole.admin and str(cu.company_id) == str(company_id)):
+        company = db.query(Company).filter(Company.id == company_id).first()
+    else:
+        raise HTTPException(403, "Forbidden")
+    if not company:
+        raise HTTPException(404, "Company not found")
+    company.whatsapp_phone_id = (data.phone_id or "").strip() or None
+    company.whatsapp_token = (data.token or "").strip() or None
+    db.commit()
+    return {"ok": True, "phone_id": company.whatsapp_phone_id}
+
+
 @companies_router.patch("/{company_id}/toggle")
 def toggle_company(company_id: UUID, db: Session = Depends(get_db), _=Depends(_super_admin_only)):
     company = db.query(Company).filter(Company.id == company_id).first()

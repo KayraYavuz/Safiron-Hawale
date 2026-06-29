@@ -37,14 +37,16 @@ YARDIM = """🤖 *Safiron Global Solutions*
 ℹ️  Yardım için `?` yazın"""
 
 
-def handle_message(sender: str, text: str, db) -> str:
+def handle_message(sender: str, text: str, db, company_id=None) -> str:
     """
     Gelen mesajı işle, yanıt metnini döndür.
     sender: WhatsApp numarası (örn: "905551234567")
     db: SQLAlchemy Session
+    company_id: mesajı alan WhatsApp numarasından çözülen şirket; None ise
+                tek-tenant fallback (_company_id) kullanılır.
     """
     cmd = text.strip().lower()
-    cid = _company_id(db)
+    cid = company_id or _company_id(db)
 
     # ── Yardım ──────────────────────────────────────────────────────────────
     if cmd in ("?", "yardim", "yardım", "help", "/start"):

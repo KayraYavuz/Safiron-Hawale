@@ -46,6 +46,9 @@ def run_migrations():
 
     # telegram_bot_token kolonu
     _exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS telegram_bot_token VARCHAR")
+    # WhatsApp per-company columns
+    _exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS whatsapp_phone_id VARCHAR")
+    _exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS whatsapp_token VARCHAR")
 
     # ── Diğer tablolara company_id ekle ─────────────────────────────────────
     for table in ['users', 'locations', 'accounts', 'counterparties', 'transactions', 'exchange_rates']:

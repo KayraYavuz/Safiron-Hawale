@@ -9,6 +9,36 @@ import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
 import { getRoleInfo } from '../constants'
 
+function WhatsAppNumberForm({ company, t }) {
+  const qc = useQueryClient()
+  const [val, setVal] = useState(company.whatsapp_phone_id || '')
+  const mut = useMutation({
+    mutationFn: () => companiesApi.updateWhatsapp(company.id, { phone_id: val }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['companies'] }); toast.success(t.saved) },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+  return (
+    <div style={{
+      margin: '0 16px 14px 16px', padding: '12px 20px', borderRadius: 8,
+      border: `1.5px solid ${company.whatsapp_phone_id ? '#BBF7D0' : C.border}`,
+      background: company.whatsapp_phone_id ? '#F0FDF4' : 'white',
+      display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap',
+    }}>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontWeight: 700, fontSize: 13.5, color: C.navy, marginBottom: 6 }}>
+          💬 {t.whatsappNumberTitle}
+        </div>
+        <Input value={val} onChange={e => setVal(e.target.value)}
+               placeholder={t.whatsappPhoneIdPlaceholder}
+               style={{ fontFamily: 'var(--mono)', fontSize: 12 }} />
+      </div>
+      <Btn onClick={() => mut.mutate()} disabled={mut.isPending}>
+        {mut.isPending ? '...' : t.save}
+      </Btn>
+    </div>
+  )
+}
+
 function TelegramBotForm({ company, t }) {
   const qc = useQueryClient()
   const [tokenInput, setTokenInput] = useState('')
@@ -395,6 +425,7 @@ export default function Companies() {
                           
                           {/* Telegram bot token settings */}
                           <TelegramBotForm company={co} t={t} />
+                          <WhatsAppNumberForm company={co} t={t} />
 
                           {/* Company users list */}
                           <div style={{ margin: '0 16px 8px 16px', borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden', background: 'white' }}>
