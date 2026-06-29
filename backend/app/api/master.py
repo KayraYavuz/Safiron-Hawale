@@ -43,7 +43,9 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db), cu: Use
         raise HTTPException(400, "Location code cannot exceed 10 characters")
     if not data.name_tr.strip():
         raise HTTPException(400, "Turkish name is required")
-    existing = db.query(Location).filter(Location.code == code).first()
+    # Uniqueness is per-company, not global (codes are tenant-scoped)
+    existing = db.query(Location).filter(Location.code == code,
+                                         Location.company_id == cu.company_id).first()
     if existing:
         raise HTTPException(400, f"Code '{code}' is already in use")
     loc = Location(
@@ -126,6 +128,12 @@ def list_accounts(
 def create_account(data: AccountCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     if cu.role not in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(403, "Only admin can perform this action")
+    # Tenant guard: the location must belong to the caller's company
+    if cu.role != UserRole.super_admin:
+        loc = db.query(Location).filter(Location.id == data.location_id,
+                                        Location.company_id == cu.company_id).first()
+        if not loc:
+            raise HTTPException(400, "Location belongs to another company")
     acc = Account(**data.model_dump(), company_id=cu.company_id)
     db.add(acc)
     db.commit()
@@ -133,11 +141,13 @@ def create_account(data: AccountCreate, db: Session = Depends(get_db), cu: User 
     return acc
 
 @router.get("/accounts/{account_id}/balance")
-def account_balance(account_id: UUID, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    balance = get_account_balance(db, account_id)
-    acc = db.query(Account).filter(Account.id == account_id).first()
+def account_balance(account_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    # Tenant guard: only expose balances for accounts in the caller's company
+    q = apply_company_filter(db.query(Account).filter(Account.id == account_id), Account, cu)
+    acc = q.first()
     if not acc:
         raise HTTPException(404, "Account not found")
+    balance = get_account_balance(db, account_id)
     balance_usd = balance_to_usd(balance, acc.currency.code, db)
     return {
         "account_id": str(account_id),
@@ -162,8 +172,16 @@ def list_counterparties(
 @router.post("/counterparties", response_model=CounterpartyOut)
 def create_counterparty(data: CounterpartyCreate, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
     from datetime import datetime
-    count = db.query(Counterparty).count()
-    code  = f"CP-{datetime.now().year}-{str(count+1).zfill(5)}"
+    # Per-company, collision-safe code sequence (unique constraint is (code, company_id)).
+    # A global count would race and leak across tenants.
+    prefix = f"CP-{datetime.now().year}-"
+    seq = db.query(Counterparty).filter(Counterparty.company_id == cu.company_id).count() + 1
+    for _ in range(50):
+        code = f"{prefix}{str(seq).zfill(5)}"
+        if not db.query(Counterparty.id).filter(Counterparty.code == code,
+                                                Counterparty.company_id == cu.company_id).first():
+            break
+        seq += 1
     pin   = _generate_bot_pin(db)
     cp = Counterparty(**data.model_dump(), code=code, company_id=cu.company_id, bot_pin=pin)
     db.add(cp)
