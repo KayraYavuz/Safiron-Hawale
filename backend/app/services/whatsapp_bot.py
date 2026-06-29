@@ -44,6 +44,7 @@ def handle_message(sender: str, text: str, db) -> str:
     db: SQLAlchemy Session
     """
     cmd = text.strip().lower()
+    cid = _company_id(db)
 
     # ── Yardım ──────────────────────────────────────────────────────────────
     if cmd in ("?", "yardim", "yardım", "help", "/start"):
@@ -51,11 +52,11 @@ def handle_message(sender: str, text: str, db) -> str:
 
     # ── Bakiye ──────────────────────────────────────────────────────────────
     if cmd in ("b", "bakiye", "bakiyeler", "kasa"):
-        return _bakiye(db)
+        return _bakiye(db, cid)
 
     # ── Günlük rapor ────────────────────────────────────────────────────────
     if cmd in ("r", "rapor", "özet", "ozet", "gunluk", "günlük"):
-        return _rapor(db)
+        return _rapor(db, cid)
 
     # ── Döviz kuru ──────────────────────────────────────────────────────────
     if cmd in ("k", "kur", "kurlar", "fx", "doviz", "döviz"):
@@ -67,7 +68,7 @@ def handle_message(sender: str, text: str, db) -> str:
 
     # ── Son işlemler ────────────────────────────────────────────────────────
     if cmd in ("i", "işlemler", "islemler", "txn", "son"):
-        return _son_islemler(db)
+        return _son_islemler(db, company_id=cid)
 
     # ── İşlem kayıt (AI destekli) ───────────────────────────────────────────
     if cmd.startswith("havale") or cmd.startswith("fx ") or cmd.startswith("transfer"):
@@ -85,8 +86,18 @@ def handle_message(sender: str, text: str, db) -> str:
 # Komut İşleyiciler
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _bakiye(db) -> str:
-    """Tüm aktif kasa bakiyelerini getir."""
+def _company_id(db):
+    """WhatsApp serves a single business (one shared number), so resolve the
+    company it belongs to — the SAFIRON default, falling back to the first
+    company — and scope all data queries to it. Without this the bot would
+    expose every tenant's balances/reports to any allowed number."""
+    from app.models.master import Company
+    co = db.query(Company).filter(Company.code == "SAFIRON").first() or db.query(Company).first()
+    return co.id if co else None
+
+
+def _bakiye(db, company_id=None) -> str:
+    """Şirketin aktif kasa bakiyelerini getir."""
     try:
         from app.models.master import Account
         from app.services.balance import get_all_balances, get_all_usd_rates
@@ -94,7 +105,7 @@ def _bakiye(db) -> str:
 
         accounts = (db.query(Account)
                     .options(joinedload(Account.location), joinedload(Account.currency))
-                    .filter(Account.is_active == True)
+                    .filter(Account.is_active == True, Account.company_id == company_id)
                     .all())
 
         if not accounts:
@@ -136,7 +147,7 @@ def _bakiye(db) -> str:
         return f"❌ Bakiye alınamadı: {exc}"
 
 
-def _rapor(db) -> str:
+def _rapor(db, company_id=None) -> str:
     """Bugünkü işlem özeti."""
     try:
         from app.models.transaction import Transaction, TransactionPnL, TxnStatus
@@ -149,6 +160,7 @@ def _rapor(db) -> str:
                 .filter(
                     Transaction.created_at >= datetime(today.year, today.month, today.day),
                     Transaction.status == TxnStatus.completed,
+                    Transaction.company_id == company_id,
                 )
                 .all())
 
@@ -175,7 +187,8 @@ def _rapor(db) -> str:
 
         # Bekleyen işlemler
         pending = (db.query(func.count(Transaction.id))
-                   .filter(Transaction.status == TxnStatus.pending)
+                   .filter(Transaction.status == TxnStatus.pending,
+                           Transaction.company_id == company_id)
                    .scalar() or 0)
         if pending:
             lines.append(f"⏳ Bekleyen işlem:    *{pending}*")
@@ -231,7 +244,7 @@ def _tek_kur(db, currency: str) -> str:
         return f"❌ Kur alınamadı: {exc}"
 
 
-def _son_islemler(db, limit: int = 10) -> str:
+def _son_islemler(db, limit: int = 10, company_id=None) -> str:
     """Son N işlemi listele."""
     try:
         from app.models.transaction import Transaction, TransactionPnL, TxnStatus
@@ -239,6 +252,7 @@ def _son_islemler(db, limit: int = 10) -> str:
 
         txns = (db.query(Transaction)
                 .options(joinedload(Transaction.counterparty))
+                .filter(Transaction.company_id == company_id)
                 .order_by(Transaction.created_at.desc())
                 .limit(limit)
                 .all())

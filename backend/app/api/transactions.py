@@ -19,6 +19,7 @@ from decimal import Decimal
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.tenant import apply_company_filter
+from app.core.timeutil import utcnow
 from app.models.user import User, UserRole
 from app.models.master import Account, Currency
 from app.models.transaction import Transaction, TransactionLeg, TransactionPnL, SupplierSettlement, TxnType, TxnStatus, LegType
@@ -100,14 +101,13 @@ def _clear_compliance_flags(db: Session, txn, user: User) -> bool:
         return True
     if user.role not in _FLAG_APPROVERS:
         return False
-    from datetime import datetime
     flags = (db.query(ComplianceFlag)
                .filter(ComplianceFlag.transaction_id == txn.id,
                        ComplianceFlag.status == ComplianceStatus.open).all())
     for f in flags:
         f.status = ComplianceStatus.cleared
         f.cleared_by = user.id
-        f.cleared_at = datetime.utcnow()
+        f.cleared_at = utcnow()
     audit_log(db, "COMPLIANCE_CLEAR", user_id=user.id, entity="Transaction",
               entity_id=txn.id, detail={"flags": [f.rule.value for f in flags]})
     return True
