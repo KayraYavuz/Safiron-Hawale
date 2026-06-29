@@ -391,4 +391,12 @@ export default {
   // Dashboard — morning screen
   currencyPosition: 'Döviz Pozisyonu', currencyPositionSub: 'Tüm kasalarda anlık net',
   pendingApprovalsMsg: 'işlem onay bekliyor', reviewNow: 'İncele',
+  // Compliance / AML
+  compliance: 'Uyum', complianceFlags: 'Risk Bayrakları', complianceWatchlist: 'Yasaklı Liste',
+  complianceSettings: 'Eşik Ayarları', riskFlag: 'Risk', flagRule: 'Kural', flagDetail: 'Açıklama',
+  flagAmount: 'Tutar Eşiği', flagWatchlist: 'Liste Eşleşmesi', flagStructuring: 'Bölme (Structuring)',
+  clearFlag: 'Temizle', flagCleared: 'Bayrak temizlendi', noFlags: 'Açık risk bayrağı yok',
+  amlThreshold: 'Tutar Eşiği (USD)', amlWindow: 'Structuring Penceresi (gün)',
+  watchlistName: 'İsim', watchlistReason: 'Sebep', addToWatchlist: 'Listeye Ekle',
+  noWatchlist: 'Liste boş', openFlags: 'Açık', clearedFlags: 'Temizlenmiş', allFlags: 'Tümü',
 }

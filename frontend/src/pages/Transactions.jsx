@@ -263,7 +263,16 @@ export default function Transactions() {
                         }
                       </Td>
                       <Td>
-                        <Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge>
+                          {txn.compliance_flagged && (
+                            <span title={t.riskFlag} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 3,
+                              fontSize: 10.5, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
+                              color: C.red, background: C.redBg,
+                            }}>⚑ {t.riskFlag}</span>
+                          )}
+                        </div>
                       </Td>
                       <Td>
                         {!ss

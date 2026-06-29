@@ -139,6 +139,16 @@ export const settingsApi = {
   clear:  (key)         => api.delete(`/api/settings/${key}`),
 }
 
+export const complianceApi = {
+  flags:          (params) => api.get('/api/compliance/flags', { params }),
+  clearFlag:      (id, note) => api.post(`/api/compliance/flags/${id}/clear`, { note }),
+  watchlist:      ()       => api.get('/api/compliance/watchlist'),
+  addWatchlist:   (data)   => api.post('/api/compliance/watchlist', data),
+  removeWatchlist:(id)     => api.delete(`/api/compliance/watchlist/${id}`),
+  settings:       ()       => api.get('/api/compliance/settings'),
+  updateSettings: (data)   => api.put('/api/compliance/settings', data),
+}
+
 export const accountingApi = {
   chart:      ()         => api.get('/api/accounting/chart'),
   initialize: (scheme)   => api.post('/api/accounting/initialize', { scheme }),

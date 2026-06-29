@@ -391,4 +391,12 @@ export default {
   // Dashboard — morning screen
   currencyPosition: 'مركز العملات', currencyPositionSub: 'الصافي الفوري في كل الصناديق',
   pendingApprovalsMsg: 'معاملة بانتظار الموافقة', reviewNow: 'مراجعة',
+  // Compliance / AML
+  compliance: 'الامتثال', complianceFlags: 'أعلام المخاطر', complianceWatchlist: 'قائمة الحظر',
+  complianceSettings: 'إعدادات الحد', riskFlag: 'خطر', flagRule: 'القاعدة', flagDetail: 'التفاصيل',
+  flagAmount: 'حد المبلغ', flagWatchlist: 'تطابق القائمة', flagStructuring: 'التجزئة',
+  clearFlag: 'مسح', flagCleared: 'تم مسح العلم', noFlags: 'لا توجد أعلام مخاطر مفتوحة',
+  amlThreshold: 'حد المبلغ (دولار)', amlWindow: 'نافذة التجزئة (أيام)',
+  watchlistName: 'الاسم', watchlistReason: 'السبب', addToWatchlist: 'إضافة إلى القائمة',
+  noWatchlist: 'القائمة فارغة', openFlags: 'مفتوح', clearedFlags: 'تم المسح', allFlags: 'الكل',
 }

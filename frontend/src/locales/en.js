@@ -391,4 +391,12 @@ export default {
   // Dashboard — morning screen
   currencyPosition: 'Currency Position', currencyPositionSub: 'Live net across all tills',
   pendingApprovalsMsg: 'transactions awaiting approval', reviewNow: 'Review',
+  // Compliance / AML
+  compliance: 'Compliance', complianceFlags: 'Risk Flags', complianceWatchlist: 'Watchlist',
+  complianceSettings: 'Threshold Settings', riskFlag: 'Risk', flagRule: 'Rule', flagDetail: 'Detail',
+  flagAmount: 'Amount Threshold', flagWatchlist: 'Watchlist Match', flagStructuring: 'Structuring',
+  clearFlag: 'Clear', flagCleared: 'Flag cleared', noFlags: 'No open risk flags',
+  amlThreshold: 'Amount Threshold (USD)', amlWindow: 'Structuring Window (days)',
+  watchlistName: 'Name', watchlistReason: 'Reason', addToWatchlist: 'Add to Watchlist',
+  noWatchlist: 'Watchlist is empty', openFlags: 'Open', clearedFlags: 'Cleared', allFlags: 'All',
 }

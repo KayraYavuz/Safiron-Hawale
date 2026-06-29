@@ -31,6 +31,7 @@ const FinancialStatements = lazy(() => import('./pages/FinancialStatements'))
 const Rates          = lazy(() => import('./pages/Rates'))
 const Reports        = lazy(() => import('./pages/Reports'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
+const Compliance     = lazy(() => import('./pages/Compliance'))
 const AuditLog       = lazy(() => import('./pages/AuditLog'))
 const AiAnalysis     = lazy(() => import('./pages/AiAnalysis'))
 const CashFlow       = lazy(() => import('./pages/CashFlow'))
@@ -141,6 +142,7 @@ export default function App() {
           <Route path="/rates"          element={<Protected><Rates /></Protected>} />
           <Route path="/reports"        element={<Protected><Reports /></Protected>} />
           <Route path="/reconciliation" element={<Protected><Reconciliation /></Protected>} />
+          <Route path="/compliance"     element={<Protected><Compliance /></Protected>} />
           <Route path="/audit"          element={<Protected><AuditLog /></Protected>} />
           <Route path="/analysis"       element={<Protected><AiAnalysis /></Protected>} />
           <Route path="/cashflow"       element={<Protected><CashFlow /></Protected>} />
