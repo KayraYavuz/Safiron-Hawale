@@ -8,12 +8,13 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from uuid import UUID
+from decimal import Decimal
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.accounting import ChartOfAccount, JournalEntry, JournalLine, JournalStatus
-from app.models.master import Counterparty
-from app.services import statements, partner_reports, reconciliation_gl, fx_position
+from app.models.master import Counterparty, Account
+from app.services import statements, partner_reports, reconciliation_gl, fx_position, posting
 
 router = APIRouter(prefix="/api/accounting", tags=["statements"])
 
@@ -160,6 +161,76 @@ def aged_balance(as_of: Optional[date] = None, format: str = "json",
         rows.append(["TOPLAM", data["current"], data["d31_60"], data["d61_90"], data["d90_plus"], data["total"]])
         return _csv(rows, ["partner", "current", "31_60", "61_90", "90_plus", "total"], "yaslandirma.csv")
     return data
+
+
+@router.get("/correspondent-positions")
+def correspondent_positions(as_of: Optional[date] = None, format: str = "json",
+                            db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    """Net USD position per correspondent — the settlement worklist."""
+    if cu.role == UserRole.data_entry:
+        raise HTTPException(403, "Data entry role cannot view balances")
+    data = partner_reports.correspondent_positions(db, cu.company_id, as_of)
+    if format == "csv":
+        rows = [[r["name"], r["direction"], r["net_usd"]] for r in data["rows"]]
+        rows.append(["TOPLAM ALACAK", "receivable", data["total_receivable_usd"]])
+        rows.append(["TOPLAM BORÇ", "payable", data["total_payable_usd"]])
+        return _csv(rows, ["partner", "direction", "net_usd"], "muhabir_pozisyonlari.csv")
+    return data
+
+
+def _counterparty_net_usd(db: Session, company_id, counterparty_id) -> Decimal:
+    rows = (db.query(JournalLine)
+              .join(JournalEntry, JournalLine.entry_id == JournalEntry.id)
+              .filter(JournalEntry.company_id == company_id,
+                      JournalEntry.status == JournalStatus.posted,
+                      JournalLine.counterparty_id == counterparty_id)
+              .all())
+    return sum((Decimal(str(l.debit_usd or 0)) - Decimal(str(l.credit_usd or 0)) for l in rows), Decimal("0"))
+
+
+class SettleRequest(BaseModel):
+    counterparty_id: UUID
+    till_account_id: UUID
+    amount_usd: Optional[Decimal] = None
+
+
+@router.post("/settle")
+def settle_correspondent(data: SettleRequest, db: Session = Depends(get_db),
+                         cu: User = Depends(get_current_user)):
+    """One-click settlement: post a balanced GL entry moving a correspondent's net
+    balance toward zero against a chosen till. Partial or full."""
+    if cu.role not in (UserRole.admin, UserRole.super_admin, UserRole.manager,
+                       UserRole.branch_manager, UserRole.accounting):
+        raise HTTPException(403, "Forbidden")
+
+    cp = db.query(Counterparty).filter(Counterparty.id == data.counterparty_id).first()
+    if not cp:
+        raise HTTPException(404, "Counterparty not found")
+    till = db.query(Account).filter(Account.id == data.till_account_id).first()
+    if not till:
+        raise HTTPException(404, "Account not found")
+    # Tenant guard (super_admin operates within its own company on writes)
+    if cu.role != UserRole.super_admin:
+        if str(cp.company_id) != str(cu.company_id) or str(till.company_id) != str(cu.company_id):
+            raise HTTPException(403, "Belongs to another company")
+
+    net = _counterparty_net_usd(db, cu.company_id, data.counterparty_id)
+    if net == 0:
+        raise HTTPException(400, "No open balance to settle")
+
+    open_abs = abs(net)
+    amount = open_abs if data.amount_usd is None else min(Decimal(str(data.amount_usd)), open_abs)
+    if amount <= 0:
+        raise HTTPException(400, "Settlement amount must be positive")
+
+    try:
+        entry = posting.post_settlement(db, cu.company_id, cp, till, amount,
+                                        receivable=net > 0, created_by=cu.id)
+    except posting.PostingError as e:
+        raise HTTPException(400, str(e))
+    db.commit()
+    return {"ok": True, "entry_number": entry.entry_number,
+            "settled_usd": str(amount), "direction": "receivable" if net > 0 else "payable"}
 
 
 @router.get("/reconciliation/{account_id}")
