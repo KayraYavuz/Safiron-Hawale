@@ -29,3 +29,9 @@ class User(Base):
     company_id = Column(GUID(), ForeignKey("companies.id"), nullable=True)
     telegram_id = Column(String(20), nullable=True, index=True)  # Bot admin erişimi
     bot_pin     = Column(String(12), nullable=True, unique=True, index=True)  # Telegram bağlama kodu
+
+    company = relationship("Company")
+
+    @property
+    def company_name(self):
+        return self.company.name if self.company else None

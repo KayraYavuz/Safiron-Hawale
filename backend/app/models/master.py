@@ -18,6 +18,8 @@ class Company(Base):
     telegram_bot_token = Column(String, nullable=True)  # @BotFather'dan alınan token
     accounting_scheme = Column(String(8), nullable=True)  # "thp" | "intl" | None until initialised
     commission_tax_rate = Column(Numeric(5, 4), default=0)  # opt-in KDV/BSMV on commission (0 = off)
+    aml_threshold_usd = Column(Numeric(18, 4), default=0)   # AML reporting/flag threshold (0 = off)
+    aml_structuring_window_days = Column(Integer, default=1)  # window for structuring aggregation
 
 
 class Location(Base):

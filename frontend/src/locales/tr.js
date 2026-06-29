@@ -381,4 +381,26 @@ export default {
   searchNameCode: 'İsim veya kod ara...', notFound: 'Bulunamadı',
   selectLocation: '— lokasyon seç —', selectSafe: '— kasa seç —',
   cpCustomer: 'Müşteri', cpSupplier: 'Tedarikçi', cpBoth: 'Her ikisi', cpFounder: 'Ortak',
+  // Correspondent netting & settlement
+  nettingTitle: 'Muhabir Pozisyonları', nettingSubtitle: 'Net bakiyeler — tek tıkla mutabakat',
+  nettingReceivable: 'Alacak', nettingPayable: 'Borç', nettingSettle: 'Mutabık Ol',
+  nettingNone: 'Açık muhabir bakiyesi yok', nettingTotalRecv: 'Toplam Alacak', nettingTotalPay: 'Toplam Borç',
+  settleTitle: 'Mutabakat', settleAmount: 'Tutar (USD)', settleTill: 'Kasa / Banka',
+  settleFullHint: 'Boş bırakırsan tüm bakiye kapanır', settleConfirm: 'Mutabakatı Onayla',
+  settleDone: 'Mutabakat kaydedildi', settleNet: 'Net bakiye',
+  // Dashboard — morning screen
+  currencyPosition: 'Döviz Pozisyonu', currencyPositionSub: 'Tüm kasalarda anlık net',
+  pendingApprovalsMsg: 'işlem onay bekliyor', reviewNow: 'İncele',
+  // Compliance / AML
+  compliance: 'Uyum', complianceFlags: 'Risk Bayrakları', complianceWatchlist: 'Yasaklı Liste',
+  complianceSettings: 'Eşik Ayarları', riskFlag: 'Risk', flagRule: 'Kural', flagDetail: 'Açıklama',
+  flagAmount: 'Tutar Eşiği', flagWatchlist: 'Liste Eşleşmesi', flagStructuring: 'Bölme (Structuring)',
+  clearFlag: 'Temizle', flagCleared: 'Bayrak temizlendi', noFlags: 'Açık risk bayrağı yok',
+  amlThreshold: 'Tutar Eşiği (USD)', amlWindow: 'Structuring Penceresi (gün)',
+  watchlistName: 'İsim', watchlistReason: 'Sebep', addToWatchlist: 'Listeye Ekle',
+  noWatchlist: 'Liste boş', openFlags: 'Açık', clearedFlags: 'Temizlenmiş', allFlags: 'Tümü',
+  // Receipt
+  receipt: 'Makbuz', receiptTitle: 'İşlem Makbuzu', print: 'Yazdır',
+  receiptGiven: 'Verilen', receiptReceived: 'Alınan', receiptIssued: 'Düzenleyen',
+  receiptThanks: 'Bizi tercih ettiğiniz için teşekkür ederiz.',
 }

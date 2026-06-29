@@ -381,4 +381,26 @@ export default {
   searchNameCode: 'بحث بالاسم أو الرمز...', notFound: 'لا يوجد',
   selectLocation: '— اختر الموقع —', selectSafe: '— اختر الصندوق —',
   cpCustomer: 'عميل', cpSupplier: 'مورد', cpBoth: 'كلاهما', cpFounder: 'شريك',
+  // Correspondent netting & settlement
+  nettingTitle: 'مراكز المراسلين', nettingSubtitle: 'الأرصدة الصافية — تسوية بنقرة واحدة',
+  nettingReceivable: 'مستحق لنا', nettingPayable: 'مستحق علينا', nettingSettle: 'تسوية',
+  nettingNone: 'لا توجد أرصدة مراسلين مفتوحة', nettingTotalRecv: 'إجمالي المستحق لنا', nettingTotalPay: 'إجمالي المستحق علينا',
+  settleTitle: 'تسوية', settleAmount: 'المبلغ (دولار)', settleTill: 'الصندوق / البنك',
+  settleFullHint: 'اتركه فارغاً لتسوية كامل الرصيد', settleConfirm: 'تأكيد التسوية',
+  settleDone: 'تم تسجيل التسوية', settleNet: 'الرصيد الصافي',
+  // Dashboard — morning screen
+  currencyPosition: 'مركز العملات', currencyPositionSub: 'الصافي الفوري في كل الصناديق',
+  pendingApprovalsMsg: 'معاملة بانتظار الموافقة', reviewNow: 'مراجعة',
+  // Compliance / AML
+  compliance: 'الامتثال', complianceFlags: 'أعلام المخاطر', complianceWatchlist: 'قائمة الحظر',
+  complianceSettings: 'إعدادات الحد', riskFlag: 'خطر', flagRule: 'القاعدة', flagDetail: 'التفاصيل',
+  flagAmount: 'حد المبلغ', flagWatchlist: 'تطابق القائمة', flagStructuring: 'التجزئة',
+  clearFlag: 'مسح', flagCleared: 'تم مسح العلم', noFlags: 'لا توجد أعلام مخاطر مفتوحة',
+  amlThreshold: 'حد المبلغ (دولار)', amlWindow: 'نافذة التجزئة (أيام)',
+  watchlistName: 'الاسم', watchlistReason: 'السبب', addToWatchlist: 'إضافة إلى القائمة',
+  noWatchlist: 'القائمة فارغة', openFlags: 'مفتوح', clearedFlags: 'تم المسح', allFlags: 'الكل',
+  // Receipt
+  receipt: 'إيصال', receiptTitle: 'إيصال المعاملة', print: 'طباعة',
+  receiptGiven: 'المدفوع', receiptReceived: 'المستلم', receiptIssued: 'صادر عن',
+  receiptThanks: 'شكراً لتعاملكم معنا.',
 }

@@ -258,6 +258,54 @@ def _persist_entry(db, company_id, entry_date, value_date, source_type, source_i
     return entry
 
 
+def _settlement_role(counterparty, receivable: bool) -> AccountRole:
+    """Control-account role for a settlement, by counterparty type.
+    supplier/both → supplier_*, otherwise customer_*."""
+    ctype = getattr(counterparty.type, "value", str(counterparty.type or "customer"))
+    supplier_like = ctype in ("supplier", "both")
+    if receivable:
+        return AccountRole.supplier_receivable if supplier_like else AccountRole.customer_receivable
+    return AccountRole.supplier_payable if supplier_like else AccountRole.customer_payable
+
+
+def post_settlement(db: Session, company_id, counterparty, till_account: Account,
+                    amount_usd: Decimal, receivable: bool, created_by=None):
+    """Post a balanced settlement entry that moves a counterparty's net balance
+    toward zero against a cash/bank till.
+
+    receivable=True  → they owed us; we collect cash:
+        debit till, credit counterparty receivable control.
+    receivable=False → we owed them; we pay cash:
+        debit counterparty payable control, credit till.
+
+    amount_usd must be > 0. Caller is responsible for clamping to the open balance.
+    """
+    amount = _q(amount_usd)
+    if amount <= ZERO:
+        raise PostingError("Settlement amount must be positive")
+    on = date.today()
+    if period_is_closed(db, company_id, on):
+        raise PostingError("Cannot post into a closed fiscal period")
+
+    usd_id = _usd_currency_id(db)
+    till_gl = get_or_create_gl_for_till(db, till_account)
+    ctrl = resolve_role(db, company_id, _settlement_role(counterparty, receivable))
+
+    if receivable:
+        till_line = _usd_line(till_gl, amount, ZERO, usd_id)        # cash in
+        ctrl_line = _usd_line(ctrl.id, ZERO, amount, usd_id)        # receivable down
+    else:
+        ctrl_line = _usd_line(ctrl.id, amount, ZERO, usd_id)        # payable down
+        till_line = _usd_line(till_gl, ZERO, amount, usd_id)        # cash out
+    till_line["account_id"] = till_account.id
+    ctrl_line["counterparty_id"] = counterparty.id
+
+    memo = f"Mutabakat {counterparty.name} ({'tahsilat' if receivable else 'ödeme'})"
+    return _persist_entry(db, company_id, on, None, JournalSourceType.settlement,
+                          counterparty.id, memo, created_by, [till_line, ctrl_line],
+                          journal_code="BNK" if till_account.account_type.value == "bank" else "CASH")
+
+
 def void_for_source(db: Session, source_id, created_by=None):
     """Reverse the posted entry for a source: create a mirror entry (debits<->credits),
     mark the original void. No-op if no posted entry exists."""

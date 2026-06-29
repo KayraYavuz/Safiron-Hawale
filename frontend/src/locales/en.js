@@ -381,4 +381,26 @@ export default {
   searchNameCode: 'Search by name or code...', notFound: 'Not found',
   selectLocation: '— select location —', selectSafe: '— select safe —',
   cpCustomer: 'Customer', cpSupplier: 'Supplier', cpBoth: 'Both', cpFounder: 'Partner',
+  // Correspondent netting & settlement
+  nettingTitle: 'Correspondent Positions', nettingSubtitle: 'Net balances — settle in one click',
+  nettingReceivable: 'Receivable', nettingPayable: 'Payable', nettingSettle: 'Settle',
+  nettingNone: 'No open correspondent balances', nettingTotalRecv: 'Total Receivable', nettingTotalPay: 'Total Payable',
+  settleTitle: 'Settlement', settleAmount: 'Amount (USD)', settleTill: 'Till / Bank',
+  settleFullHint: 'Leave empty to settle the full balance', settleConfirm: 'Confirm Settlement',
+  settleDone: 'Settlement posted', settleNet: 'Net balance',
+  // Dashboard — morning screen
+  currencyPosition: 'Currency Position', currencyPositionSub: 'Live net across all tills',
+  pendingApprovalsMsg: 'transactions awaiting approval', reviewNow: 'Review',
+  // Compliance / AML
+  compliance: 'Compliance', complianceFlags: 'Risk Flags', complianceWatchlist: 'Watchlist',
+  complianceSettings: 'Threshold Settings', riskFlag: 'Risk', flagRule: 'Rule', flagDetail: 'Detail',
+  flagAmount: 'Amount Threshold', flagWatchlist: 'Watchlist Match', flagStructuring: 'Structuring',
+  clearFlag: 'Clear', flagCleared: 'Flag cleared', noFlags: 'No open risk flags',
+  amlThreshold: 'Amount Threshold (USD)', amlWindow: 'Structuring Window (days)',
+  watchlistName: 'Name', watchlistReason: 'Reason', addToWatchlist: 'Add to Watchlist',
+  noWatchlist: 'Watchlist is empty', openFlags: 'Open', clearedFlags: 'Cleared', allFlags: 'All',
+  // Receipt
+  receipt: 'Receipt', receiptTitle: 'Transaction Receipt', print: 'Print',
+  receiptGiven: 'Given', receiptReceived: 'Received', receiptIssued: 'Issued by',
+  receiptThanks: 'Thank you for your business.',
 }

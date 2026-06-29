@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, counterpartiesApi, accountsApi } from '../utils/api'
 import { fmt } from '../utils/format'
@@ -9,6 +9,7 @@ import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
 import TransactionForm from '../components/TransactionForm'
 import SupplierSettlementModal from '../components/SupplierSettlementModal'
+import ReceiptModal from '../components/ReceiptModal'
 import toast from 'react-hot-toast'
 import { getTxnTypeLabel, TXN_TYPE_COLOR, getStatusLabel, STALE_2MIN, CAN_CREATE_TXN, CAN_APPROVE_TXN, CAN_DELETE_TXN } from '../constants'
 import { useLang } from '../hooks/useLang'
@@ -19,10 +20,12 @@ export default function Transactions() {
   const STATUS_LABEL   = getStatusLabel(t)
   const { user } = useAuthStore()
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
   const [showForm,    setShowForm]    = useState(false)
-  const [filterStatus, setStatus]    = useState('')
+  const [filterStatus, setStatus]    = useState(searchParams.get('status') ?? '')
   const [filterType,   setType]      = useState('')
   const [settleTxn,    setSettleTxn] = useState(null)
+  const [receiptTxn,   setReceiptTxn] = useState(null)
 
   const { data: txns = [], isLoading } = useQuery({
     queryKey: ['transactions'],
@@ -262,7 +265,16 @@ export default function Transactions() {
                         }
                       </Td>
                       <Td>
-                        <Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Badge type={txn.status} dot>{STATUS_LABEL[txn.status] ?? txn.status}</Badge>
+                          {txn.compliance_flagged && (
+                            <span title={t.riskFlag} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 3,
+                              fontSize: 10.5, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
+                              color: C.red, background: C.redBg,
+                            }}>⚑ {t.riskFlag}</span>
+                          )}
+                        </div>
                       </Td>
                       <Td>
                         {!ss
@@ -285,6 +297,9 @@ export default function Transactions() {
                       {isAccounting && (
                         <Td>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                            <Btn variant="ghost" size="sm" onClick={() => setReceiptTxn(txn)}>
+                              {t.receipt}
+                            </Btn>
                             <Btn
                               variant="ghost" size="sm"
                               style={{ color: C.purple, borderColor: 'rgba(107,70,193,0.25)', background: C.purpleBg }}
@@ -326,6 +341,7 @@ export default function Transactions() {
 
       {showForm  && <TransactionForm onClose={() => setShowForm(false)} accounts={accs} counterparties={cps} />}
       {settleTxn && <SupplierSettlementModal txn={settleTxn} counterparties={cps} onClose={() => setSettleTxn(null)} />}
+      {receiptTxn && <ReceiptModal txn={receiptTxn} onClose={() => setReceiptTxn(null)} />}
     </div>
   )
 }

@@ -31,6 +31,7 @@ const BASE_NAV = [
   { path: '/financial-statements', key: 'financialStatements', icon: 'reports' },
   { path: '/rates',          key: 'rates',          icon: 'rates'          },
   { path: '/reconciliation', key: 'reconciliation', icon: 'calendar'       },
+  { path: '/compliance',     key: 'compliance',     icon: 'shield'         },
   { path: '/reports',        key: 'reports',        icon: 'reports'        },
   { path: '/analysis',       key: 'aiAnalysis',     icon: 'sparkles'       },
   { path: '/cashflow',       key: 'cashFlow',       icon: 'cashflow'       },

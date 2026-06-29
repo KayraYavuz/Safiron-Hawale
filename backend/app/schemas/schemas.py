@@ -49,6 +49,7 @@ class UserOut(BaseModel):
     is_approved: bool = True
     created_at: datetime
     company_id: Optional[UUID] = None
+    company_name: Optional[str] = None  # for receipts / headers
     bot_pin: Optional[str] = None       # Telegram bağlama kodu
     telegram_id: Optional[str] = None  # Bağlı Telegram hesabı
     class Config:
@@ -257,6 +258,7 @@ class TransactionOut(BaseModel):
     legs: List[LegOut] = []
     pnl:  Optional[PnLOut] = None
     supplier_settlement: Optional['SupplierSettlementOut'] = None
+    compliance_flagged: bool = False
     class Config:
         from_attributes = True
 

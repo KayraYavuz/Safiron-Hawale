@@ -19,6 +19,7 @@ from app.api.accounting import router as accounting_router
 from app.api.journal import router as journal_router
 from app.api.statements import router as statements_router
 from app.api.periods import router as periods_router
+from app.api.compliance import router as compliance_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -92,6 +93,7 @@ app.include_router(accounting_router)
 app.include_router(journal_router)
 app.include_router(statements_router)
 app.include_router(periods_router)
+app.include_router(compliance_router)
 
 @app.get("/")
 def root():

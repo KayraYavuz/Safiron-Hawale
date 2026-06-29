@@ -6,6 +6,7 @@ import { fmt } from '../utils/format'
 import { Card, Table, Th, Td, Badge, Btn, Input, Select, TrHover, C } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
+import CorrespondentPositions from '../components/CorrespondentPositions'
 import toast from 'react-hot-toast'
 import { getCpTypeLabel, STALE_2MIN } from '../constants'
 import { useLang } from '../hooks/useLang'
@@ -71,6 +72,8 @@ export default function Counterparties() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <CorrespondentPositions />
+
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}

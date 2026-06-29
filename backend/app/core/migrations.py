@@ -142,4 +142,36 @@ def run_migrations():
     """)
     _exec("CREATE INDEX IF NOT EXISTS idx_bot_conv_updated ON bot_conversations(updated_at)")
 
+    # ── AML / Uyum katmanı ────────────────────────────────────────────────────
+    _exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS aml_threshold_usd NUMERIC(18,4) DEFAULT 0")
+    _exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS aml_structuring_window_days INTEGER DEFAULT 1")
+    _exec("""
+        CREATE TABLE IF NOT EXISTS watchlist (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            company_id UUID REFERENCES companies(id),
+            name VARCHAR NOT NULL,
+            name_ar VARCHAR,
+            reason VARCHAR(255),
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+    _exec("CREATE INDEX IF NOT EXISTS ix_watchlist_company ON watchlist(company_id)")
+    _exec("""
+        CREATE TABLE IF NOT EXISTS compliance_flags (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            company_id UUID REFERENCES companies(id),
+            transaction_id UUID NOT NULL REFERENCES transactions(id),
+            rule VARCHAR(20) NOT NULL,
+            detail TEXT,
+            status VARCHAR(10) NOT NULL DEFAULT 'open',
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            cleared_by UUID REFERENCES users(id),
+            cleared_at TIMESTAMPTZ
+        )
+    """)
+    _exec("CREATE INDEX IF NOT EXISTS ix_compliance_flags_txn ON compliance_flags(transaction_id)")
+    _exec("CREATE INDEX IF NOT EXISTS ix_compliance_flags_company ON compliance_flags(company_id)")
+    _exec("ALTER TABLE compliance_flags ADD CONSTRAINT uq_flag_txn_rule UNIQUE (transaction_id, rule)")
+
     print("✅ Migration tamamlandı.")

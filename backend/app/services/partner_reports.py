@@ -53,6 +53,47 @@ def partner_ledger(db: Session, company_id, counterparty_id, start: date, end: d
     return {"opening_usd": opening, "lines": lines, "closing_usd": running}
 
 
+def correspondent_positions(db: Session, company_id, as_of: date = None) -> dict:
+    """Net USD position per counterparty over posted journal lines that carry a
+    counterparty_id. Settlement-focused (no aging buckets).
+
+    net_usd > 0 → receivable (they owe us); < 0 → payable (we owe them).
+    Zero-net counterparties are dropped. Sorted by name.
+    """
+    q = (db.query(JournalLine, JournalEntry)
+           .join(JournalEntry, JournalLine.entry_id == JournalEntry.id)
+           .filter(JournalEntry.company_id == company_id,
+                   JournalEntry.status == JournalStatus.posted,
+                   JournalLine.counterparty_id.isnot(None)))
+    if as_of:
+        q = q.filter(JournalEntry.entry_date <= as_of)
+
+    names = {str(c.id): c.name for c in
+             db.query(Counterparty).filter(Counterparty.company_id == company_id).all()}
+
+    nets = {}
+    for line, _entry in q.all():
+        cid = str(line.counterparty_id)
+        nets[cid] = nets.get(cid, ZERO) + _q(line.debit_usd) - _q(line.credit_usd)
+
+    rows, total_recv, total_pay = [], ZERO, ZERO
+    for cid, net in nets.items():
+        if net == ZERO:
+            continue
+        rows.append({
+            "counterparty_id": cid,
+            "name": names.get(cid, cid),
+            "net_usd": net,
+            "direction": "receivable" if net > ZERO else "payable",
+        })
+        if net > ZERO:
+            total_recv += net
+        else:
+            total_pay += -net
+    rows.sort(key=lambda r: r["name"] or "")
+    return {"rows": rows, "total_receivable_usd": total_recv, "total_payable_usd": total_pay}
+
+
 _BUCKETS = ("current", "d31_60", "d61_90", "d90_plus")
 
 
