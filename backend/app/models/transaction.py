@@ -56,6 +56,12 @@ class Transaction(Base):
     legs = relationship("TransactionLeg", back_populates="transaction", cascade="all, delete-orphan")
     pnl  = relationship("TransactionPnL", back_populates="transaction", uselist=False, cascade="all, delete-orphan")
     supplier_settlement = relationship("SupplierSettlement", back_populates="transaction", uselist=False, cascade="all, delete-orphan")
+    compliance_flags = relationship("ComplianceFlag", cascade="all, delete-orphan")
+
+    @property
+    def compliance_flagged(self) -> bool:
+        """True if the transaction has any open compliance flag."""
+        return any(getattr(f.status, "value", f.status) == "open" for f in self.compliance_flags)
 
 
 class TransactionLeg(Base):

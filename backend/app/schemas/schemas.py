@@ -257,6 +257,7 @@ class TransactionOut(BaseModel):
     legs: List[LegOut] = []
     pnl:  Optional[PnLOut] = None
     supplier_settlement: Optional['SupplierSettlementOut'] = None
+    compliance_flagged: bool = False
     class Config:
         from_attributes = True
 

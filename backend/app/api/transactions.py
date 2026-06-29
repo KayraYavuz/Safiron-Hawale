@@ -81,6 +81,37 @@ def _require(user: User, *roles: UserRole):
         raise HTTPException(403, "Forbidden")
 
 
+# Roles that may approve a transaction carrying open compliance flags.
+_FLAG_APPROVERS = (UserRole.admin, UserRole.super_admin, UserRole.manager, UserRole.branch_manager)
+
+
+def _clear_compliance_flags(db: Session, txn, user: User) -> bool:
+    """Compliance gate on approval. Returns True if the transaction may proceed.
+    Flagged transactions require an elevated approver; on approval their open
+    flags are cleared with an audit trail. raise_on_block=False semantics: the
+    caller decides whether a block is a 403 or a skip."""
+    try:
+        from app.services.compliance import has_open_flags
+        from app.models.compliance import ComplianceFlag, ComplianceStatus
+    except Exception:
+        return True
+    if not has_open_flags(db, txn.id):
+        return True
+    if user.role not in _FLAG_APPROVERS:
+        return False
+    from datetime import datetime
+    flags = (db.query(ComplianceFlag)
+               .filter(ComplianceFlag.transaction_id == txn.id,
+                       ComplianceFlag.status == ComplianceStatus.open).all())
+    for f in flags:
+        f.status = ComplianceStatus.cleared
+        f.cleared_by = user.id
+        f.cleared_at = datetime.utcnow()
+    audit_log(db, "COMPLIANCE_CLEAR", user_id=user.id, entity="Transaction",
+              entity_id=txn.id, detail={"flags": [f.rule.value for f in flags]})
+    return True
+
+
 def _next_txn_number(db: Session) -> str:
     """MAX+1 tabanlı sıra numarası — race-condition safe, index kullanır."""
     import datetime
@@ -130,6 +161,7 @@ def list_transactions(
         joinedload(Transaction.legs).joinedload(TransactionLeg.currency),
         joinedload(Transaction.pnl),
         joinedload(Transaction.supplier_settlement).joinedload(SupplierSettlement.counterparty),
+        joinedload(Transaction.compliance_flags),
     )
     q = apply_company_filter(q, Transaction, cu)
     if status:
@@ -200,6 +232,12 @@ def create_transaction(
 
     db.flush()
     _calculate_and_save_pnl(txn, data, db)
+    # AML screening — flag-only, never blocks transaction creation
+    try:
+        from app.services.compliance import evaluate_and_store
+        evaluate_and_store(db, txn)
+    except Exception:
+        pass
     audit_log(db, "CREATE", user_id=cu.id, entity="Transaction",
               entity_id=txn.id, detail={"txn_number": txn.txn_number, "type": data.txn_type})
     db.commit()
@@ -340,6 +378,8 @@ def approve(txn_id: UUID, db: Session = Depends(get_db), cu: User = Depends(get_
     txn = q.first()
     if not txn:
         raise HTTPException(404, "Transaction not found")
+    if not _clear_compliance_flags(db, txn, cu):
+        raise HTTPException(403, "Flagged transaction requires manager approval")
     txn.status = TxnStatus.completed
     txn.approved_by = cu.id
     _post_gl(db, txn)
@@ -360,14 +400,21 @@ def approve_all(db: Session = Depends(get_db), cu: User = Depends(get_current_us
     pending = q.all()
     if not pending:
         return {"approved": 0}
+    approved, skipped = 0, 0
     for txn in pending:
+        # Flagged transactions an elevated approver can't clear are skipped, not
+        # blocking the rest of the batch.
+        if not _clear_compliance_flags(db, txn, cu):
+            skipped += 1
+            continue
         txn.status = TxnStatus.completed
         txn.approved_by = cu.id
         _post_gl(db, txn)
         audit_log(db, "APPROVE", user_id=cu.id, entity="Transaction", entity_id=txn.id,
                   detail={"txn_number": txn.txn_number})
+        approved += 1
     db.commit()
-    return {"approved": len(pending)}
+    return {"approved": approved, "skipped": skipped}
 
 
 @router.delete("/{txn_id}")
