@@ -403,4 +403,7 @@ export default {
   receipt: 'Receipt', receiptTitle: 'Transaction Receipt', print: 'Print',
   receiptGiven: 'Given', receiptReceived: 'Received', receiptIssued: 'Issued by',
   receiptThanks: 'Thank you for your business.',
+  // Currency margins
+  currencyMargins: 'Currency Margins', marginPct: 'Margin (%)', applyMargin: 'Apply margin',
+  addMargin: 'Add Margin', noMargins: 'No margins defined', marginHint: 'Default profit margin applied to the market rate',
 }

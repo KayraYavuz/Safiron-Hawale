@@ -17,7 +17,7 @@
  */
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { transactionsApi, locationsApi } from '../utils/api'
+import { transactionsApi, locationsApi, marginsApi } from '../utils/api'
 import { fmt, stripCommas, addCommas, calcPnl } from '../utils/format'
 import { Modal, Btn, Steps, AmountInput, RateInput, SumRow, Info, CPSearch, LocAccPicker, Input, C } from './UI'
 import toast from 'react-hot-toast'
@@ -163,6 +163,21 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
   const nonUsdCur = destCur === 'USD' ? sourceCur
                   : sourceCur === 'USD' ? destCur
                   : destCur
+
+  // ── Kur marjı (opsiyonel) — supplier kuruna marj uygulayıp müşteri kurunu önerir
+  const { data: margins = [] } = useQuery({ queryKey: ['margins'], queryFn: () => marginsApi.list().then(r => r.data), staleTime: 120000 })
+  const marginPct = useMemo(() => {
+    const m = margins.find(x => x.currency_code === nonUsdCur)
+    return m ? Number(m.margin_pct) : 0
+  }, [margins, nonUsdCur])
+  const applyMargin = useCallback(() => {
+    const sr = parseFloat(supplierRate || 0)
+    if (!sr || !marginPct || sameCur) return
+    // Case A (destCur===USD): kâr için customer > supplier → ×(1+marj)
+    // Case B (aksi):          kâr için supplier > customer → ×(1−marj)
+    const suggested = destCur === 'USD' ? sr * (1 + marginPct) : sr * (1 - marginPct)
+    setCustomerRate(String(Number(suggested.toFixed(6))))
+  }, [supplierRate, marginPct, destCur, sameCur])
 
   // ── Çift yönlü tutar handler'ları ─────────────────────────────────────────
   const handleUsdChange = useCallback((val) => {
@@ -531,6 +546,13 @@ export default function TransactionForm({ onClose, accounts = [], counterparties
                   label={`${t.supplierRate} — 1 USD = ? ${nonUsdCur}`}
                   hint={destCur === 'USD' ? t.supplierRateHintLow : t.supplierRateHintHigh}
                 />
+
+                {/* Opt-in: tedarikçi kuruna marj uygulayıp müşteri kurunu öner */}
+                {marginPct > 0 && supplierRate && !sameCur && (
+                  <Btn variant="ghost" size="sm" onClick={applyMargin}>
+                    {t.applyMargin} · {nonUsdCur} %{(marginPct * 100).toFixed(2)}
+                  </Btn>
+                )}
 
                 {/* Anlık kâr önizlemesi */}
                 {ratePreview && (

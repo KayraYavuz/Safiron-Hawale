@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.tenant import apply_company_filter
 from app.models.user import User, UserRole
-from app.models.master import Location, Currency, Account, Counterparty, CounterpartyType
+from app.models.master import Location, Currency, Account, Counterparty, CounterpartyType, CurrencyMargin
 from app.models.transaction import ExchangeRate
 from app.schemas.schemas import (
     LocationCreate, LocationUpdate, LocationOut, CurrencyOut,
@@ -331,6 +331,60 @@ def create_rate(data: ExchangeRateCreate, db: Session = Depends(get_db), cu: Use
     db.refresh(rate)
     invalidate_rates_cache()
     return rate
+
+# ── Currency Margins ──────────────────────────────────────────────────────────
+from pydantic import BaseModel
+from decimal import Decimal as _Dec
+
+
+class MarginUpsert(BaseModel):
+    currency_code: str
+    margin_pct: _Dec
+
+
+@router.get("/margins")
+def list_margins(db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    """Per-company currency markup percentages (read for the transaction form)."""
+    q = apply_company_filter(db.query(CurrencyMargin), CurrencyMargin, cu)
+    return [{"currency_code": m.currency_code, "margin_pct": str(m.margin_pct or 0)}
+            for m in q.order_by(CurrencyMargin.currency_code).all()]
+
+
+@router.put("/margins")
+def upsert_margin(data: MarginUpsert, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
+        raise HTTPException(403, "Only admin can set margins")
+    code = data.currency_code.upper().strip()
+    if not code:
+        raise HTTPException(400, "Currency code required")
+    if data.margin_pct < 0:
+        raise HTTPException(400, "Margin cannot be negative")
+    q = apply_company_filter(
+        db.query(CurrencyMargin).filter(CurrencyMargin.currency_code == code), CurrencyMargin, cu)
+    m = q.first()
+    if m:
+        m.margin_pct = data.margin_pct
+    else:
+        m = CurrencyMargin(company_id=cu.company_id, currency_code=code, margin_pct=data.margin_pct)
+        db.add(m)
+    db.commit()
+    return {"currency_code": code, "margin_pct": str(data.margin_pct)}
+
+
+@router.delete("/margins/{currency_code}")
+def delete_margin(currency_code: str, db: Session = Depends(get_db), cu: User = Depends(get_current_user)):
+    if cu.role not in (UserRole.admin, UserRole.super_admin):
+        raise HTTPException(403, "Only admin can delete margins")
+    q = apply_company_filter(
+        db.query(CurrencyMargin).filter(CurrencyMargin.currency_code == currency_code.upper().strip()),
+        CurrencyMargin, cu)
+    m = q.first()
+    if not m:
+        raise HTTPException(404, "Margin not found")
+    db.delete(m)
+    db.commit()
+    return {"ok": True}
+
 
 @router.post("/fx/update-rates")
 async def auto_update_rates(db: Session = Depends(get_db), _=Depends(get_current_user)):

@@ -1,19 +1,23 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ratesApi, currenciesApi } from '../utils/api'
+import { ratesApi, currenciesApi, marginsApi } from '../utils/api'
 import { fmt } from '../utils/format'
 import { Card, Table, Th, Td, Badge, Btn, Input, Select, Info, C } from '../components/UI'
 import { SkeletonRow } from '../components/Skeleton'
 import { Icon } from '../components/Icons'
 import toast from 'react-hot-toast'
 import { useLang } from '../hooks/useLang'
+import { useAuthStore } from '../store'
 
 export default function Rates() {
   const { t } = useLang()
   const qc = useQueryClient()
+  const { user } = useAuthStore()
+  const isAdmin = ['admin', 'super_admin'].includes(user?.role)
   const today = new Date().toISOString().split('T')[0]
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ date: today, currency_code: '', rate_per_usd: '' })
+  const [marginForm, setMarginForm] = useState({ currency_code: '', pct: '' })
 
   const { data: rates = [], isLoading } = useQuery({ queryKey: ['rates'],      queryFn: () => ratesApi.list({}).then(r => r.data) })
   const { data: curs  = [] }            = useQuery({ queryKey: ['currencies'], queryFn: () => currenciesApi.list().then(r => r.data) })
@@ -27,6 +31,18 @@ export default function Rates() {
     mutationFn: ratesApi.autoUpdate,
     onSuccess:  r  => { qc.invalidateQueries({ queryKey: ['rates', 'position'] }); toast.success(`✅ ${r.data.saved} ${t.rateUpdated}`) },
     onError:    e  => toast.error(e.response?.data?.detail || t.apiError),
+  })
+
+  const { data: margins = [] } = useQuery({ queryKey: ['margins'], queryFn: () => marginsApi.list().then(r => r.data) })
+  const marginUpsert = useMutation({
+    mutationFn: () => marginsApi.upsert({ currency_code: marginForm.currency_code, margin_pct: Number(marginForm.pct) / 100 }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['margins'] }); setMarginForm({ currency_code: '', pct: '' }); toast.success(t.saved) },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
+  })
+  const marginDelete = useMutation({
+    mutationFn: (code) => marginsApi.remove(code),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['margins'] }); toast.success(t.deleted) },
+    onError: e => toast.error(e.response?.data?.detail || t.error),
   })
 
   return (
@@ -100,6 +116,49 @@ export default function Rates() {
             ))}
             {!isLoading && !rates.length && (
               <tr><td colSpan={4} style={{ padding: 32, textAlign: 'center', color: C.text3 }}>{t.noRateYet}</td></tr>
+            )}
+          </tbody>
+        </Table>
+      </Card>
+
+      {/* ── Currency margins ── */}
+      <Card>
+        <div style={{ padding: '13px 18px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>{t.currencyMargins}</div>
+          <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>{t.marginHint}</div>
+        </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 10, padding: '12px 18px', borderBottom: `1px solid ${C.border}`, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <Select label={t.currencySelect} value={marginForm.currency_code}
+                    onChange={e => setMarginForm(x => ({ ...x, currency_code: e.target.value }))} style={{ minWidth: 150 }}>
+              <option value="">{t.selectPlaceholder}</option>
+              {curs.filter(c => c.code !== 'USD').sort((a, b) => a.code.localeCompare(b.code)).map(c =>
+                <option key={c.id} value={c.code}>{c.code} — {c.name_tr}</option>)}
+            </Select>
+            <Input label={t.marginPct} type="number" step="0.01" value={marginForm.pct}
+                   onChange={e => setMarginForm(x => ({ ...x, pct: e.target.value }))} placeholder="1.5" style={{ maxWidth: 120 }} />
+            <Btn onClick={() => marginUpsert.mutate()} disabled={marginUpsert.isPending || !marginForm.currency_code || marginForm.pct === ''}>
+              {t.addMargin}
+            </Btn>
+          </div>
+        )}
+        <Table>
+          <thead><tr><Th>{t.currencySelect}</Th><Th right>{t.marginPct}</Th><Th /></tr></thead>
+          <tbody>
+            {margins.map(m => (
+              <tr key={m.currency_code}>
+                <Td style={{ fontWeight: 600, color: C.navy }}>{m.currency_code}</Td>
+                <Td right mono>{fmt(Number(m.margin_pct) * 100, 2)}%</Td>
+                <Td right>{isAdmin && (
+                  <button onClick={() => marginDelete.mutate(m.currency_code)} disabled={marginDelete.isPending}
+                          style={{ fontSize: 11.5, color: C.red, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+                    {t.delete}
+                  </button>
+                )}</Td>
+              </tr>
+            ))}
+            {!margins.length && (
+              <tr><td colSpan={3} style={{ padding: 28, textAlign: 'center', color: C.text4, fontSize: 13 }}>{t.noMargins}</td></tr>
             )}
           </tbody>
         </Table>

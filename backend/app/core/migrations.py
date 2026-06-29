@@ -174,4 +174,17 @@ def run_migrations():
     _exec("CREATE INDEX IF NOT EXISTS ix_compliance_flags_company ON compliance_flags(company_id)")
     _exec("ALTER TABLE compliance_flags ADD CONSTRAINT uq_flag_txn_rule UNIQUE (transaction_id, rule)")
 
+    # ── Kur marjları ──────────────────────────────────────────────────────────
+    _exec("""
+        CREATE TABLE IF NOT EXISTS currency_margin (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            company_id UUID REFERENCES companies(id),
+            currency_code VARCHAR(5) NOT NULL,
+            margin_pct NUMERIC(6,4) DEFAULT 0,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+    _exec("CREATE INDEX IF NOT EXISTS ix_currency_margin_company ON currency_margin(company_id)")
+    _exec("ALTER TABLE currency_margin ADD CONSTRAINT uq_margin_company_currency UNIQUE (company_id, currency_code)")
+
     print("✅ Migration tamamlandı.")

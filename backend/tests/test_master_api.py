@@ -68,6 +68,39 @@ def test_account_balance_tenant_isolated(env):
     assert r.status_code == 404
 
 
+def test_margin_upsert_list_delete(env):
+    client, s = env
+    # upsert
+    r = client.put("/api/margins", json={"currency_code": "try", "margin_pct": "0.015"})
+    assert r.status_code == 200
+    assert r.json()["currency_code"] == "TRY"
+    # list
+    rows = client.get("/api/margins").json()
+    assert any(m["currency_code"] == "TRY" and float(m["margin_pct"]) == 0.015 for m in rows)
+    # update existing (no duplicate)
+    client.put("/api/margins", json={"currency_code": "TRY", "margin_pct": "0.02"})
+    rows = client.get("/api/margins").json()
+    assert len([m for m in rows if m["currency_code"] == "TRY"]) == 1
+    # delete
+    assert client.delete("/api/margins/TRY").status_code == 200
+    assert all(m["currency_code"] != "TRY" for m in client.get("/api/margins").json())
+
+
+def test_margin_negative_rejected(env):
+    client, s = env
+    r = client.put("/api/margins", json={"currency_code": "EUR", "margin_pct": "-0.01"})
+    assert r.status_code == 400
+
+
+def test_margin_tenant_isolated(env):
+    client, s = env
+    from app.models.master import CurrencyMargin
+    s.add(CurrencyMargin(id=uuid.uuid4(), company_id=uuid.UUID(client.c2),
+                         currency_code="SAR", margin_pct=0.03))
+    s.commit()
+    assert all(m["currency_code"] != "SAR" for m in client.get("/api/margins").json())
+
+
 def test_counterparty_code_is_per_company(env):
     client, s = env
     # Pre-seed many counterparties in company B; company A's first code should be ...00001.
