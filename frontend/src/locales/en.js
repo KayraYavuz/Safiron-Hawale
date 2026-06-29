@@ -399,4 +399,8 @@ export default {
   amlThreshold: 'Amount Threshold (USD)', amlWindow: 'Structuring Window (days)',
   watchlistName: 'Name', watchlistReason: 'Reason', addToWatchlist: 'Add to Watchlist',
   noWatchlist: 'Watchlist is empty', openFlags: 'Open', clearedFlags: 'Cleared', allFlags: 'All',
+  // Receipt
+  receipt: 'Receipt', receiptTitle: 'Transaction Receipt', print: 'Print',
+  receiptGiven: 'Given', receiptReceived: 'Received', receiptIssued: 'Issued by',
+  receiptThanks: 'Thank you for your business.',
 }

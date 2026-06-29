@@ -399,4 +399,8 @@ export default {
   amlThreshold: 'Tutar Eşiği (USD)', amlWindow: 'Structuring Penceresi (gün)',
   watchlistName: 'İsim', watchlistReason: 'Sebep', addToWatchlist: 'Listeye Ekle',
   noWatchlist: 'Liste boş', openFlags: 'Açık', clearedFlags: 'Temizlenmiş', allFlags: 'Tümü',
+  // Receipt
+  receipt: 'Makbuz', receiptTitle: 'İşlem Makbuzu', print: 'Yazdır',
+  receiptGiven: 'Verilen', receiptReceived: 'Alınan', receiptIssued: 'Düzenleyen',
+  receiptThanks: 'Bizi tercih ettiğiniz için teşekkür ederiz.',
 }

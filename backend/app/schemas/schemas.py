@@ -49,6 +49,7 @@ class UserOut(BaseModel):
     is_approved: bool = True
     created_at: datetime
     company_id: Optional[UUID] = None
+    company_name: Optional[str] = None  # for receipts / headers
     bot_pin: Optional[str] = None       # Telegram bağlama kodu
     telegram_id: Optional[str] = None  # Bağlı Telegram hesabı
     class Config:

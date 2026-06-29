@@ -399,4 +399,8 @@ export default {
   amlThreshold: 'حد المبلغ (دولار)', amlWindow: 'نافذة التجزئة (أيام)',
   watchlistName: 'الاسم', watchlistReason: 'السبب', addToWatchlist: 'إضافة إلى القائمة',
   noWatchlist: 'القائمة فارغة', openFlags: 'مفتوح', clearedFlags: 'تم المسح', allFlags: 'الكل',
+  // Receipt
+  receipt: 'إيصال', receiptTitle: 'إيصال المعاملة', print: 'طباعة',
+  receiptGiven: 'المدفوع', receiptReceived: 'المستلم', receiptIssued: 'صادر عن',
+  receiptThanks: 'شكراً لتعاملكم معنا.',
 }
