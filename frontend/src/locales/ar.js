@@ -18,7 +18,7 @@ export default {
   fsPrint: 'طباعة / PDF',
   fsPartnerLedger: 'كشف حساب العميل', fsAged: 'أعمار الديون', fsPartner: 'الطرف',
   fsFxPosition: 'مركز العملات', fsNetPosition: 'صافي المركز', fsBookedUsd: 'دولار دفتري', fsCurrentUsd: 'دولار حالي',
-  fsUnrealizedFx: 'أرباح/خسائر صرف غير محققة', fsSide: 'الاتجاه', fsLong: 'دائن', fsShort: 'مدين', fsNoRate: 'لا سعر',
+  fsUnrealizedFx: 'أرباح/خسائر صرف غير محققة', fsSide: 'الاتجاه', fsLong: 'طويل', fsShort: 'قصير', fsNoRate: 'لا سعر',
   fsOpening: 'رصيد افتتاحي', fsClosing: 'الرصيد الختامي',
   fsCurrent: 'جاري (0-30)', fsD3160: '31-60 يوم', fsD6190: '61-90 يوم', fsD90: '+90 يوم',
   fsReceivable: 'مدين (+)', fsPayable: 'دائن (−)',
