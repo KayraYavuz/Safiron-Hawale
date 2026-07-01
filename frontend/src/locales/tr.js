@@ -18,7 +18,7 @@ export default {
   fsPrint: 'Yazdır / PDF',
   fsPartnerLedger: 'Cari Ekstre', fsAged: 'Alacak Vade Analizi', fsPartner: 'Cari Hesap',
   fsFxPosition: 'Döviz Pozisyonu', fsNetPosition: 'Net Pozisyon', fsBookedUsd: 'Defter USD', fsCurrentUsd: 'Güncel USD',
-  fsUnrealizedFx: 'Gerçekleşmemiş FX K/Z', fsSide: 'Yön', fsLong: 'Long', fsShort: 'Short', fsNoRate: 'kur yok',
+  fsUnrealizedFx: 'Gerçekleşmemiş FX K/Z', fsSide: 'Yön', fsLong: 'Uzun', fsShort: 'Kısa', fsNoRate: 'kur yok',
   fsOpening: 'Devir / Açılış', fsClosing: 'Kapanış Bakiyesi',
   fsCurrent: 'Güncel (0-30)', fsD3160: '31-60 gün', fsD6190: '61-90 gün', fsD90: '90+ gün',
   fsReceivable: 'Alacak (+)', fsPayable: 'Borç (−)',
